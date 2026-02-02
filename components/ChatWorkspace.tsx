@@ -30,7 +30,7 @@ export function ChatWorkspace() {
   } = useConversationStore();
   const { slots, activeSlotId, setSlotModel } = useModelStore();
   const { sendMessage } = useChatActions();
-  const [activeTab, setActiveTab] = useState(activeSlotId ?? "slot-1");
+  const activeTab = activeSlotId ?? slots[0]?.slotId ?? "slot-1";
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [sourcesRun, setSourcesRun] = useState<Run | null>(null);
   const [disagreementsRun, setDisagreementsRun] = useState<Run | null>(null);
@@ -49,12 +49,6 @@ export function ChatWorkspace() {
     );
   }, [conversations, currentConversationId]);
   const isEmpty = !conversation?.messages?.length;
-
-  useEffect(() => {
-    if (activeSlotId && activeTab !== activeSlotId) {
-      setActiveTab(activeSlotId);
-    }
-  }, [activeSlotId, activeTab]);
 
   useEffect(() => {
     resetPeriodIfNeeded();

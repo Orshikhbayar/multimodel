@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
 import {
   ArrowUpRight,
   Download,
@@ -38,7 +38,6 @@ const shortcutItems = [
 
 export function UserMenu() {
   const router = useRouter();
-  const pathname = usePathname();
   const user = useUser();
   const [open, setOpen] = useState(false);
   const [languageOpen, setLanguageOpen] = useState(false);
@@ -49,13 +48,6 @@ export function UserMenu() {
   const languageLabel = useMemo(() => {
     return LANGUAGE_OPTIONS.find((option) => option.id === user.locale)?.label ?? "English";
   }, [user.locale]);
-
-  useEffect(() => {
-    setOpen(false);
-    setLearnMoreOpen(false);
-    setLanguageOpen(false);
-    setHelpOpen(false);
-  }, [pathname]);
 
   const handleNavigate = (href: string) => {
     setOpen(false);

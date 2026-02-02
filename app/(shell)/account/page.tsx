@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTheme } from "next-themes";
 
@@ -22,7 +22,7 @@ import { useBillingStore } from "@/lib/billing/store";
 export default function AccountPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { theme: resolvedTheme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
   const { isAuthenticated } = useSession();
   const settings = useSettings();
   const user = useUserStore((state) => state.user);
@@ -30,26 +30,16 @@ export default function AccountPage() {
   const setPlan = useUserStore((state) => state.setPlan);
   const choosePlan = useBillingStore((state) => state.choosePlan);
 
-  const [tab, setTab] = useState("settings");
-  const [name, setName] = useState(user.name);
-  const [email, setEmail] = useState(user.email);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
   const currentThemeLabel = resolvedTheme ?? settings.theme;
-
-  useEffect(() => {
-    const nextTab = searchParams.get("tab") === "billing" ? "billing" : "settings";
-    setTab(nextTab);
-  }, [searchParams]);
+  const activeTab = searchParams.get("tab") === "billing" ? "billing" : "settings";
 
   useEffect(() => {
     if (!isAuthenticated) {
       router.replace("/login");
     }
   }, [isAuthenticated, router]);
-
-  useEffect(() => {
-    setName(user.name);
-    setEmail(user.email);
-  }, [user.name, user.email]);
 
   const usage = useMemo(() => {
     const totalCredits = 120;
@@ -71,17 +61,19 @@ export default function AccountPage() {
       <ContentColumn className="space-y-6">
         <PageHeader label="Account" title="Plan & Settings" />
 
-        <Tabs value={tab} onValueChange={(value) => {
-          setTab(value);
-          router.replace(value === "billing" ? "/account?tab=billing" : "/account");
-        }}>
+        <Tabs
+          value={activeTab}
+          onValueChange={(value) =>
+            router.replace(value === "billing" ? "/account?tab=billing" : "/account")
+          }
+        >
           <TabsList>
             <TabsTrigger value="settings">Settings</TabsTrigger>
             <TabsTrigger value="billing">Billing</TabsTrigger>
           </TabsList>
 
           <TabsContent value="settings" className="space-y-4">
-            <Card>
+            <Card key={user.id}>
               <CardHeader>
                 <CardTitle>Profile</CardTitle>
                 <CardDescription>Update your local account details.</CardDescription>
@@ -92,8 +84,8 @@ export default function AccountPage() {
                     <Label htmlFor="name">Display name</Label>
                     <Input
                       id="name"
-                      value={name}
-                      onChange={(event) => setName(event.target.value)}
+                      defaultValue={user.name}
+                      ref={nameRef}
                       placeholder="Demo User"
                     />
                   </div>
@@ -102,14 +94,23 @@ export default function AccountPage() {
                     <Input
                       id="email"
                       type="email"
-                      value={email}
-                      onChange={(event) => setEmail(event.target.value)}
+                      defaultValue={user.email}
+                      ref={emailRef}
                       placeholder="demo@example.com"
                     />
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
-                  <Button onClick={() => updateProfile({ name, email })}>Save changes</Button>
+                  <Button
+                    onClick={() =>
+                      updateProfile({
+                        name: nameRef.current?.value ?? "",
+                        email: emailRef.current?.value ?? "",
+                      })
+                    }
+                  >
+                    Save changes
+                  </Button>
                   <Badge variant="outline">{PLAN_LABELS[user.plan]} plan</Badge>
                 </div>
               </CardContent>

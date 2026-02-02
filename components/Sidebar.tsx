@@ -24,7 +24,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import { UserMenu } from "@/components/UserMenu";
 import { useBillingStore } from "@/lib/billing/store";
@@ -44,7 +44,6 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
   const { resolvedTheme, setTheme } = useTheme();
   const setAppTheme = useAppSettingsStore((state) => state.setTheme);
   const [collapsed, setCollapsed] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const {
     conversations,
     currentConversationId,
@@ -64,8 +63,6 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
   }, [createConversation, setCurrentConversation, router, onNavigate]);
 
   useEffect(() => {
-    setMounted(true);
-
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
@@ -223,7 +220,7 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
       <div className="mt-4 space-y-3 px-1 pb-2 shrink-0">
         <div className="flex items-center justify-between rounded-lg border px-3 py-2">
           <div className="flex items-center gap-2">
-            {mounted && resolvedTheme === "dark" ? (
+            {resolvedTheme === "dark" ? (
               <Moon className="h-4 w-4" />
             ) : (
               <Sun className="h-4 w-4" />
@@ -231,18 +228,18 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
             {!collapsed && <span className="text-sm font-medium">Theme</span>}
           </div>
           <Switch
-            checked={mounted ? resolvedTheme === "dark" : false}
+            checked={resolvedTheme === "dark"}
             onCheckedChange={(checked) => {
               const nextTheme = checked ? "dark" : "light";
               setTheme(nextTheme);
               setAppTheme(nextTheme);
             }}
             aria-label="Toggle dark mode"
-            disabled={!mounted}
+            disabled={!resolvedTheme}
           />
         </div>
         {!collapsed && (
-          <UserMenu />
+          <UserMenu key={pathname} />
         )}
       </div>
     </aside>
