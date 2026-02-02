@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MultipleChat - One Chat Multiple Minds</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <nav class="nav">
+            <div class="nav-left">
+                <div class="logo">
+                    <i class="fas fa-comments"></i>
+                    <span>MultipleChat</span>
+                </div>
+            </div>
+            <div class="nav-center">
+                <a href="#features">Features</a>
+                <a href="#humanizer">AI Humanizer</a>
+                <a href="#generation">Image Generation</a>
+                <a href="#pricing">Pricing</a>
+                <a href="#about">About</a>
+                <a href="#contact">Contact</a>
+            </div>
+            <div class="nav-right">
+                <a href="#login" class="login-link">Login</a>
+                <button class="btn-primary">Get started</button>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1 class="hero-title">One Chat Multiple Minds</h1>
+                <p class="hero-subtitle">ChatGPT, Claude, and Gemini working together in one chat. Deeper answers. Instant verification. No switching tabs.</p>
+                
+                <div class="hero-visual">
+                    <div class="chat-interface">
+                        <div class="chat-header">
+                            <div class="ai-models">
+                                <div class="ai-model openai">
+                                    <i class="fas fa-robot"></i>
+                                    <span>GPT</span>
+                                </div>
+                                <div class="ai-model claude">
+                                    <i class="fas fa-brain"></i>
+                                    <span>Claude</span>
+                                </div>
+                                <div class="ai-model gemini">
+                                    <i class="fas fa-gem"></i>
+                                    <span>Gemini</span>
+                                </div>
+                            </div>
+                            <div class="verification">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Verified</span>
+                                <span class="timer">2.3s</span>
+                            </div>
+                        </div>
+                        <div class="chat-message">
+                            <p>All three models agree: The best approach for your React component optimization is to use React.memo() with custom comparison...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <a class="btn-hero" href="/"><span>Try it free now</span></a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Feature Grid -->
+    <section class="features" id="features">
+        <div class="container">
+            <h2 class="section-title">Why Choose MultipleChat</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-magic"></i>
+                    </div>
+                    <h3>Prompt Optimizer</h3>
+                    <p>Instantly sharpen any prompt for better results across all models</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon multi-model">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                    <h3>Multi-Model Hub</h3>
+                    <p>Use any model solo or combine them for consensus-driven answers</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <h3>Document Uploads</h3>
+                    <p>Drop in files and get insights from multiple AI perspectives</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-globe"></i>
+                    </div>
+                    <h3>Web Search</h3>
+                    <p>Real-time web search with citations and fact-checking</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Model Showcase -->
+    <section class="models">
+        <div class="container">
+            <h2 class="section-title">Supported AI Models</h2>
+            <div class="model-grid">
+                <div class="model-card openai-card">
+                    <div class="model-logo">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <h3>OpenAI ChatGPT</h3>
+                    <span class="model-tag">Advanced Reasoning</span>
+                </div>
+                <div class="model-card claude-card">
+                    <div class="model-logo">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <h3>Anthropic Claude</h3>
+                    <span class="model-tag">Writing Master</span>
+                </div>
+                <div class="model-card gemini-card">
+                    <div class="model-logo">
+                        <i class="fas fa-gem"></i>
+                    </div>
+                    <h3>Google Gemini</h3>
+                    <span class="model-tag">Research Pro</span>
+                </div>
+                <div class="model-card grok-card">
+                    <div class="model-logo">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <h3>xAI Grok</h3>
+                    <span class="model-tag">Real-time Data</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Before & After Comparison -->
+    <section class="comparison" id="humanizer">
+        <div class="container">
+            <h2 class="section-title">AI Text Humanization</h2>
+            <div class="comparison-container">
+                <div class="comparison-side before">
+                    <h3>Before: Raw AI Output</h3>
+                    <div class="text-sample">
+                        <p>As an AI language model, I must emphasize that the implementation of blockchain technology in supply chain management offers numerous advantages including enhanced transparency, improved traceability, and reduced fraud potential...</p>
+                    </div>
+                </div>
+                <div class="comparison-arrow">
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+                <div class="comparison-side after">
+                    <h3>After: Humanized & Optimized</h3>
+                    <div class="text-sample">
+                        <p>Blockchain transforms supply chains by creating transparent, tamper-proof records. Companies can track products from origin to consumer, reducing fraud by 40% and building customer trust through verified authenticity.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Interaction Modes -->
+    <section class="interaction-modes">
+        <div class="container">
+            <h2 class="section-title">How AIs Collaborate</h2>
+            <div class="modes-grid">
+                <div class="mode-card">
+                    <div class="mode-icon">
+                        <i class="fas fa-cogs"></i>
+                    </div>
+                    <h3>Auto Mode</h3>
+                    <p>Draft → Check → Refine</p>
+                </div>
+                <div class="mode-card">
+                    <div class="mode-icon">
+                        <i class="fas fa-vote-yea"></i>
+                    </div>
+                    <h3>Vote Mode</h3>
+                    <p>Multiple models vote on best answer</p>
+                </div>
+                <div class="mode-card">
+                    <div class="mode-icon">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <h3>Debate Mode</h3>
+                    <p>Pro/Con analysis for balanced insights</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Comparison Table -->
+    <section class="comparison-table">
+        <div class="container">
+            <h2 class="section-title">Traditional AI vs MultipleChat</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th>Traditional AI</th>
+                            <th class="highlight">MultipleChat</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Accuracy</td>
+                            <td>Single perspective</td>
+                            <td class="highlight">Consensus verified</td>
+                        </tr>
+                        <tr>
+                            <td>Hallucinations</td>
+                            <td>Common occurrence</td>
+                            <td class="highlight">Cross-model validation</td>
+                        </tr>
+                        <tr>
+                            <td>Bias</td>
+                            <td>Model-specific bias</td>
+                            <td class="highlight">Balanced viewpoints</td>
+                        </tr>
+                        <tr>
+                            <td>Speed</td>
+                            <td>Single query</td>
+                            <td class="highlight">Parallel processing</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- Use Cases -->
+    <section class="use-cases">
+        <div class="container">
+            <h2 class="section-title">Perfect For</h2>
+            <div class="bento-grid">
+                <div class="use-case-card">
+                    <i class="fas fa-search"></i>
+                    <span>Research Verification</span>
+                </div>
+                <div class="use-case-card">
+                    <i class="fas fa-code"></i>
+                    <span>Code Review</span>
+                </div>
+                <div class="use-case-card">
+                    <i class="fas fa-pen"></i>
+                    <span>SEO Copy</span>
+                </div>
+                <div class="use-case-card">
+                    <i class="fas fa-gavel"></i>
+                    <span>Legal QA</span>
+                </div>
+                <div class="use-case-card">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Data Analysis</span>
+                </div>
+                <div class="use-case-card">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>Academic Writing</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section class="testimonials">
+        <div class="container">
+            <h2 class="section-title">What Our Users Say</h2>
+            <div class="testimonial-grid">
+                <div class="testimonial-card">
+                    <p>"Having multiple AI models verify each other's work gives me confidence in critical legal research. It's like having a second pair of eyes on everything."</p>
+                    <div class="testimonial-author">
+                        <strong>Sarah C.</strong>
+                        <span>Corporate Law Partner</span>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <p>"The consensus-driven answers have dramatically reduced errors in our technical documentation. Game-changer for our development team."</p>
+                    <div class="testimonial-author">
+                        <strong>Marcus T.</strong>
+                        <span>Senior Developer</span>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <p>"MultipleChat's fact-checking capabilities have transformed how we approach content creation. No more worrying about AI hallucinations."</p>
+                    <div class="testimonial-author">
+                        <strong>Elena R.</strong>
+                        <span>Content Director</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Image Generation Section -->
+    <section class="image-generation" id="generation">
+        <div class="container">
+            <h2 class="section-title">AI Image Generation</h2>
+            <div class="generation-content">
+                <div class="generation-text">
+                    <h3>Create Stunning Visuals with AI</h3>
+                    <p>Generate high-quality images using multiple AI models working together. Get diverse creative perspectives and choose the best result.</p>
+                    <div class="generation-features">
+                        <div class="generation-feature">
+                            <i class="fas fa-palette"></i>
+                            <span>Multiple Art Styles</span>
+                        </div>
+                        <div class="generation-feature">
+                            <i class="fas fa-magic"></i>
+                            <span>Enhanced Prompts</span>
+                        </div>
+                        <div class="generation-feature">
+                            <i class="fas fa-images"></i>
+                            <span>Batch Generation</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="generation-visual">
+                    <div class="image-grid">
+                        <div class="image-placeholder">
+                            <i class="fas fa-image"></i>
+                            <span>AI Generated</span>
+                        </div>
+                        <div class="image-placeholder">
+                            <i class="fas fa-image"></i>
+                            <span>AI Generated</span>
+                        </div>
+                        <div class="image-placeholder">
+                            <i class="fas fa-image"></i>
+                            <span>AI Generated</span>
+                        </div>
+                        <div class="image-placeholder">
+                            <i class="fas fa-image"></i>
+                            <span>AI Generated</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="pricing" id="pricing">
+        <div class="container">
+            <h2 class="section-title">Simple, Transparent Pricing</h2>
+            <div class="pricing-grid">
+                <div class="pricing-card">
+                    <h3>Free</h3>
+                    <div class="price">
+                        <span class="currency">$</span>
+                        <span class="amount">0</span>
+                        <span class="period">/month</span>
+                    </div>
+                    <ul class="pricing-features">
+                        <li><i class="fas fa-check"></i> 10 queries per day</li>
+                        <li><i class="fas fa-check"></i> Basic AI models</li>
+                        <li><i class="fas fa-check"></i> Standard support</li>
+                    </ul>
+                    <button class="btn-pricing">Get Started</button>
+                </div>
+                <div class="pricing-card featured">
+                    <div class="popular-badge">Most Popular</div>
+                    <h3>Pro</h3>
+                    <div class="price">
+                        <span class="currency">$</span>
+                        <span class="amount">29</span>
+                        <span class="period">/month</span>
+                    </div>
+                    <ul class="pricing-features">
+                        <li><i class="fas fa-check"></i> Unlimited queries</li>
+                        <li><i class="fas fa-check"></i> All AI models</li>
+                        <li><i class="fas fa-check"></i> Priority support</li>
+                        <li><i class="fas fa-check"></i> Image generation</li>
+                        <li><i class="fas fa-check"></i> Document uploads</li>
+                    </ul>
+                    <button class="btn-pricing primary">Start Free Trial</button>
+                </div>
+                <div class="pricing-card">
+                    <h3>Enterprise</h3>
+                    <div class="price">
+                        <span class="currency">$</span>
+                        <span class="amount">99</span>
+                        <span class="period">/month</span>
+                    </div>
+                    <ul class="pricing-features">
+                        <li><i class="fas fa-check"></i> Everything in Pro</li>
+                        <li><i class="fas fa-check"></i> Custom integrations</li>
+                        <li><i class="fas fa-check"></i> Dedicated support</li>
+                        <li><i class="fas fa-check"></i> SLA guarantee</li>
+                    </ul>
+                    <button class="btn-pricing">Contact Sales</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="about" id="about">
+        <div class="container">
+            <h2 class="section-title">About MultipleChat</h2>
+            <div class="about-content">
+                <div class="about-text">
+                    <h3>Revolutionizing AI Interaction</h3>
+                    <p>Founded in 2024, MultipleChat was born from a simple observation: no single AI model has all the answers. By combining the strengths of multiple AI systems, we create more reliable, accurate, and comprehensive responses.</p>
+                    <p>Our team of AI researchers and engineers is dedicated to building the future of collaborative artificial intelligence, where different models work together to provide the best possible outcomes.</p>
+                    <div class="about-stats">
+                        <div class="stat">
+                            <span class="stat-number">50K+</span>
+                            <span class="stat-label">Active Users</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number">1M+</span>
+                            <span class="stat-label">Queries Processed</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number">99.9%</span>
+                            <span class="stat-label">Uptime</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="about-visual">
+                    <div class="team-grid">
+                        <div class="team-member">
+                            <div class="member-avatar">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <span>AI Research Team</span>
+                        </div>
+                        <div class="team-member">
+                            <div class="member-avatar">
+                                <i class="fas fa-code"></i>
+                            </div>
+                            <span>Engineering Team</span>
+                        </div>
+                        <div class="team-member">
+                            <div class="member-avatar">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <span>Data Science Team</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section class="contact" id="contact">
+        <div class="container">
+            <h2 class="section-title">Get in Touch</h2>
+            <div class="contact-content">
+                <div class="contact-info">
+                    <h3>Contact Information</h3>
+                    <div class="contact-item">
+                        <i class="fas fa-envelope"></i>
+                        <span>hello@multiplechat.ai</span>
+                    </div>
+                    <div class="contact-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>Zurich, Switzerland</span>
+                    </div>
+                    <div class="contact-item">
+                        <i class="fas fa-clock"></i>
+                        <span>24/7 Support Available</span>
+                    </div>
+                </div>
+                <div class="contact-form">
+                    <form>
+                        <div class="form-group">
+                            <input type="text" placeholder="Your Name" required>
+                        </div>
+                        <div class="form-group">
+                            <input type="email" placeholder="Your Email" required>
+                        </div>
+                        <div class="form-group">
+                            <select required>
+                                <option value="">Select Subject</option>
+                                <option value="general">General Inquiry</option>
+                                <option value="support">Technical Support</option>
+                                <option value="sales">Sales</option>
+                                <option value="partnership">Partnership</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <textarea placeholder="Your Message" rows="5" required></textarea>
+                        </div>
+                        <button type="submit" class="btn-contact">Send Message</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-left">
+                    <div class="footer-logo">
+                        <i class="fas fa-comments"></i>
+                        <span>MultipleChat</span>
+                    </div>
+                    <p>Collaborative Intelligence</p>
+                </div>
+                <div class="footer-columns">
+                    <div class="footer-column">
+                        <h4>Product</h4>
+                        <a href="#features">Features</a>
+                        <a href="#pricing">Pricing</a>
+                        <a href="#api">API</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4>General</h4>
+                        <a href="#faq">FAQ</a>
+                        <a href="#terms">Terms</a>
+                        <a href="#privacy">Privacy</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4>Contact</h4>
+                        <p>Zurich, Switzerland</p>
+                        <p>hello@multiplechat.ai</p>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 MultipleChat. All rights reserved.</p>
+                <div class="legal-badges">
+                    <span class="badge">GDPR Compliant</span>
+                    <span class="badge">SOC 2 Type II</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

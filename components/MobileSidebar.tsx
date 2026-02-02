@@ -1,0 +1,41 @@
+"use client";
+
+import { useState } from "react";
+import { Menu } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { Sidebar } from "@/components/Sidebar";
+
+/**
+ * Mobile sidebar wrapper using Sheet drawer
+ * Shows hamburger menu + drawer on mobile, hidden on desktop
+ */
+export function MobileSidebar() {
+    const [open, setOpen] = useState(false);
+
+    return (
+        <>
+            {/* Mobile hamburger menu - only visible on small screens */}
+            <div className="fixed left-4 top-4 z-40 md:hidden">
+                <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setOpen(true)}
+                    aria-label="Open navigation menu"
+                    className="bg-background/80 backdrop-blur"
+                >
+                    <Menu className="h-5 w-5" />
+                </Button>
+            </div>
+
+            {/* Mobile drawer */}
+            <Sheet open={open} onOpenChange={setOpen}>
+                <SheetContent side="left" className="w-72 p-0">
+                    <SheetTitle className="sr-only">Navigation</SheetTitle>
+                    <Sidebar onNavigate={() => setOpen(false)} />
+                </SheetContent>
+            </Sheet>
+        </>
+    );
+}
