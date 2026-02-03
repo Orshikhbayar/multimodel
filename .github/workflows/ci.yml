@@ -41,3 +41,6 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Audit
+        run: npm audit --audit-level=high
