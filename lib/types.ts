@@ -45,6 +45,7 @@ export interface Message {
   role: Role;
   content: string;
   createdAt: number;
+  editedAt?: number;
   runs?: Run[];
   /** File attachments on this message */
   attachments?: Attachment[];

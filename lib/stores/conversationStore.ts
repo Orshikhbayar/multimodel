@@ -28,6 +28,11 @@ interface ConversationStoreActions {
     messageId: string,
     content: string,
   ) => void;
+  replaceTurnAssistant: (
+    conversationId: string,
+    userMessageId: string,
+    newAssistantMessages: Message[],
+  ) => void;
   interruptStreamingRuns: (conversationId: string) => void;
 
   // Message operations
@@ -144,8 +149,48 @@ export const useConversationStore = create<ConversationStore>()(
             return {
               ...conv,
               messages: conv.messages.map((msg) =>
-                msg.id === messageId ? { ...msg, content } : msg,
+                msg.id === messageId
+                  ? msg.content === content
+                    ? msg
+                    : {
+                        ...msg,
+                        content,
+                        editedAt: Date.now(),
+                      }
+                  : msg,
               ),
+            };
+          }),
+        })),
+
+      replaceTurnAssistant: (
+        conversationId,
+        userMessageId,
+        newAssistantMessages,
+      ) =>
+        set((state) => ({
+          conversations: state.conversations.map((conv) => {
+            if (conv.id !== conversationId) return conv;
+            const userIndex = conv.messages.findIndex(
+              (msg) => msg.id === userMessageId,
+            );
+            if (userIndex === -1) return conv;
+
+            let endExclusive = conv.messages.length;
+            for (let i = userIndex + 1; i < conv.messages.length; i += 1) {
+              if (conv.messages[i]?.role === "user") {
+                endExclusive = i;
+                break;
+              }
+            }
+
+            return {
+              ...conv,
+              messages: [
+                ...conv.messages.slice(0, userIndex + 1),
+                ...newAssistantMessages,
+                ...conv.messages.slice(endExclusive),
+              ],
             };
           }),
         })),

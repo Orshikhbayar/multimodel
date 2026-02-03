@@ -119,6 +119,124 @@ export function useChatActions() {
   const streamStore = useStreamStore();
   const usageStore = useUsageStore();
 
+  const startRuns = async (
+    conversationId: string,
+    content: string,
+    slots: ModelSlot[],
+    runs: Run[],
+    assistantMessageId: string,
+    apiMessages: { role: "system" | "user" | "assistant"; content: string }[],
+  ) => {
+    // Update slot statuses
+    runs.forEach((run) => {
+      if (run.slotId) {
+        modelStore.updateSlotStatus(run.slotId, "streaming");
+      }
+    });
+
+    // Start streaming for each run
+    for (const run of runs) {
+      // Skip unified run (it's synthesized, not from API)
+      if (run.model === "Unified") {
+        // For now, just complete unified run with a placeholder
+        setTimeout(() => {
+          conversationStore.completeRun(
+            conversationId,
+            assistantMessageId,
+            run.id,
+            {
+              text: "Synthesis of all model responses would appear here.",
+              status: "done",
+            },
+          );
+        }, 1500);
+        continue;
+      }
+
+      const slot = slots.find((s) => s.slotId === run.slotId);
+      if (!slot) continue;
+
+      const controller = new AbortController();
+      streamStore.registerStream(run.id, controller);
+
+      // Track API request timing
+      const startTime = Date.now();
+      let accumulatedText = "";
+
+      fetchStreamingChat(
+        apiMessages,
+        slot.modelId,
+        controller,
+        // onToken
+        (token) => {
+          accumulatedText += token;
+          conversationStore.appendRunChunk(
+            conversationId,
+            assistantMessageId,
+            run.id,
+            token,
+          );
+        },
+        // onDone
+        () => {
+          const latencyMs = Date.now() - startTime;
+
+          conversationStore.completeRun(
+            conversationId,
+            assistantMessageId,
+            run.id,
+          );
+          if (run.slotId) {
+            modelStore.updateSlotStatus(run.slotId, "done");
+          }
+          streamStore.removeStream(run.id);
+
+          // Track API usage
+          const inputTokens = Math.ceil(content.length / 4); // ~4 chars per token estimate
+          const outputTokens = Math.ceil(accumulatedText.length / 4);
+
+          usageStore.addRecord({
+            timestamp: Date.now(),
+            model: slot.modelId,
+            inputTokens,
+            outputTokens,
+            latencyMs,
+            estimatedCostUsd: inputTokens * 0.00003 + outputTokens * 0.00006, // GPT-4 pricing estimate
+          });
+
+          analytics.trackApiUsage({
+            model: slot.modelId,
+            latencyMs,
+            inputTokens,
+            outputTokens,
+            success: true,
+          });
+        },
+        // onError
+        (error) => {
+          const latencyMs = Date.now() - startTime;
+
+          conversationStore.markRunError(
+            conversationId,
+            assistantMessageId,
+            run.id,
+            error,
+          );
+          if (run.slotId) {
+            modelStore.updateSlotStatus(run.slotId, "error");
+          }
+          streamStore.removeStream(run.id);
+
+          analytics.trackApiUsage({
+            model: slot.modelId,
+            latencyMs,
+            success: false,
+          });
+        },
+      );
+    }
+  };
+
   const sendMessage = async (content: string) => {
     if (!content.trim()) return;
 
@@ -199,107 +317,83 @@ export function useChatActions() {
     apiMessages.push(...historyMessages);
     apiMessages.push({ role: "user", content });
 
-    // Start streaming for each run
-    for (const run of runs) {
-      // Skip unified run (it's synthesized, not from API)
-      if (run.model === "Unified") {
-        // For now, just complete unified run with a placeholder
-        setTimeout(() => {
-          conversationStore.completeRun(
-            conversationId!,
-            assistantMessage.id,
-            run.id,
-            {
-              text: "Synthesis of all model responses would appear here.",
-              status: "done",
-            },
-          );
-        }, 1500);
-        continue;
-      }
+    await startRuns(
+      conversationId!,
+      content,
+      slots,
+      runs,
+      assistantMessage.id,
+      apiMessages,
+    );
+  };
 
-      const slot = slots.find((s) => s.slotId === run.slotId);
-      if (!slot) continue;
+  const respondToEditedMessage = async (
+    conversationId: string,
+    userMessageId: string,
+    content: string,
+  ) => {
+    if (!content.trim()) return;
 
-      const controller = new AbortController();
-      streamStore.registerStream(run.id, controller);
+    // Track message sent
+    analytics.trackMessageSent(
+      modelStore.slots
+        .filter((s) => s.enabled)
+        .map((s) => s.modelId)
+        .join(","),
+      content.length,
+    );
 
-      // Track API request timing
-      const startTime = Date.now();
-      let accumulatedText = "";
+    const { slots } = modelStore;
+    const { mode, instructions } = settingsStore;
 
-      fetchStreamingChat(
-        apiMessages,
-        slot.modelId,
-        controller,
-        // onToken
-        (token) => {
-          accumulatedText += token;
-          conversationStore.appendRunChunk(
-            conversationId!,
-            assistantMessage.id,
-            run.id,
-            token,
-          );
-        },
-        // onDone
-        () => {
-          const latencyMs = Date.now() - startTime;
+    // Create runs for each enabled model
+    const runs = generateRuns(mode, slots);
 
-          conversationStore.completeRun(
-            conversationId!,
-            assistantMessage.id,
-            run.id,
-          );
-          if (run.slotId) {
-            modelStore.updateSlotStatus(run.slotId, "done");
-          }
-          streamStore.removeStream(run.id);
+    // Create assistant message with runs and replace the current turn
+    const assistantMessage: Message = {
+      id: nanoid(),
+      role: "assistant",
+      content: "",
+      createdAt: Date.now(),
+      runs,
+    };
 
-          // Track API usage
-          const inputTokens = Math.ceil(content.length / 4); // ~4 chars per token estimate
-          const outputTokens = Math.ceil(accumulatedText.length / 4);
+    conversationStore.replaceTurnAssistant(conversationId, userMessageId, [
+      assistantMessage,
+    ]);
 
-          usageStore.addRecord({
-            timestamp: Date.now(),
-            model: slot.modelId,
-            inputTokens,
-            outputTokens,
-            latencyMs,
-            estimatedCostUsd: inputTokens * 0.00003 + outputTokens * 0.00006, // GPT-4 pricing estimate
-          });
+    const conversation = useConversationStore
+      .getState()
+      .conversations.find((c) => c.id === conversationId);
+    const historyMessages = (conversation?.messages ?? [])
+      .filter(
+        (m) =>
+          m.role === "user" || (m.role === "assistant" && m.runs?.[0]?.text),
+      )
+      .slice(-10)
+      .map((m) => ({
+        role: m.role as "user" | "assistant",
+        content: m.role === "user" ? m.content : (m.runs?.[0]?.text ?? ""),
+      }));
 
-          analytics.trackApiUsage({
-            model: slot.modelId,
-            latencyMs,
-            inputTokens,
-            outputTokens,
-            success: true,
-          });
-        },
-        // onError
-        (error) => {
-          const latencyMs = Date.now() - startTime;
-
-          conversationStore.markRunError(
-            conversationId!,
-            assistantMessage.id,
-            run.id,
-            error,
-          );
-          if (run.slotId) {
-            modelStore.updateSlotStatus(run.slotId, "error");
-          }
-          streamStore.removeStream(run.id);
-
-          analytics.trackApiUsage({
-            model: slot.modelId,
-            latencyMs,
-            success: false,
-          });
-        },
-      );
+    const apiMessages: {
+      role: "system" | "user" | "assistant";
+      content: string;
+    }[] = [];
+    if (instructions.trim()) {
+      apiMessages.push({ role: "system", content: instructions });
     }
+    apiMessages.push(...historyMessages);
+    apiMessages.push({ role: "user", content });
+
+    await startRuns(
+      conversationId,
+      content,
+      slots,
+      runs,
+      assistantMessage.id,
+      apiMessages,
+    );
   };
 
   const stopAllStreams = () => {
@@ -317,6 +411,7 @@ export function useChatActions() {
 
   return {
     sendMessage,
+    respondToEditedMessage,
     stopAllStreams,
   };
 }

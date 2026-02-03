@@ -76,8 +76,16 @@ export function MessageList({
       aria-label="Chat messages"
       aria-live="polite"
     >
-      <ContentColumn className="space-y-6 py-6 pb-28" id="main-content">
-        {messages.map((message) => {
+      <ContentColumn
+        className="space-y-6 py-6 pb-28"
+        id="main-content"
+        maxWidth="var(--chat-max-width)"
+      >
+        {messages.map((message, index) => {
+          const nextMessage = messages[index + 1];
+          const isTurnEnd =
+            message.role === "assistant" &&
+            (!nextMessage || nextMessage.role === "user");
           if (message.role === "user") {
             lastUserContent = message.content;
           }
@@ -100,6 +108,7 @@ export function MessageList({
               retryContent={
                 message.role === "assistant" ? lastUserContent : undefined
               }
+              isTurnEnd={isTurnEnd}
               onShowSources={onShowSources}
               onShowDisagreements={onShowDisagreements}
             />

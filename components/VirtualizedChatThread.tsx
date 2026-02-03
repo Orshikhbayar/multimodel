@@ -129,6 +129,7 @@ export function VirtualizedChatThread({
       >
         <ChatContentContainer
           className="absolute top-0 left-0 w-full"
+          maxWidth="var(--chat-max-width)"
           style={{
             transform: `translateY(${virtualItems[0]?.start ?? 0}px)`,
           }}
@@ -157,6 +158,11 @@ export function VirtualizedChatThread({
                     message.role === "assistant"
                       ? retryContentByIndex[virtualRow.index]
                       : undefined
+                  }
+                  isTurnEnd={
+                    message.role === "assistant" &&
+                    (!messages[virtualRow.index + 1] ||
+                      messages[virtualRow.index + 1]?.role === "user")
                   }
                   onShowSources={onShowSources}
                   onShowDisagreements={onShowDisagreements}

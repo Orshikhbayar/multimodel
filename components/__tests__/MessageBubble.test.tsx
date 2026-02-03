@@ -1,7 +1,30 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MessageBubble } from "../MessageBubble";
 import type { Message, Run } from "@/lib/types";
+
+const {
+  mockSendMessage,
+  mockRespondToEditedMessage,
+  mockUpdateMessageContent,
+} = vi.hoisted(() => ({
+  mockSendMessage: vi.fn(),
+  mockRespondToEditedMessage: vi.fn(),
+  mockUpdateMessageContent: vi.fn(),
+}));
+
+vi.mock("@/lib/hooks/useChatActions", () => ({
+  useChatActions: () => ({
+    sendMessage: mockSendMessage,
+    respondToEditedMessage: mockRespondToEditedMessage,
+  }),
+}));
+
+vi.mock("@/lib/stores", () => ({
+  useConversationStore: () => ({
+    updateMessageContent: mockUpdateMessageContent,
+  }),
+}));
 
 // Mock lucide-react with all icons used in MessageBubble
 vi.mock("lucide-react", async (importOriginal) => {
@@ -55,7 +78,7 @@ describe("MessageBubble", () => {
       expect(screen.getByText("Hello, AI!")).toBeInTheDocument();
     });
 
-    it("does not show action buttons for user messages", () => {
+    it("shows copy action but no feedback buttons for user messages", () => {
       const message = createUserMessage("Test");
 
       render(
@@ -66,9 +89,87 @@ describe("MessageBubble", () => {
         />,
       );
 
-      // User messages should not have copy/thumbs buttons
-      expect(screen.queryByTestId("copy-icon")).not.toBeInTheDocument();
+      // User messages show copy/edit/retry actions but no thumbs feedback
+      expect(screen.queryByTestId("copy-icon")).toBeInTheDocument();
       expect(screen.queryByTestId("thumbs-up-icon")).not.toBeInTheDocument();
+    });
+
+    it("shows edit and retry buttons and enters edit mode on click", () => {
+      const message = createUserMessage("Edit me");
+
+      render(
+        <MessageBubble
+          message={message}
+          onShowSources={mockOnShowSources}
+          onShowDisagreements={mockOnShowDisagreements}
+        />,
+      );
+
+      const retryButton = screen.getByTitle("Retry");
+      const editButton = screen.getByTitle("Edit");
+
+      fireEvent.click(retryButton);
+      expect(mockSendMessage).toHaveBeenCalledWith("Edit me");
+
+      fireEvent.click(editButton);
+      expect(screen.getByRole("textbox")).toBeInTheDocument();
+      expect(screen.getByText("Cancel")).toBeInTheDocument();
+      expect(screen.getByText("Save")).toBeInTheDocument();
+    });
+
+    it("hides action bar until hover via classes", () => {
+      const message = createUserMessage("Hover check");
+
+      render(
+        <MessageBubble
+          message={message}
+          onShowSources={mockOnShowSources}
+          onShowDisagreements={mockOnShowDisagreements}
+        />,
+      );
+
+      const retryButton = screen.getByTitle("Retry");
+      const actionBar = retryButton.closest("div");
+
+      expect(actionBar).not.toBeNull();
+      expect(actionBar).toHaveClass("opacity-0");
+      expect(actionBar).toHaveClass("group-hover:opacity-100");
+      expect(actionBar).toHaveClass("pointer-events-none");
+      expect(actionBar).toHaveClass("group-hover:pointer-events-auto");
+    });
+
+    it("saves edited content and exits edit mode", async () => {
+      const message = createUserMessage("Original");
+
+      render(
+        <MessageBubble
+          message={message}
+          conversationId="conv-1"
+          onShowSources={mockOnShowSources}
+          onShowDisagreements={mockOnShowDisagreements}
+        />,
+      );
+
+      fireEvent.click(screen.getByTitle("Edit"));
+
+      const textbox = screen.getByRole("textbox");
+      fireEvent.change(textbox, { target: { value: "  Updated  " } });
+      fireEvent.click(screen.getByText("Save"));
+
+      expect(mockUpdateMessageContent).toHaveBeenCalledWith(
+        "conv-1",
+        message.id,
+        "Updated",
+      );
+      expect(mockRespondToEditedMessage).toHaveBeenCalledWith(
+        "conv-1",
+        message.id,
+        "Updated",
+      );
+
+      await waitFor(() =>
+        expect(screen.queryByRole("textbox")).not.toBeInTheDocument(),
+      );
     });
   });
 

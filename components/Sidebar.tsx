@@ -48,6 +48,7 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
   const { resolvedTheme, setTheme } = useTheme();
   const setAppTheme = useAppSettingsStore((state) => state.setTheme);
   const [collapsed, setCollapsed] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const {
     conversations,
     currentConversationId,
@@ -71,6 +72,7 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
   }, [createConversation, setCurrentConversation, router, onNavigate]);
 
   useEffect(() => {
+    setMounted(true);
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
@@ -245,22 +247,26 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
       <div className="mt-4 space-y-3 px-1 pb-2 shrink-0">
         <div className="flex items-center justify-between rounded-lg border px-3 py-2">
           <div className="flex items-center gap-2">
-            {resolvedTheme === "dark" ? (
-              <Moon className="h-4 w-4" />
+            {mounted && resolvedTheme ? (
+              resolvedTheme === "dark" ? (
+                <Moon className="h-4 w-4" />
+              ) : (
+                <Sun className="h-4 w-4" />
+              )
             ) : (
-              <Sun className="h-4 w-4" />
+              <div className="h-4 w-4 rounded-full bg-muted/40" />
             )}
             {!collapsed && <span className="text-sm font-medium">Theme</span>}
           </div>
           <Switch
-            checked={resolvedTheme === "dark"}
+            checked={mounted && resolvedTheme === "dark"}
             onCheckedChange={(checked) => {
               const nextTheme = checked ? "dark" : "light";
               setTheme(nextTheme);
               setAppTheme(nextTheme);
             }}
             aria-label="Toggle dark mode"
-            disabled={!resolvedTheme}
+            disabled={!mounted || !resolvedTheme}
           />
         </div>
         {!collapsed && <UserMenu key={pathname} />}

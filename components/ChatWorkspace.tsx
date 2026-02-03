@@ -87,7 +87,10 @@ export function ChatWorkspace() {
 
         {isEmpty ? (
           <div className="flex flex-1 items-center justify-center">
-            <ChatContentContainer className="space-y-4">
+            <ChatContentContainer
+              className="space-y-4"
+              maxWidth="var(--chat-max-width)"
+            >
               <ChatControls onOpenSettings={() => setSettingsOpen(true)} />
               <Composer
                 onSend={handleSend}
@@ -115,7 +118,10 @@ export function ChatWorkspace() {
               onShowSources={(run) => setSourcesRun(run)}
               onShowDisagreements={(run) => setDisagreementsRun(run)}
             />
-            <ChatContentContainer className="sticky bottom-4 z-10 space-y-2">
+            <ChatContentContainer
+              className="sticky bottom-4 z-10 space-y-2"
+              maxWidth="var(--chat-max-width)"
+            >
               <ChatControls onOpenSettings={() => setSettingsOpen(true)} />
               <Composer
                 onSend={handleSend}

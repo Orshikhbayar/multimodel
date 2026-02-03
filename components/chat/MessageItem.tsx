@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
@@ -17,6 +17,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { ContentColumn } from "@/components/layout";
 import { ExpandableMessage } from "./ExpandableMessage";
+import {
+  PrismLight,
+  SUPPORTED_LANGUAGES,
+  normalizeLanguage,
+} from "./codeHighlight";
 import type { Message, Run } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useChatActions } from "@/lib/hooks/useChatActions";
@@ -27,6 +32,7 @@ interface MessageItemProps {
   run?: Run;
   conversationId?: string;
   retryContent?: string;
+  isTurnEnd?: boolean;
   onShowSources?: (run: Run) => void;
   onShowDisagreements?: (run: Run) => void;
 }
@@ -36,23 +42,30 @@ export function MessageItem({
   run,
   conversationId,
   retryContent,
+  isTurnEnd = false,
   onShowSources,
   onShowDisagreements,
 }: MessageItemProps) {
   const isUser = message.role === "user";
   const text = run?.text?.trim() || message.content;
-  const lineCount = text.split("\n").length;
-  const isLong = text.length > 600 || lineCount > 12;
-  const { sendMessage } = useChatActions();
+  const { sendMessage, respondToEditedMessage } = useChatActions();
   const { updateMessageContent } = useConversationStore();
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(message.content);
+  const editRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (!isEditing) {
       setDraft(message.content);
     }
   }, [isEditing, message.content]);
+
+  useEffect(() => {
+    const el = editRef.current;
+    if (!el) return;
+    el.style.height = "0px";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [draft, isEditing]);
 
   const sentAt = useMemo(() => {
     if (!message.createdAt) return "";
@@ -62,61 +75,79 @@ export function MessageItem({
     });
   }, [message.createdAt]);
 
+  const displayContent = isUser ? message.content : text;
+  const displayLineCount = displayContent.split("\n").length;
+  const displayIsLong =
+    displayContent.length > 600 || displayLineCount > 12;
+
   return (
     <ContentColumn withPadding={false} className="w-full">
       <article
         role="article"
         aria-label={isUser ? "Your message" : "Assistant response"}
         className={cn(
-          "w-full",
+          "w-full space-y-1",
           isUser ? "flex justify-end" : "flex justify-start",
+          isTurnEnd && "pb-4",
         )}
       >
         <div
           className={cn(
-            "w-full",
-            isUser && "flex flex-col items-end group",
+            "w-full flex flex-col",
+            isUser ? "items-end group" : "items-start",
           )}
         >
+          {!isUser && (
+            <div className="mb-1 text-[11px] text-muted-foreground">
+              {run?.model ?? "Assistant"}
+            </div>
+          )}
           <ExpandableMessage
             id={`message-${message.id}`}
             align={isUser ? "end" : "start"}
             collapsible={isUser}
             containerClassName={cn(
-              isUser ? "max-w-[92%] sm:max-w-[85%] lg:max-w-[80%]" : "w-full",
+              isUser
+                ? "ml-auto w-fit max-w-[85%]"
+                : "w-full max-w-[85%]",
             )}
             contentClassName={cn(
-              "message-bubble prose prose-sm dark:prose-invert",
+              "message-bubble prose prose-sm dark:prose-invert max-w-none leading-relaxed break-words",
+              "prose-p:my-2 prose-li:my-1 prose-ul:my-2 prose-ol:my-2",
+              "prose-headings:my-3 prose-blockquote:my-2",
               isUser
                 ? cn(
-                    "ml-auto w-fit max-w-full",
-                    "text-foreground/90",
-                    isLong ? "px-0 py-0" : "px-0 py-0",
+                    "w-fit rounded-2xl bg-primary/15 px-4 py-3 text-foreground/90 whitespace-pre-wrap",
+                    isEditing ? "bg-primary/10" : "",
                   )
-                : "text-foreground/90",
+                : cn(
+                    "w-full rounded-2xl bg-muted/20 px-4 py-3 text-foreground/90",
+                    "chat-markdown",
+                  ),
             )}
             fadeFromClassName={
               isUser ? "from-muted/50" : "from-[hsl(var(--app-panel))]"
             }
-            contentLength={text.length}
-            contentLineCount={lineCount}
+            contentLength={displayContent.length}
+            contentLineCount={displayLineCount}
             longTextLabel="Show full text"
           >
             {isUser && isEditing ? (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <textarea
+                  ref={editRef}
                   value={draft}
                   onChange={(event) => setDraft(event.target.value)}
-                  className="w-full min-h-[120px] rounded-xl border bg-background/80 p-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="w-full min-h-[160px] rounded-xl border border-white/10 bg-background/60 p-4 text-sm leading-relaxed outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 />
-                <div className="flex items-center justify-end gap-2 text-xs">
+                <div className="flex items-center justify-end gap-3 text-xs">
                   <button
                     type="button"
                     onClick={() => {
                       setDraft(message.content);
                       setIsEditing(false);
                     }}
-                    className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-muted-foreground transition hover:text-foreground"
+                    className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-muted-foreground transition hover:text-foreground"
                   >
                     <X className="h-3.5 w-3.5" />
                     Cancel
@@ -130,9 +161,14 @@ export function MessageItem({
                         return;
                       }
                       updateMessageContent(conversationId, message.id, next);
+                      respondToEditedMessage(
+                        conversationId,
+                        message.id,
+                        next,
+                      );
                       setIsEditing(false);
                     }}
-                    className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-foreground transition hover:bg-muted/40"
+                    className="inline-flex items-center gap-1 rounded-md border border-white/10 px-3 py-1.5 text-foreground transition hover:bg-muted/40"
                   >
                     <Check className="h-3.5 w-3.5" />
                     Save
@@ -145,7 +181,7 @@ export function MessageItem({
                 skipHtml
                 components={{
                   p: ({ children }) => (
-                    <p className="mb-3 last:mb-0">{children}</p>
+                    <p className="mb-2 last:mb-0">{children}</p>
                   ),
                   code: ({ className, children, ...props }) => {
                     const isInline = !className;
@@ -169,7 +205,8 @@ export function MessageItem({
                   pre: ({ children }) => <>{children}</>,
                 }}
               >
-                {text || (run?.status === "streaming" ? "Thinking..." : "")}
+                {displayContent ||
+                  (run?.status === "streaming" ? "Thinking..." : "")}
               </ReactMarkdown>
             )}
           </ExpandableMessage>
@@ -197,6 +234,11 @@ export function MessageItem({
                 <Pencil className="h-4 w-4" />
               </button>
               <CopyButton text={message.content} />
+              {message.editedAt ? (
+                <span className="text-[11px] text-muted-foreground">
+                  Edited
+                </span>
+              ) : null}
             </div>
           )}
           {!isUser && run?.interrupted && (
@@ -231,13 +273,28 @@ export function MessageItem({
                 >
                   <ThumbsDown className="h-4 w-4" />
                 </button>
-                <button
-                  type="button"
-                  className="hover:text-foreground transition-colors"
-                  title="Regenerate"
-                >
-                  <RotateCcw className="h-4 w-4" />
-                </button>
+                <div className="relative flex items-center group">
+                  <button
+                    type="button"
+                    className="hover:text-foreground transition-colors"
+                    title="Try again"
+                    onClick={() =>
+                      retryContent ? sendMessage(retryContent) : undefined
+                    }
+                    disabled={!retryContent}
+                    aria-label="Try again"
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                  </button>
+                  {retryContent && (
+                    <div className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 w-max -translate-x-1/2 rounded-md bg-black/90 px-2.5 py-2 text-[11px] text-white opacity-0 shadow-lg transition group-hover:opacity-100">
+                      <div className="font-medium">Try again...</div>
+                      <div className="text-[10px] text-white/70">
+                        Used {run.model ?? "Assistant"}
+                      </div>
+                    </div>
+                  )}
+                </div>
                 {run?.status === "error" && (
                   <span className="flex items-center gap-1 text-destructive">
                     <TriangleAlert className="h-3 w-3" />
@@ -307,6 +364,11 @@ function CopyButton({ text }: { text: string }) {
 /** Code block with copy functionality */
 function CodeBlock({ code, language }: { code: string; language?: string }) {
   const [copied, setCopied] = useState(false);
+  const normalizedLanguage = normalizeLanguage(language);
+  const isSupported = SUPPORTED_LANGUAGES.has(normalizedLanguage);
+  const label = isSupported
+    ? normalizedLanguage.toUpperCase()
+    : "TEXT";
 
   const handleCopy = async () => {
     try {
@@ -319,15 +381,13 @@ function CodeBlock({ code, language }: { code: string; language?: string }) {
   };
 
   return (
-    <div className="my-3 rounded-xl border bg-muted/40 overflow-hidden">
-      <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/60">
-        <span className="text-[11px] uppercase text-muted-foreground font-medium">
-          {language}
-        </span>
+    <div className="code-block my-3 overflow-hidden">
+      <div className="code-block__header">
+        <span className="code-block__label">{label}</span>
         <button
           type="button"
           onClick={handleCopy}
-          className="flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-muted-foreground transition hover:bg-background hover:text-foreground"
+          className="code-block__copy"
         >
           {copied ? (
             <Check className="h-3 w-3" />
@@ -337,11 +397,14 @@ function CodeBlock({ code, language }: { code: string; language?: string }) {
           {copied ? "Copied" : "Copy"}
         </button>
       </div>
-      <pre className="p-3 overflow-x-auto">
-        <code className="text-xs font-mono leading-relaxed text-foreground/90 whitespace-pre-wrap break-words">
-          {code}
-        </code>
-      </pre>
+      <PrismLight
+        language={isSupported ? normalizedLanguage : undefined}
+        useInlineStyles={false}
+        className="code-block__pre"
+        codeTagProps={{ className: "code-block__code" }}
+      >
+        {code}
+      </PrismLight>
     </div>
   );
 }
