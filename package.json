@@ -14,7 +14,7 @@
     "bundle:size": "node scripts/check-bundle-size.mjs",
     "format": "prettier --write . --ignore-unknown",
     "format:check": "prettier --check . --ignore-unknown",
-    "spellcheck": "cspell --no-progress --show-suggestions"
+    "spellcheck": "cspell lint . --no-progress --show-suggestions"
   },
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.1.0",
