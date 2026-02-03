@@ -13,7 +13,8 @@
     "e2e:install": "playwright install --with-deps",
     "bundle:size": "node scripts/check-bundle-size.mjs",
     "format": "prettier --write . --ignore-unknown",
-    "format:check": "prettier --check . --ignore-unknown"
+    "format:check": "prettier --check . --ignore-unknown",
+    "spellcheck": "cspell --no-progress --show-suggestions"
   },
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.1.0",
@@ -52,6 +53,7 @@
     "@vitejs/plugin-react": "^5.1.2",
     "@vitest/coverage-v8": "^4.0.18",
     "autoprefixer": "^10.4.20",
+    "cspell": "^9.6.3",
     "eslint": "^9",
     "eslint-config-next": "16.1.4",
     "jsdom": "^27.4.0",
