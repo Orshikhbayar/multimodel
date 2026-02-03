@@ -223,7 +223,8 @@ describe('conversationStore', () => {
         it('removes a conversation and selects next one', () => {
             const { createConversation, removeConversation } = useConversationStore.getState();
 
-            let id1: string, id2: string;
+            let id1 = "";
+            let id2 = "";
             act(() => {
                 id1 = createConversation('First');
                 id2 = createConversation('Second');
