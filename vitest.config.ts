@@ -9,7 +9,7 @@ export default defineConfig({
         globals: true,
         setupFiles: ['./test/setup.ts'],
         include: ['**/__tests__/**/*.{test,spec}.{ts,tsx}', '**/*.{test,spec}.{ts,tsx}'],
-        exclude: ['node_modules', '.next', 'dist'],
+        exclude: ['node_modules', '.next', 'dist', 'e2e/**', 'playwright.config.ts'],
         coverage: {
             provider: 'v8',
             reporter: ['text', 'json', 'html'],
