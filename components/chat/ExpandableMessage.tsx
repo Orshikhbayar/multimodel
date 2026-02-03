@@ -9,6 +9,7 @@ export type ExpandableMessageProps = {
   id: string;
   children: React.ReactNode;
   align?: "start" | "end";
+  collapsible?: boolean;
   containerClassName?: string;
   contentClassName?: string;
   fadeFromClassName?: string;
@@ -28,6 +29,7 @@ export function ExpandableMessage({
   id,
   children,
   align = "start",
+  collapsible = true,
   containerClassName,
   contentClassName,
   fadeFromClassName = "from-[hsl(var(--app-panel))]",
@@ -40,9 +42,16 @@ export function ExpandableMessage({
 }: ExpandableMessageProps) {
   const [expanded, setExpanded] = useState(false);
 
+  const estimatedLineCount = Math.ceil(contentLength / 90);
+  const effectiveLineCount = Math.max(contentLineCount, estimatedLineCount);
+  const collapseThreshold = Math.min(
+    collapsedLinesDesktop,
+    collapsedLinesMobile,
+  );
+
   // Determine if content should be collapsible based on content metrics
-  const shouldCollapse = contentLength > 400 || contentLineCount > 8;
-  const isVeryLong = contentLength > 4000 || contentLineCount > 40;
+  const shouldCollapse = collapsible && effectiveLineCount > collapseThreshold;
+  const isVeryLong = effectiveLineCount > collapseThreshold * 3;
 
   const contentId = `${id}-content`;
 

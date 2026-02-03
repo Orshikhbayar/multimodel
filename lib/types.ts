@@ -21,6 +21,8 @@ export interface Run {
   slotId?: string;
   status: RunStatus;
   text: string;
+  /** True when a stream was manually stopped */
+  interrupted?: boolean;
   sources?: Source[];
   disagreements?: Disagreement[];
   /** Token usage statistics */

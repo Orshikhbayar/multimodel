@@ -303,7 +303,16 @@ export function useChatActions() {
   };
 
   const stopAllStreams = () => {
+    const conversationId = conversationStore.currentConversationId;
     streamStore.abortAllStreams();
+    if (conversationId) {
+      conversationStore.interruptStreamingRuns(conversationId);
+    }
+    modelStore.slots.forEach((slot) => {
+      if (slot.status === "streaming") {
+        modelStore.updateSlotStatus(slot.slotId, "done");
+      }
+    });
   };
 
   return {

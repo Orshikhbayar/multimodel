@@ -23,6 +23,12 @@ interface ConversationStoreActions {
   removeConversation: (id: string) => void;
   addProject: (name: string, description?: string) => void;
   resetConversations: () => void;
+  updateMessageContent: (
+    conversationId: string,
+    messageId: string,
+    content: string,
+  ) => void;
+  interruptStreamingRuns: (conversationId: string) => void;
 
   // Message operations
   addMessages: (conversationId: string, messages: Message[]) => void;
@@ -130,6 +136,44 @@ export const useConversationStore = create<ConversationStore>()(
           projects: defaultProjects,
           currentConversationId: null,
         }),
+
+      updateMessageContent: (conversationId, messageId, content) =>
+        set((state) => ({
+          conversations: state.conversations.map((conv) => {
+            if (conv.id !== conversationId) return conv;
+            return {
+              ...conv,
+              messages: conv.messages.map((msg) =>
+                msg.id === messageId ? { ...msg, content } : msg,
+              ),
+            };
+          }),
+        })),
+
+      interruptStreamingRuns: (conversationId) =>
+        set((state) => ({
+          conversations: state.conversations.map((conv) => {
+            if (conv.id !== conversationId) return conv;
+            return {
+              ...conv,
+              messages: conv.messages.map((msg) => {
+                if (!msg.runs) return msg;
+                return {
+                  ...msg,
+                  runs: msg.runs.map((run) =>
+                    run.status === "streaming"
+                      ? {
+                          ...run,
+                          status: "done" as RunStatus,
+                          interrupted: true,
+                        }
+                      : run,
+                  ),
+                };
+              }),
+            };
+          }),
+        })),
 
       addMessages: (conversationId, messages) =>
         set((state) => ({

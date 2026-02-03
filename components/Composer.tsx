@@ -5,6 +5,7 @@ import {
   ArrowUp,
   ChevronDown,
   Paperclip,
+  Square,
   Sparkles,
   Wrench,
   Globe,
@@ -16,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { ModelPicker } from "@/components/ModelPicker";
 import { useChatActions } from "@/lib/hooks/useChatActions";
+import { useStreamStore } from "@/lib/stores";
 
 interface ComposerProps {
   onSend?: (value: string) => void;
@@ -34,7 +36,7 @@ export function Composer({
   onSelectModel,
   onSelectLocked,
 }: ComposerProps) {
-  const { sendMessage } = useChatActions();
+  const { sendMessage, stopAllStreams } = useChatActions();
   const [value, setValue] = useState("");
   const [attachmentName, setAttachmentName] = useState<string | null>(null);
   const [webEnabled, setWebEnabled] = useState(false);
@@ -42,6 +44,10 @@ export function Composer({
   const [enhanceEnabled, setEnhanceEnabled] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const maxHeight = 160;
+  const activeStreamCount = useStreamStore(
+    (state) => state.activeStreams.size,
+  );
+  const isStreaming = activeStreamCount > 0;
 
   useEffect(() => {
     textareaRef.current?.focus();
@@ -106,13 +112,13 @@ export function Composer({
         </div>
       </div>
 
-      <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-end">
+      <div className="mt-2 flex flex-col gap-2">
         <Textarea
           ref={textareaRef}
           value={value}
           onChange={(event) => setValue(event.target.value)}
           placeholder="Message the team…"
-          className="min-h-[44px] max-h-[160px] flex-1 resize-none border-0 bg-transparent text-sm shadow-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 focus:ring-offset-0 focus-visible:ring-offset-0"
+          className="min-h-[44px] max-h-[160px] w-full resize-none border-0 bg-transparent text-sm shadow-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 focus:ring-offset-0 focus-visible:ring-offset-0"
           onKeyDown={(event) => {
             if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
               event.preventDefault();
@@ -126,7 +132,7 @@ export function Composer({
             onChange={onSelectModel}
             lockedModelIds={lockedModelIds}
             onSelectLocked={onSelectLocked}
-            popoverSide="bottom"
+            popoverSide="top"
             popoverAlign="end"
             trigger={
               <button
@@ -138,9 +144,20 @@ export function Composer({
               </button>
             }
           />
-          <Button onClick={handleSend} size="icon" className="rounded-xl">
-            <ArrowUp className="h-4 w-4" />
-            <span className="sr-only">Send</span>
+          <Button
+            onClick={isStreaming ? stopAllStreams : handleSend}
+            size="icon"
+            className="rounded-xl"
+            variant={isStreaming ? "secondary" : "default"}
+          >
+            {isStreaming ? (
+              <Square className="h-4 w-4" />
+            ) : (
+              <ArrowUp className="h-4 w-4" />
+            )}
+            <span className="sr-only">
+              {isStreaming ? "Stop generating" : "Send"}
+            </span>
           </Button>
         </div>
       </div>

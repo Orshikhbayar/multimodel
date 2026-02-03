@@ -28,6 +28,15 @@ export function VirtualizedChatThread({
 }: VirtualizedChatThreadProps) {
   const parentRef = useRef<HTMLDivElement>(null);
   const messages = useMemo(() => conversation?.messages ?? [], [conversation]);
+  const retryContentByIndex = useMemo(() => {
+    let lastUser = "";
+    return messages.map((message) => {
+      if (message.role === "user") {
+        lastUser = message.content;
+      }
+      return lastUser;
+    });
+  }, [messages]);
   const slotIds = useMemo(
     () => new Set(slots.map((slot) => slot.slotId)),
     [slots],
@@ -38,6 +47,8 @@ export function VirtualizedChatThread({
   );
   const activeIsSlot = slotIds.has(activeTab);
   const activeSlot = activeIsSlot ? slotById.get(activeTab) : undefined;
+  const stickToBottomRef = useRef(true);
+  const prevCountRef = useRef(0);
 
   // Get run for a message based on active tab
   const getRunForMessage = useCallback(
@@ -69,27 +80,37 @@ export function VirtualizedChatThread({
     ),
   });
 
-  // Auto-scroll to bottom on new messages
-  const prevLengthRef = useRef(messages.length);
   useEffect(() => {
-    if (messages.length > prevLengthRef.current) {
-      // New message added, scroll to bottom
-      virtualizer.scrollToIndex(messages.length - 1, {
-        align: "end",
-        behavior: "smooth",
-      });
-    }
-    prevLengthRef.current = messages.length;
-  }, [messages.length, virtualizer]);
+    const viewport = parentRef.current;
+    if (!viewport) return;
 
-  // Scroll to bottom on initial render if there are messages
+    const updateStickiness = () => {
+      const distanceFromBottom =
+        viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
+      stickToBottomRef.current = distanceFromBottom <= 48;
+    };
+
+    updateStickiness();
+    viewport.addEventListener("scroll", updateStickiness, { passive: true });
+    return () => viewport.removeEventListener("scroll", updateStickiness);
+  }, []);
+
+  // Auto-scroll to bottom when appropriate
   useEffect(() => {
-    if (messages.length > 0) {
+    if (messages.length === 0) return;
+
+    const shouldStick = stickToBottomRef.current;
+    const isNewMessage = messages.length > prevCountRef.current;
+
+    if (shouldStick || isNewMessage) {
       virtualizer.scrollToIndex(messages.length - 1, {
         align: "end",
+        behavior: isNewMessage ? "smooth" : "auto",
       });
     }
-  }, []);
+
+    prevCountRef.current = messages.length;
+  }, [messages, activeTab, virtualizer]);
 
   const virtualItems = virtualizer.getVirtualItems();
 
@@ -130,7 +151,13 @@ export function VirtualizedChatThread({
               >
                 <MessageBubble
                   message={message}
+                  conversationId={conversation?.id}
                   run={run}
+                  retryContent={
+                    message.role === "assistant"
+                      ? retryContentByIndex[virtualRow.index]
+                      : undefined
+                  }
                   onShowSources={onShowSources}
                   onShowDisagreements={onShowDisagreements}
                 />

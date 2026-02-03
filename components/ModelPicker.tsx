@@ -54,7 +54,7 @@ export function ModelPicker({
   lockedModelIds,
   onSelectLocked,
   popoverSide = "bottom",
-  popoverAvoidCollisions = false,
+  popoverAvoidCollisions = true,
   popoverAlign = "end",
   popoverSideOffset = 8,
   popoverCollisionPadding = 8,
@@ -121,7 +121,7 @@ export function ModelPicker({
           maxHeight:
             "min(calc(100vh - 120px), var(--radix-popover-content-available-height))",
         }}
-        className="w-[360px] max-w-[85vw] overflow-y-auto p-0 rounded-2xl border bg-card shadow-xl z-[9999]"
+        className="flex w-[360px] max-w-[85vw] flex-col overflow-hidden rounded-2xl border bg-card p-0 shadow-xl z-[9999]"
       >
         <div className="flex items-center justify-between px-3 py-3">
           <div className="flex items-center gap-2">
@@ -153,7 +153,10 @@ export function ModelPicker({
           />
         </div>
 
-        <ScrollArea className="h-[360px]">
+        <ScrollArea
+          className="flex-1 min-h-0"
+          style={{ maxHeight: "min(360px, 50vh)" }}
+        >
           <div className="space-y-3 px-2 pb-2">
             {isSearching ? (
               searchResults.length > 0 ? (
