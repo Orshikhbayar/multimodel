@@ -18,14 +18,19 @@ interface SourcesDialogProps {
   sources: Source[];
 }
 
-export function SourcesDialog({ open, onOpenChange, sources }: SourcesDialogProps) {
+export function SourcesDialog({
+  open,
+  onOpenChange,
+  sources,
+}: SourcesDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Sources &amp; References</DialogTitle>
           <DialogDescription>
-            Mocked citations for the current run. Replace with grounded sources later.
+            Mocked citations for the current run. Replace with grounded sources
+            later.
           </DialogDescription>
         </DialogHeader>
         <ScrollArea className="h-72">
@@ -60,13 +65,17 @@ export function SourcesDialog({ open, onOpenChange, sources }: SourcesDialogProp
                     </a>
                   </div>
                   {source.snippet && (
-                    <p className="mt-2 text-sm text-muted-foreground">{source.snippet}</p>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      {source.snippet}
+                    </p>
                   )}
                 </li>
               );
             })}
             {sources.length === 0 && (
-              <p className="text-sm text-muted-foreground">No sources attached yet.</p>
+              <p className="text-sm text-muted-foreground">
+                No sources attached yet.
+              </p>
             )}
           </ul>
         </ScrollArea>

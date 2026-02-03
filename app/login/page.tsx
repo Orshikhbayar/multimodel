@@ -39,7 +39,9 @@ export default function LoginPage() {
               <LogIn className="h-7 w-7 text-primary" />
             </div>
             <h1 className="text-2xl font-bold tracking-tight">Welcome back</h1>
-            <p className="mt-2 text-sm text-muted-foreground">Sign in to your workspace</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Sign in to your workspace
+            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -75,7 +77,9 @@ export default function LoginPage() {
           </form>
 
           <div className="mt-6 text-center">
-            <p className="text-xs text-muted-foreground">Local session only · no backend required</p>
+            <p className="text-xs text-muted-foreground">
+              Local session only · no backend required
+            </p>
           </div>
         </div>
       </div>

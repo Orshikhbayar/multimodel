@@ -1,4 +1,10 @@
-export type ProviderIconKey = "sparkles" | "brain" | "cloud" | "flame" | "cpu" | "layers";
+export type ProviderIconKey =
+  | "sparkles"
+  | "brain"
+  | "cloud"
+  | "flame"
+  | "cpu"
+  | "layers";
 
 export type ModelProvider = {
   id: string;

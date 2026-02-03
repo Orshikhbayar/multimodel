@@ -18,12 +18,19 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ModelPicker } from "@/components/ModelPicker";
 import type { ModelSlot } from "@/lib/types";
-import { getProviderById, type ProviderIconKey, MODELS } from "@/lib/modelCatalog";
+import {
+  getProviderById,
+  type ProviderIconKey,
+  MODELS,
+} from "@/lib/modelCatalog";
 import { cn } from "@/lib/utils";
 import { useBillingStore } from "@/lib/billing/store";
 import { getPlanById } from "@/lib/billing/plans";
 
-const PROVIDER_ICONS: Record<ProviderIconKey, React.ComponentType<{ className?: string }>> = {
+const PROVIDER_ICONS: Record<
+  ProviderIconKey,
+  React.ComponentType<{ className?: string }>
+> = {
   sparkles: Sparkles,
   brain: Brain,
   cloud: Cloud,
@@ -85,7 +92,12 @@ export function TopBar({
         <Button variant="ghost" size="icon" title="Quick action">
           <Zap className="h-4 w-4" />
         </Button>
-        <Button variant="outline" size="sm" onClick={onNewChat} className="gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onNewChat}
+          className="gap-2"
+        >
           <Plus className="h-4 w-4" />
           New
         </Button>
@@ -112,7 +124,12 @@ export function TopBar({
             </button>
           }
         />
-        <Button variant="ghost" size="icon" onClick={onOpenSettings} title="Open settings">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onOpenSettings}
+          title="Open settings"
+        >
           <Settings className="h-4 w-4" />
         </Button>
       </div>

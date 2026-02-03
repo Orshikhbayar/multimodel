@@ -38,7 +38,10 @@ export function ModelTabs({
   const lockedModelIds = MODELS.filter(
     (model) => !plan.allowedModelIds.includes(model.id),
   ).map((model) => model.id);
-  const enabledSlots = useMemo(() => slots.filter((slot) => slot.enabled), [slots]);
+  const enabledSlots = useMemo(
+    () => slots.filter((slot) => slot.enabled),
+    [slots],
+  );
 
   const tabItems = useMemo<TabItem[]>(() => {
     const slotItems: TabItem[] = enabledSlots.map((slot) => {
@@ -54,7 +57,9 @@ export function ModelTabs({
     });
 
     const slotIds = new Set(enabledSlots.map((slot) => slot.slotId));
-    const extraRuns = runs.filter((run) => !run.slotId || !slotIds.has(run.slotId));
+    const extraRuns = runs.filter(
+      (run) => !run.slotId || !slotIds.has(run.slotId),
+    );
     const runItems: TabItem[] = extraRuns.map((run) => ({
       key: run.model,
       label: run.model,
@@ -105,14 +110,20 @@ export function ModelTabs({
                 {status === "streaming" && (
                   <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                 )}
-                {status === "error" && <div className="h-2 w-2 rounded-full bg-destructive" />}
-                {status === "done" && <div className="h-2 w-2 rounded-full bg-emerald-500" />}
+                {status === "error" && (
+                  <div className="h-2 w-2 rounded-full bg-destructive" />
+                )}
+                {status === "done" && (
+                  <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                )}
               </TabsTrigger>
 
               {isSlot ? (
                 <ModelPicker
                   value={item.slot.modelId}
-                  onChange={(modelId) => onSelectModel(item.slot.slotId, modelId)}
+                  onChange={(modelId) =>
+                    onSelectModel(item.slot.slotId, modelId)
+                  }
                   onOpenProviderSettings={onOpenProviderSettings}
                   lockedModelIds={lockedModelIds}
                   onSelectLocked={(modelId) =>

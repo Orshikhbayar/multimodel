@@ -11,12 +11,12 @@ export default function TermsPage() {
         <Card>
           <CardContent className="space-y-3 py-6 text-sm text-muted-foreground">
             <p>
-              This is a demo UI only. Features, pricing, and availability are subject to change as
-              the product evolves.
+              This is a demo UI only. Features, pricing, and availability are
+              subject to change as the product evolves.
             </p>
             <p>
-              By using this prototype, you acknowledge that all data is stored locally and may be
-              cleared at any time.
+              By using this prototype, you acknowledge that all data is stored
+              locally and may be cleared at any time.
             </p>
           </CardContent>
         </Card>

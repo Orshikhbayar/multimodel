@@ -67,13 +67,13 @@ export interface Project {
 
 // Interaction modes for multi-model orchestration
 export type InteractionMode =
-  | "smart"       // Single best model selected automatically
-  | "conversation"// Standard single-model chat
-  | "ensemble"    // Multiple models answer, synthesized
-  | "expert"      // Domain-specific expert model
-  | "debate"      // Models debate each other
-  | "simulation"  // Agent simulation mode
-  | "web";        // Web search augmented
+  | "smart" // Single best model selected automatically
+  | "conversation" // Standard single-model chat
+  | "ensemble" // Multiple models answer, synthesized
+  | "expert" // Domain-specific expert model
+  | "debate" // Models debate each other
+  | "simulation" // Agent simulation mode
+  | "web"; // Web search augmented
 
 export interface ModelOption {
   id: string;

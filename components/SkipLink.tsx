@@ -5,10 +5,10 @@
  * Hidden by default, appears on focus for keyboard users
  */
 export function SkipLink({ targetId = "main-content" }: { targetId?: string }) {
-    return (
-        <a
-            href={`#${targetId}`}
-            className="
+  return (
+    <a
+      href={`#${targetId}`}
+      className="
         sr-only
         focus:not-sr-only
         focus:fixed
@@ -28,8 +28,8 @@ export function SkipLink({ targetId = "main-content" }: { targetId?: string }) {
         focus:ring-ring
         focus:ring-offset-2
       "
-        >
-            Skip to main content
-        </a>
-    );
+    >
+      Skip to main content
+    </a>
+  );
 }

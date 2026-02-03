@@ -7,14 +7,24 @@ import { useTheme } from "next-themes";
 import { ContentColumn, PageHeader } from "@/components/layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { updateLocale } from "@/lib/state/actions";
-import { LANGUAGE_OPTIONS, PLAN_DETAILS, PLAN_LABELS } from "@/lib/state/constants";
+import {
+  LANGUAGE_OPTIONS,
+  PLAN_DETAILS,
+  PLAN_LABELS,
+} from "@/lib/state/constants";
 import { useSession, useSettings } from "@/lib/state/hooks";
 import { useUserStore } from "@/lib/state/userStore";
 import { useBillingStore } from "@/lib/billing/store";
@@ -33,7 +43,8 @@ function AccountPageContent() {
   const nameRef = useRef<HTMLInputElement>(null);
   const emailRef = useRef<HTMLInputElement>(null);
   const currentThemeLabel = resolvedTheme ?? settings.theme;
-  const activeTab = searchParams.get("tab") === "billing" ? "billing" : "settings";
+  const activeTab =
+    searchParams.get("tab") === "billing" ? "billing" : "settings";
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -44,7 +55,10 @@ function AccountPageContent() {
   const usage = useMemo(() => {
     const totalCredits = 120;
     const usedCredits = 42;
-    const percent = Math.min(100, Math.round((usedCredits / totalCredits) * 100));
+    const percent = Math.min(
+      100,
+      Math.round((usedCredits / totalCredits) * 100),
+    );
     return { totalCredits, usedCredits, percent };
   }, []);
 
@@ -64,7 +78,9 @@ function AccountPageContent() {
         <Tabs
           value={activeTab}
           onValueChange={(value) =>
-            router.replace(value === "billing" ? "/account?tab=billing" : "/account")
+            router.replace(
+              value === "billing" ? "/account?tab=billing" : "/account",
+            )
           }
         >
           <TabsList>
@@ -76,7 +92,9 @@ function AccountPageContent() {
             <Card key={user.id}>
               <CardHeader>
                 <CardTitle>Profile</CardTitle>
-                <CardDescription>Update your local account details.</CardDescription>
+                <CardDescription>
+                  Update your local account details.
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
@@ -119,7 +137,9 @@ function AccountPageContent() {
             <Card>
               <CardHeader>
                 <CardTitle>Preferences</CardTitle>
-                <CardDescription>Control how the app feels for you.</CardDescription>
+                <CardDescription>
+                  Control how the app feels for you.
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-3">
@@ -135,7 +155,10 @@ function AccountPageContent() {
                         className="flex items-center justify-between rounded-lg border p-3 text-sm hover:bg-muted/40"
                       >
                         <span>{option.label}</span>
-                        <RadioGroupItem value={option.id} aria-label={option.label} />
+                        <RadioGroupItem
+                          value={option.id}
+                          aria-label={option.label}
+                        />
                       </label>
                     ))}
                   </RadioGroup>
@@ -150,7 +173,9 @@ function AccountPageContent() {
                           key={value}
                           type="button"
                           size="sm"
-                          variant={settings.theme === value ? "default" : "outline"}
+                          variant={
+                            settings.theme === value ? "default" : "outline"
+                          }
                           onClick={() => {
                             settings.setTheme(value);
                             setTheme(value);
@@ -160,16 +185,22 @@ function AccountPageContent() {
                         </Button>
                       ))}
                     </div>
-                    <p className="text-xs text-muted-foreground">Current: {currentThemeLabel}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Current: {currentThemeLabel}
+                    </p>
                   </div>
                   <div className="flex items-center justify-between rounded-lg border p-3">
                     <div>
                       <p className="text-sm font-medium">Reduce motion</p>
-                      <p className="text-xs text-muted-foreground">Minimize UI animations.</p>
+                      <p className="text-xs text-muted-foreground">
+                        Minimize UI animations.
+                      </p>
                     </div>
                     <Switch
                       checked={settings.reduceMotion}
-                      onCheckedChange={(checked) => settings.setReduceMotion(checked)}
+                      onCheckedChange={(checked) =>
+                        settings.setReduceMotion(checked)
+                      }
                       aria-label="Reduce motion"
                     />
                   </div>
@@ -182,13 +213,19 @@ function AccountPageContent() {
             <Card>
               <CardHeader>
                 <CardTitle>Current plan</CardTitle>
-                <CardDescription>Mocked billing state for the prototype.</CardDescription>
+                <CardDescription>
+                  Mocked billing state for the prototype.
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium">{PLAN_LABELS[user.plan]} plan</p>
-                    <p className="text-xs text-muted-foreground">Renews monthly</p>
+                    <p className="text-sm font-medium">
+                      {PLAN_LABELS[user.plan]} plan
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Renews monthly
+                    </p>
                   </div>
                   <Badge variant="outline">Active</Badge>
                 </div>
@@ -215,7 +252,9 @@ function AccountPageContent() {
             <Card>
               <CardHeader>
                 <CardTitle>Upgrade options</CardTitle>
-                <CardDescription>Choose the plan that fits your workflow.</CardDescription>
+                <CardDescription>
+                  Choose the plan that fits your workflow.
+                </CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4 lg:grid-cols-3">
                 {PLAN_DETAILS.map((plan) => {
@@ -228,9 +267,13 @@ function AccountPageContent() {
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <p className="text-base font-semibold">{plan.name}</p>
-                          {isCurrent ? <Badge variant="outline">Current</Badge> : null}
+                          {isCurrent ? (
+                            <Badge variant="outline">Current</Badge>
+                          ) : null}
                         </div>
-                        <p className="text-sm text-muted-foreground">{plan.description}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {plan.description}
+                        </p>
                         <p className="text-2xl font-semibold">{plan.price}</p>
                         <ul className="space-y-1 text-xs text-muted-foreground">
                           {plan.highlights.map((item) => (
@@ -261,8 +304,9 @@ function AccountPageContent() {
                 <CardDescription>Coming soon.</CardDescription>
               </CardHeader>
               <CardContent className="text-sm text-muted-foreground">
-                We will connect this to a real billing system in a future release. For now, the
-                UI is fully interactive and stored locally.
+                We will connect this to a real billing system in a future
+                release. For now, the UI is fully interactive and stored
+                locally.
               </CardContent>
             </Card>
           </TabsContent>

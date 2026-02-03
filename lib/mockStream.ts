@@ -1,9 +1,4 @@
-import type {
-  Disagreement,
-  InteractionMode,
-  Run,
-  Source,
-} from "./types";
+import type { Disagreement, InteractionMode, Run, Source } from "./types";
 
 type StreamCallbacks = {
   onToken: (chunk: string) => void;

@@ -10,7 +10,13 @@ import type {
   PlanId,
 } from "./types";
 import { getPlanById } from "./plans";
-import { addMonths, convertCurrency, getIncludedCredits, getPlanPrice, toISO } from "./utils";
+import {
+  addMonths,
+  convertCurrency,
+  getIncludedCredits,
+  getPlanPrice,
+  toISO,
+} from "./utils";
 
 const buildPeriod = () => {
   const start = new Date();
@@ -104,7 +110,11 @@ export const useBillingStore = create<BillingStore>()(
         set((state) => {
           const plan = getPlanById(planId);
           const period = buildPeriod();
-          const amount = getPlanPrice(plan, state.currency, state.billingCadence);
+          const amount = getPlanPrice(
+            plan,
+            state.currency,
+            state.billingCadence,
+          );
           const transaction: BillingTransaction = {
             id: nanoid(),
             type: "subscription",
@@ -134,7 +144,10 @@ export const useBillingStore = create<BillingStore>()(
             amount: converted,
             currency: state.currency,
             createdAtISO: new Date().toISOString(),
-            note: currency === state.currency ? "Top up" : `Converted from ${currency}`,
+            note:
+              currency === state.currency
+                ? "Top up"
+                : `Converted from ${currency}`,
           };
           return {
             topUpCreditsBalance: state.topUpCreditsBalance + converted,
@@ -144,7 +157,8 @@ export const useBillingStore = create<BillingStore>()(
 
       spendCredits: (cost, note) => {
         const state = get();
-        const totalAvailable = state.includedCreditsRemaining + state.topUpCreditsBalance;
+        const totalAvailable =
+          state.includedCreditsRemaining + state.topUpCreditsBalance;
         if (cost <= 0) return true;
         if (totalAvailable < cost) {
           set({ ui: { ...state.ui, outOfCreditsOpen: true } });
@@ -164,7 +178,8 @@ export const useBillingStore = create<BillingStore>()(
         };
 
         set({
-          includedCreditsRemaining: state.includedCreditsRemaining - usedIncluded,
+          includedCreditsRemaining:
+            state.includedCreditsRemaining - usedIncluded,
           topUpCreditsBalance: state.topUpCreditsBalance - usedTopUp,
           transactions: [transaction, ...state.transactions],
         });
@@ -182,7 +197,10 @@ export const useBillingStore = create<BillingStore>()(
             return {
               periodStartISO: period.startISO,
               periodEndISO: period.endISO,
-              includedCreditsRemaining: getIncludedCredits(plan, state.currency),
+              includedCreditsRemaining: getIncludedCredits(
+                plan,
+                state.currency,
+              ),
             };
           }
           if (now <= periodEnd) {

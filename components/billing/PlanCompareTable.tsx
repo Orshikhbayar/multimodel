@@ -13,7 +13,8 @@ export function PlanCompareTable() {
   const featureRows = [
     {
       label: "Included monthly credits",
-      render: (plan: (typeof PLANS)[number]) => formatCredits(plan.includedMonthlyCredits[currency], currency),
+      render: (plan: (typeof PLANS)[number]) =>
+        formatCredits(plan.includedMonthlyCredits[currency], currency),
     },
     {
       label: "Max enabled models",
@@ -57,7 +58,10 @@ export function PlanCompareTable() {
                 Feature
               </th>
               {PLANS.map((plan) => (
-                <th key={plan.id} className="px-4 py-3 text-left text-xs font-semibold">
+                <th
+                  key={plan.id}
+                  className="px-4 py-3 text-left text-xs font-semibold"
+                >
                   {plan.name}
                 </th>
               ))}
@@ -76,10 +80,16 @@ export function PlanCompareTable() {
             ))}
             {MODELS.map((model) => (
               <tr key={model.id} className="border-t">
-                <td className="px-4 py-3 text-muted-foreground">{model.label}</td>
+                <td className="px-4 py-3 text-muted-foreground">
+                  {model.label}
+                </td>
                 {PLANS.map((plan) => (
                   <td key={plan.id} className="px-4 py-3">
-                    {plan.allowedModelIds.includes(model.id) ? <CheckIcon /> : <MinusIcon />}
+                    {plan.allowedModelIds.includes(model.id) ? (
+                      <CheckIcon />
+                    ) : (
+                      <MinusIcon />
+                    )}
                   </td>
                 ))}
               </tr>

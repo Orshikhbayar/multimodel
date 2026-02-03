@@ -33,11 +33,17 @@ export function DisagreementsDialog({
         <ScrollArea className="h-72">
           <div className="space-y-3 pt-2">
             {disagreements.map((item) => (
-              <div key={item.claim} className="rounded-lg border bg-muted/40 px-3 py-2">
+              <div
+                key={item.claim}
+                className="rounded-lg border bg-muted/40 px-3 py-2"
+              >
                 <p className="text-sm font-semibold">{item.claim}</p>
                 <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
                   {item.models.map((stance) => (
-                    <li key={`${item.claim}-${stance.model}`} className="flex items-start gap-2">
+                    <li
+                      key={`${item.claim}-${stance.model}`}
+                      className="flex items-start gap-2"
+                    >
                       <span className="rounded bg-secondary px-2 py-0.5 text-xs font-semibold text-secondary-foreground">
                         {stance.model}
                       </span>
@@ -48,7 +54,9 @@ export function DisagreementsDialog({
               </div>
             ))}
             {disagreements.length === 0 && (
-              <p className="text-sm text-muted-foreground">No disagreements captured.</p>
+              <p className="text-sm text-muted-foreground">
+                No disagreements captured.
+              </p>
             )}
           </div>
         </ScrollArea>

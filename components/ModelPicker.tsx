@@ -34,7 +34,10 @@ import {
 } from "@/lib/modelCatalog";
 import { cn } from "@/lib/utils";
 
-const PROVIDER_ICONS: Record<ProviderIconKey, React.ComponentType<{ className?: string }>> = {
+const PROVIDER_ICONS: Record<
+  ProviderIconKey,
+  React.ComponentType<{ className?: string }>
+> = {
   sparkles: Sparkles,
   brain: Brain,
   cloud: Cloud,
@@ -72,7 +75,8 @@ export function ModelPicker({
   const [q, setQ] = useState("");
 
   const selectedModel = MODELS.find((model) => model.id === value) ?? MODELS[0];
-  const selectedProvider = getProviderById(selectedModel?.providerId ?? "") ?? PROVIDERS[0];
+  const selectedProvider =
+    getProviderById(selectedModel?.providerId ?? "") ?? PROVIDERS[0];
 
   const query = q.trim().toLowerCase();
   const isSearching = Boolean(query);
@@ -91,9 +95,7 @@ export function ModelPicker({
 
   const searchResults = useMemo(() => {
     if (!query) return [];
-    return MODELS.filter((model) =>
-      model.label.toLowerCase().includes(query),
-    );
+    return MODELS.filter((model) => model.label.toLowerCase().includes(query));
   }, [query]);
 
   return (
@@ -101,7 +103,9 @@ export function ModelPicker({
       <PopoverTrigger asChild>
         {trigger ?? (
           <Button variant="secondary" className="gap-2">
-            <span className="truncate">{selectedModel?.label ?? "Select model"}</span>
+            <span className="truncate">
+              {selectedModel?.label ?? "Select model"}
+            </span>
             <ChevronDown className="h-4 w-4" />
           </Button>
         )}
@@ -114,7 +118,8 @@ export function ModelPicker({
         avoidCollisions={popoverAvoidCollisions}
         collisionPadding={popoverCollisionPadding}
         style={{
-          maxHeight: "min(calc(100vh - 120px), var(--radix-popover-content-available-height))",
+          maxHeight:
+            "min(calc(100vh - 120px), var(--radix-popover-content-available-height))",
         }}
         className="w-[360px] max-w-[85vw] overflow-y-auto p-0 rounded-2xl border bg-card shadow-xl z-[9999]"
       >
@@ -122,8 +127,12 @@ export function ModelPicker({
           <div className="flex items-center gap-2">
             <ProviderGlyph providerId={selectedProvider.id} />
             <div>
-              <p className="text-sm font-semibold">{selectedModel?.label ?? "Model"}</p>
-              <p className="text-xs text-muted-foreground">{selectedProvider?.name ?? ""}</p>
+              <p className="text-sm font-semibold">
+                {selectedModel?.label ?? "Model"}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {selectedProvider?.name ?? ""}
+              </p>
             </div>
           </div>
           {selectedModel?.context ? (
@@ -308,13 +317,17 @@ function ModelSection({
                     ) : null}
                   </div>
                   {model.description ? (
-                    <p className="text-xs text-muted-foreground">{model.description}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {model.description}
+                    </p>
                   ) : null}
                 </div>
               </button>
               <div className="flex items-center gap-2">
                 {model.context ? (
-                  <span className="text-[11px] text-muted-foreground">{model.context}</span>
+                  <span className="text-[11px] text-muted-foreground">
+                    {model.context}
+                  </span>
                 ) : null}
                 <Button
                   type="button"

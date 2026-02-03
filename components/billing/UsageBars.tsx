@@ -13,7 +13,8 @@ export function UsageBars({
   currency: Currency;
 }) {
   const includedUsed = Math.max(0, includedTotal - includedRemaining);
-  const includedPercent = includedTotal > 0 ? (includedUsed / includedTotal) * 100 : 0;
+  const includedPercent =
+    includedTotal > 0 ? (includedUsed / includedTotal) * 100 : 0;
 
   return (
     <div className="space-y-4">
@@ -27,7 +28,9 @@ export function UsageBars({
         <div className="h-2 w-full rounded-full bg-muted">
           <div
             className="h-2 rounded-full bg-primary"
-            style={{ width: `${Math.min(100, Math.max(0, 100 - includedPercent))}%` }}
+            style={{
+              width: `${Math.min(100, Math.max(0, 100 - includedPercent))}%`,
+            }}
           />
         </div>
         <p className="text-[11px] text-muted-foreground">
@@ -38,7 +41,9 @@ export function UsageBars({
       <div className="space-y-2">
         <div className="flex items-center justify-between text-xs">
           <span className="text-muted-foreground">Top-up balance</span>
-          <span className="font-medium">{formatCredits(topUpBalance, currency)}</span>
+          <span className="font-medium">
+            {formatCredits(topUpBalance, currency)}
+          </span>
         </div>
         <div className="h-2 w-full rounded-full bg-muted">
           <div
@@ -46,7 +51,9 @@ export function UsageBars({
             style={{ width: topUpBalance > 0 ? "100%" : "0%" }}
           />
         </div>
-        <p className="text-[11px] text-muted-foreground">Top-ups never expire.</p>
+        <p className="text-[11px] text-muted-foreground">
+          Top-ups never expire.
+        </p>
       </div>
     </div>
   );

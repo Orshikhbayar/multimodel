@@ -23,11 +23,8 @@ import { getPlanById } from "@/lib/billing/plans";
 import { estimateChatCostForSlots } from "@/lib/billing/estimator";
 
 export function ChatWorkspace() {
-  const {
-    conversations,
-    currentConversationId,
-    projects,
-  } = useConversationStore();
+  const { conversations, currentConversationId, projects } =
+    useConversationStore();
   const { slots, activeSlotId, setSlotModel } = useModelStore();
   const { sendMessage } = useChatActions();
   const activeTab = activeSlotId ?? slots[0]?.slotId ?? "slot-1";
@@ -55,7 +52,8 @@ export function ChatWorkspace() {
   }, [resetPeriodIfNeeded]);
 
   const project = projects.find((p) => p.id === conversation?.projectId);
-  const activeSlot = slots.find((slot) => slot.slotId === activeSlotId) ?? slots[0];
+  const activeSlot =
+    slots.find((slot) => slot.slotId === activeSlotId) ?? slots[0];
   const plan = getPlanById(currentPlanId);
   const lockedModelIds = MODELS.filter(
     (model) => !plan.allowedModelIds.includes(model.id),
@@ -64,13 +62,18 @@ export function ChatWorkspace() {
   const handleSend = (value: string) => {
     if (!value.trim()) return;
     resetPeriodIfNeeded();
-    const enabledModelIds = slots.filter((slot) => slot.enabled).map((slot) => slot.modelId);
+    const enabledModelIds = slots
+      .filter((slot) => slot.enabled)
+      .map((slot) => slot.modelId);
     const estimatedCost = estimateChatCostForSlots({
       modelIds: enabledModelIds,
       input: value,
       currency,
     });
-    const ok = spendCredits(estimatedCost, `Chat message (${enabledModelIds.length} model(s))`);
+    const ok = spendCredits(
+      estimatedCost,
+      `Chat message (${enabledModelIds.length} model(s))`,
+    );
     if (!ok) return;
     sendMessage(value);
   };
@@ -91,7 +94,9 @@ export function ChatWorkspace() {
                 modelId={activeSlot?.modelId ?? "openai/gpt-4.1"}
                 modelLabel={activeSlot?.label ?? "Select model"}
                 lockedModelIds={lockedModelIds}
-                onSelectModel={(modelId) => activeSlot && setSlotModel(activeSlot.slotId, modelId)}
+                onSelectModel={(modelId) =>
+                  activeSlot && setSlotModel(activeSlot.slotId, modelId)
+                }
                 onSelectLocked={(modelId) =>
                   openUpgradeModal({
                     reason: "This model is available on higher tiers.",
@@ -150,11 +155,15 @@ export function ChatWorkspace() {
   );
 }
 
-
 function ChatControls({ onOpenSettings }: { onOpenSettings: () => void }) {
   return (
     <div className="flex items-center justify-end">
-      <Button variant="ghost" size="icon" onClick={onOpenSettings} title="Settings">
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={onOpenSettings}
+        title="Settings"
+      >
         <Settings className="h-4 w-4" />
       </Button>
     </div>

@@ -13,7 +13,11 @@ import {
   Settings,
 } from "lucide-react";
 
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Dialog,
   DialogContent,
@@ -46,7 +50,10 @@ export function UserMenu() {
 
   const planLabel = PLAN_LABELS[user.plan] ?? "Free";
   const languageLabel = useMemo(() => {
-    return LANGUAGE_OPTIONS.find((option) => option.id === user.locale)?.label ?? "English";
+    return (
+      LANGUAGE_OPTIONS.find((option) => option.id === user.locale)?.label ??
+      "English"
+    );
   }, [user.locale]);
 
   const handleNavigate = (href: string) => {
@@ -95,26 +102,42 @@ export function UserMenu() {
                 {user.avatarInitial}
               </span>
               <span>
-                <span className="block text-sm font-semibold">{user.name || "Guest"}</span>
-                <span className="block text-xs text-muted-foreground">{planLabel} plan</span>
+                <span className="block text-sm font-semibold">
+                  {user.name || "Guest"}
+                </span>
+                <span className="block text-xs text-muted-foreground">
+                  {planLabel} plan
+                </span>
               </span>
             </span>
             <Settings className="h-4 w-4 text-muted-foreground" />
           </button>
         </PopoverTrigger>
-        <PopoverContent align="start" side="top" className="w-64 rounded-2xl p-2">
+        <PopoverContent
+          align="start"
+          side="top"
+          className="w-64 rounded-2xl p-2"
+        >
           <div className="space-y-1" role="menu" aria-label="User menu">
             <p className="px-2 py-1 text-xs text-muted-foreground">
               {user.email || "Not signed in"}
             </p>
-            <MenuItem icon={Settings} label="Settings" onClick={() => handleNavigate("/account")} />
+            <MenuItem
+              icon={Settings}
+              label="Settings"
+              onClick={() => handleNavigate("/account")}
+            />
             <MenuItem
               icon={Globe}
               label="Language"
               suffix={languageLabel}
               onClick={handleLanguageOpen}
             />
-            <MenuItem icon={HelpCircle} label="Get help" onClick={handleHelpOpen} />
+            <MenuItem
+              icon={HelpCircle}
+              label="Get help"
+              onClick={handleHelpOpen}
+            />
             <Separator className="my-1" />
             <MenuItem
               icon={ArrowUpRight}
@@ -136,9 +159,18 @@ export function UserMenu() {
             />
             {learnMoreOpen ? (
               <div className="ml-7 space-y-1">
-                <SubMenuItem label="About" onClick={() => handleNavigate("/about")} />
-                <SubMenuItem label="Privacy policy" onClick={() => handleNavigate("/privacy")} />
-                <SubMenuItem label="Terms" onClick={() => handleNavigate("/terms")} />
+                <SubMenuItem
+                  label="About"
+                  onClick={() => handleNavigate("/about")}
+                />
+                <SubMenuItem
+                  label="Privacy policy"
+                  onClick={() => handleNavigate("/privacy")}
+                />
+                <SubMenuItem
+                  label="Terms"
+                  onClick={() => handleNavigate("/terms")}
+                />
               </div>
             ) : null}
             <Separator className="my-1" />
@@ -188,7 +220,9 @@ export function UserMenu() {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Get help</DialogTitle>
-            <DialogDescription>We are here to help you succeed.</DialogDescription>
+            <DialogDescription>
+              We are here to help you succeed.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-2">
@@ -203,7 +237,10 @@ export function UserMenu() {
               <p className="text-sm font-semibold">Keyboard shortcuts</p>
               <div className="mt-3 space-y-2">
                 {shortcutItems.map((item) => (
-                  <div key={item.combo} className="flex items-center justify-between text-sm">
+                  <div
+                    key={item.combo}
+                    className="flex items-center justify-between text-sm"
+                  >
                     <span className="text-muted-foreground">{item.label}</span>
                     <span className="rounded-md border bg-background px-2 py-1 text-xs font-medium">
                       {item.combo}
@@ -250,12 +287,20 @@ function MenuItem({
         <Icon className="h-4 w-4 text-muted-foreground" />
         {label}
       </span>
-      {suffix ? <span className="text-xs text-muted-foreground">{suffix}</span> : null}
+      {suffix ? (
+        <span className="text-xs text-muted-foreground">{suffix}</span>
+      ) : null}
     </button>
   );
 }
 
-function SubMenuItem({ label, onClick }: { label: string; onClick: () => void }) {
+function SubMenuItem({
+  label,
+  onClick,
+}: {
+  label: string;
+  onClick: () => void;
+}) {
   return (
     <button
       type="button"

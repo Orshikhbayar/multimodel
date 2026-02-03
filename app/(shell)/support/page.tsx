@@ -19,7 +19,8 @@ export default function SupportPage() {
           <PageHeader label="Support" title="Thanks for the report" />
           <Card>
             <CardContent className="py-6 text-sm text-muted-foreground">
-              We saved your report locally. A backend submission flow will arrive soon.
+              We saved your report locally. A backend submission flow will
+              arrive soon.
             </CardContent>
           </Card>
         </ContentColumn>
@@ -39,7 +40,11 @@ export default function SupportPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="details">Details</Label>
-              <Textarea id="details" rows={5} placeholder="Steps to reproduce, expected behavior..." />
+              <Textarea
+                id="details"
+                rows={5}
+                placeholder="Steps to reproduce, expected behavior..."
+              />
             </div>
             <Button onClick={() => setSubmitted(true)}>Submit report</Button>
           </CardContent>

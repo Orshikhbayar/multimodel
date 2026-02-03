@@ -11,12 +11,12 @@ export default function PrivacyPage() {
         <Card>
           <CardContent className="space-y-3 py-6 text-sm text-muted-foreground">
             <p>
-              This prototype stores data locally in your browser (localStorage). No information is
-              sent to external services.
+              This prototype stores data locally in your browser (localStorage).
+              No information is sent to external services.
             </p>
             <p>
-              Clear your local storage to remove any saved conversations, settings, or profile
-              details.
+              Clear your local storage to remove any saved conversations,
+              settings, or profile details.
             </p>
           </CardContent>
         </Card>

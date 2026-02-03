@@ -24,7 +24,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import { UserMenu } from "@/components/UserMenu";
 import { useBillingStore } from "@/lib/billing/store";
@@ -52,8 +56,12 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
     updateConversationTitle,
     removeConversation,
   } = useChatStore();
-  const { currentPlanId, currency, includedCreditsRemaining, topUpCreditsBalance } =
-    useBillingStore();
+  const {
+    currentPlanId,
+    currency,
+    includedCreditsRemaining,
+    topUpCreditsBalance,
+  } = useBillingStore();
 
   const handleNewChat = useCallback(() => {
     const id = createConversation("Untitled chat");
@@ -88,7 +96,8 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
   const activePlan = getPlanById(currentPlanId);
   const includedTotal = getIncludedCredits(activePlan, currency);
   const creditsRemaining = includedCreditsRemaining + topUpCreditsBalance;
-  const remainingPercent = includedTotal > 0 ? (includedCreditsRemaining / includedTotal) * 100 : 0;
+  const remainingPercent =
+    includedTotal > 0 ? (includedCreditsRemaining / includedTotal) * 100 : 0;
 
   return (
     <aside
@@ -134,7 +143,12 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
           {!collapsed && <span>New Chat</span>}
         </Button>
 
-        <div className={cn("grid gap-2", collapsed ? "grid-cols-1" : "grid-cols-4")}>
+        <div
+          className={cn(
+            "grid gap-2",
+            collapsed ? "grid-cols-1" : "grid-cols-4",
+          )}
+        >
           {navItems.map((item) => {
             const active = pathname === item.href;
             const Icon = item.icon;
@@ -143,7 +157,9 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
                 <span
                   className={cn(
                     "flex items-center justify-center rounded-lg border px-3 py-2 text-xs font-medium uppercase tracking-wide transition",
-                    active ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-muted/60",
+                    active
+                      ? "bg-accent text-foreground"
+                      : "text-muted-foreground hover:bg-muted/60",
                   )}
                 >
                   <Icon className="h-4 w-4" />
@@ -164,7 +180,9 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
               <div className="mt-2 space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Credits</span>
-                  <span className="font-medium">{formatCredits(creditsRemaining, currency)}</span>
+                  <span className="font-medium">
+                    {formatCredits(creditsRemaining, currency)}
+                  </span>
                 </div>
                 <div className="h-1.5 w-full rounded-full bg-muted">
                   <div
@@ -182,7 +200,9 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
         {!collapsed && (
           <div className="px-2 shrink-0">
             <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold text-muted-foreground">Chats</p>
+              <p className="text-xs font-semibold text-muted-foreground">
+                Chats
+              </p>
               <MessageSquare className="h-4 w-4 text-muted-foreground" />
             </div>
           </div>
@@ -190,7 +210,9 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
         <ScrollArea className={cn("mt-2 flex-1 min-h-0")}>
           <div className="space-y-1 px-1">
             {visibleConversations.length === 0 && !collapsed && (
-              <p className="px-2 text-xs text-muted-foreground">No chats yet.</p>
+              <p className="px-2 text-xs text-muted-foreground">
+                No chats yet.
+              </p>
             )}
             {visibleConversations.map((conv) => (
               <Fragment key={conv.id}>
@@ -204,7 +226,10 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
                     onNavigate?.();
                   }}
                   onRename={() => {
-                    const next = window.prompt("Rename chat", conv.title || "Untitled chat");
+                    const next = window.prompt(
+                      "Rename chat",
+                      conv.title || "Untitled chat",
+                    );
                     if (next && next.trim()) {
                       updateConversationTitle(conv.id, next.trim());
                     }
@@ -238,14 +263,11 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
             disabled={!resolvedTheme}
           />
         </div>
-        {!collapsed && (
-          <UserMenu key={pathname} />
-        )}
+        {!collapsed && <UserMenu key={pathname} />}
       </div>
     </aside>
   );
 }
-
 
 function ChatListItem({
   title,
@@ -276,7 +298,9 @@ function ChatListItem({
         onClick={onSelect}
         className={cn(
           "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition",
-          active ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-muted/60",
+          active
+            ? "bg-accent text-foreground"
+            : "text-muted-foreground hover:bg-muted/60",
           collapsed && "justify-center px-2",
         )}
       >

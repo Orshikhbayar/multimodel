@@ -17,16 +17,22 @@ import { getNextPlanForModel, getPlanById } from "@/lib/billing/plans";
 import { getModelLabel } from "@/lib/modelCatalog";
 
 export function UpgradeModal() {
-  const { ui, closeUpgradeModal, choosePlan, currentPlanId } = useBillingStore();
+  const { ui, closeUpgradeModal, choosePlan, currentPlanId } =
+    useBillingStore();
 
-  const lockedModelLabel = ui.lockedModelId ? getModelLabel(ui.lockedModelId) : null;
+  const lockedModelLabel = ui.lockedModelId
+    ? getModelLabel(ui.lockedModelId)
+    : null;
   const recommendedPlan =
     (ui.requiredPlanId && getPlanById(ui.requiredPlanId)) ||
     (ui.lockedModelId && getNextPlanForModel(ui.lockedModelId)) ||
     getPlanById(currentPlanId === "free" ? "plus" : "pro");
 
   return (
-    <Dialog open={ui.upgradeModalOpen} onOpenChange={(open) => !open && closeUpgradeModal()}>
+    <Dialog
+      open={ui.upgradeModalOpen}
+      onOpenChange={(open) => !open && closeUpgradeModal()}
+    >
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <div className="flex items-center gap-3">
@@ -45,14 +51,16 @@ export function UpgradeModal() {
         <div className="rounded-lg border bg-muted/30 p-4 text-sm">
           {lockedModelLabel ? (
             <p>
-              <span className="font-semibold">{lockedModelLabel}</span> is locked on your
-              current plan.
+              <span className="font-semibold">{lockedModelLabel}</span> is
+              locked on your current plan.
             </p>
           ) : (
             <p>Unlock more models and higher limits with an upgraded plan.</p>
           )}
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Badge variant="secondary">Recommended: {recommendedPlan?.name}</Badge>
+            <Badge variant="secondary">
+              Recommended: {recommendedPlan?.name}
+            </Badge>
             <span className="text-xs text-muted-foreground">
               Higher included credits and more active models.
             </span>

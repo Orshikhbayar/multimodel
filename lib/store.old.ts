@@ -14,14 +14,42 @@ import type {
   RunStatus,
 } from "./types";
 
-export const MODE_OPTIONS: { value: InteractionMode; label: string; description: string }[] = [
+export const MODE_OPTIONS: {
+  value: InteractionMode;
+  label: string;
+  description: string;
+}[] = [
   { value: "smart", label: "Smart", description: "Parallel default responses" },
-  { value: "conversation", label: "Conversation", description: "Parallel chat with each model" },
-  { value: "ensemble", label: "Ensemble", description: "Parallel then unified synthesis" },
-  { value: "expert", label: "Expert", description: "Answer + critique + revised output" },
-  { value: "debate", label: "Debate", description: "Pro/con runs then a summary" },
-  { value: "simulation", label: "Simulation", description: "Role-play to stress test answers" },
-  { value: "web", label: "Web-Aided", description: "Grounded with mocked citations" },
+  {
+    value: "conversation",
+    label: "Conversation",
+    description: "Parallel chat with each model",
+  },
+  {
+    value: "ensemble",
+    label: "Ensemble",
+    description: "Parallel then unified synthesis",
+  },
+  {
+    value: "expert",
+    label: "Expert",
+    description: "Answer + critique + revised output",
+  },
+  {
+    value: "debate",
+    label: "Debate",
+    description: "Pro/con runs then a summary",
+  },
+  {
+    value: "simulation",
+    label: "Simulation",
+    description: "Role-play to stress test answers",
+  },
+  {
+    value: "web",
+    label: "Web-Aided",
+    description: "Grounded with mocked citations",
+  },
 ];
 
 const defaultProjects: Project[] = [
@@ -48,7 +76,8 @@ const seedConversation: Conversation = {
     {
       id: "seed-user-1",
       role: "user",
-      content: "Summarize takeaways from the AI team about parallel model workflows.",
+      content:
+        "Summarize takeaways from the AI team about parallel model workflows.",
       createdAt: Date.now() - 1000 * 60 * 60 * 12,
     },
     {
@@ -86,7 +115,11 @@ const seedConversation: Conversation = {
 
 type RunSeed = Run & { delay?: number };
 
-const buildSlot = (slotId: string, modelId: string, enabled = true): ModelSlot => {
+const buildSlot = (
+  slotId: string,
+  modelId: string,
+  enabled = true,
+): ModelSlot => {
   const model = getModelById(modelId);
   return {
     slotId,
@@ -148,7 +181,10 @@ interface ChatState {
   clearStreams: () => void;
 }
 
-const runSeedsForMode = (mode: InteractionMode, slots: ModelSlot[]): RunSeed[] => {
+const runSeedsForMode = (
+  mode: InteractionMode,
+  slots: ModelSlot[],
+): RunSeed[] => {
   const enabledSlots = slots.filter((slot) => slot.enabled);
   const pickedSlots = enabledSlots.length ? enabledSlots : slots;
   const pickedLabels = pickedSlots.map((slot) => slot.label);
@@ -178,24 +214,75 @@ const runSeedsForMode = (mode: InteractionMode, slots: ModelSlot[]): RunSeed[] =
       const critic = pickedLabels[1] ?? "Critique";
       return [
         ...baseRuns,
-        { id: nanoid(), model: `${lead} (lead)`, status: "streaming", text: "" },
-        { id: nanoid(), model: `${critic} (critique)`, status: "streaming", text: "", delay: 600 },
-        { id: nanoid(), model: "Revised", status: "streaming", text: "", delay: 1200 },
+        {
+          id: nanoid(),
+          model: `${lead} (lead)`,
+          status: "streaming",
+          text: "",
+        },
+        {
+          id: nanoid(),
+          model: `${critic} (critique)`,
+          status: "streaming",
+          text: "",
+          delay: 600,
+        },
+        {
+          id: nanoid(),
+          model: "Revised",
+          status: "streaming",
+          text: "",
+          delay: 1200,
+        },
       ];
     }
     case "debate":
       return [
         ...baseRuns,
-        { id: nanoid(), model: `${pickedLabels[0] ?? "Model A"} (pro)`, status: "streaming", text: "" },
-        { id: nanoid(), model: `${pickedLabels[1] ?? "Model B"} (con)`, status: "streaming", text: "", delay: 400 },
-        { id: nanoid(), model: "Unified", status: "streaming", text: "", delay: 1200 },
+        {
+          id: nanoid(),
+          model: `${pickedLabels[0] ?? "Model A"} (pro)`,
+          status: "streaming",
+          text: "",
+        },
+        {
+          id: nanoid(),
+          model: `${pickedLabels[1] ?? "Model B"} (con)`,
+          status: "streaming",
+          text: "",
+          delay: 400,
+        },
+        {
+          id: nanoid(),
+          model: "Unified",
+          status: "streaming",
+          text: "",
+          delay: 1200,
+        },
       ];
     case "simulation":
       return [
         ...baseRuns,
-        { id: nanoid(), model: `${pickedLabels[0] ?? "Planner"} (planner)`, status: "streaming", text: "" },
-        { id: nanoid(), model: `${pickedLabels[1] ?? "Skeptic"} (skeptic)`, status: "streaming", text: "", delay: 500 },
-        { id: nanoid(), model: "Unified", status: "streaming", text: "", delay: 1100 },
+        {
+          id: nanoid(),
+          model: `${pickedLabels[0] ?? "Planner"} (planner)`,
+          status: "streaming",
+          text: "",
+        },
+        {
+          id: nanoid(),
+          model: `${pickedLabels[1] ?? "Skeptic"} (skeptic)`,
+          status: "streaming",
+          text: "",
+          delay: 500,
+        },
+        {
+          id: nanoid(),
+          model: "Unified",
+          status: "streaming",
+          text: "",
+          delay: 1100,
+        },
       ];
     default:
       return baseRuns;
@@ -211,7 +298,8 @@ export const useChatStore = create<ChatState>()(
       slots: initialSlots,
       activeSlotId: initialSlots[0]?.slotId ?? "slot-1",
       mode: "ensemble",
-      instructions: "Keep answers concise, cite disagreements, and surface sources.",
+      instructions:
+        "Keep answers concise, cite disagreements, and surface sources.",
       streamHandles: {},
 
       createConversation: (title = "New chat", projectId) => {
@@ -254,12 +342,17 @@ export const useChatStore = create<ChatState>()(
 
       removeConversation: (id) =>
         set((state) => {
-          const nextConversations = state.conversations.filter((conv) => conv.id !== id);
+          const nextConversations = state.conversations.filter(
+            (conv) => conv.id !== id,
+          );
           const nextCurrent =
             state.currentConversationId === id
-              ? nextConversations[0]?.id ?? null
+              ? (nextConversations[0]?.id ?? null)
               : state.currentConversationId;
-          return { conversations: nextConversations, currentConversationId: nextCurrent };
+          return {
+            conversations: nextConversations,
+            currentConversationId: nextCurrent,
+          };
         }),
 
       setActiveSlot: (slotId) => set({ activeSlotId: slotId }),
@@ -270,31 +363,38 @@ export const useChatStore = create<ChatState>()(
             slots: state.slots.map((slot) =>
               slot.slotId === slotId
                 ? {
-                  ...slot,
-                  modelId: model?.id ?? modelId,
-                  providerId: model?.providerId ?? slot.providerId,
-                  label: model?.label ?? slot.label,
-                  status: "idle",
-                }
+                    ...slot,
+                    modelId: model?.id ?? modelId,
+                    providerId: model?.providerId ?? slot.providerId,
+                    label: model?.label ?? slot.label,
+                    status: "idle",
+                  }
                 : slot,
             ),
           };
         }),
       toggleSlot: (slotId) =>
         set((state) => {
-          const enabledCount = state.slots.filter((slot) => slot.enabled).length;
+          const enabledCount = state.slots.filter(
+            (slot) => slot.enabled,
+          ).length;
           const nextSlots = state.slots.map((slot) => {
             if (slot.slotId !== slotId) return slot;
             if (slot.enabled && enabledCount <= 1) return slot;
             return { ...slot, enabled: !slot.enabled };
           });
-          const activeSlot = nextSlots.find((slot) => slot.slotId === state.activeSlotId);
+          const activeSlot = nextSlots.find(
+            (slot) => slot.slotId === state.activeSlotId,
+          );
           const hasEnabledActive = activeSlot?.enabled;
           const fallbackActive =
-            nextSlots.find((slot) => slot.enabled)?.slotId ?? state.activeSlotId;
+            nextSlots.find((slot) => slot.enabled)?.slotId ??
+            state.activeSlotId;
           return {
             slots: nextSlots,
-            activeSlotId: hasEnabledActive ? state.activeSlotId : fallbackActive,
+            activeSlotId: hasEnabledActive
+              ? state.activeSlotId
+              : fallbackActive,
           };
         }),
       setMode: (mode) => set({ mode }),
@@ -343,7 +443,10 @@ export const useChatStore = create<ChatState>()(
         set((current) => ({
           conversations: current.conversations.map((conv) =>
             conv.id === conversationId
-              ? { ...conv, messages: [...conv.messages, userMessage, assistantMessage] }
+              ? {
+                  ...conv,
+                  messages: [...conv.messages, userMessage, assistantMessage],
+                }
               : conv,
           ),
           slots: current.slots.map((slot) =>
@@ -359,11 +462,26 @@ export const useChatStore = create<ChatState>()(
             mode: state.mode,
             delay: run.delay ?? 100,
             onToken: (chunk) =>
-              get().appendRunChunk(conversationId, assistantMessage.id, run.id, chunk),
+              get().appendRunChunk(
+                conversationId,
+                assistantMessage.id,
+                run.id,
+                chunk,
+              ),
             onDone: (payload) =>
-              get().completeRun(conversationId, assistantMessage.id, run.id, payload),
+              get().completeRun(
+                conversationId,
+                assistantMessage.id,
+                run.id,
+                payload,
+              ),
             onError: () =>
-              get().markRunError(conversationId, assistantMessage.id, run.id, "error"),
+              get().markRunError(
+                conversationId,
+                assistantMessage.id,
+                run.id,
+                "error",
+              ),
           });
 
           get().registerStream(run.id, stop);
@@ -382,7 +500,11 @@ export const useChatStore = create<ChatState>()(
                   ...msg,
                   runs: msg.runs.map((r) =>
                     r.id === runId
-                      ? { ...r, status: "streaming", text: `${r.text ?? ""}${chunk}` }
+                      ? {
+                          ...r,
+                          status: "streaming",
+                          text: `${r.text ?? ""}${chunk}`,
+                        }
                       : r,
                   ),
                 };
@@ -408,7 +530,8 @@ export const useChatStore = create<ChatState>()(
                     return {
                       ...r,
                       ...payload,
-                      status: (payload.status as RunStatus | undefined) ?? "done",
+                      status:
+                        (payload.status as RunStatus | undefined) ?? "done",
                       text: payload.text ?? r.text,
                       sources: payload.sources ?? r.sources,
                       disagreements: payload.disagreements ?? r.disagreements,
@@ -421,8 +544,10 @@ export const useChatStore = create<ChatState>()(
 
           const slots = slotId
             ? state.slots.map((slot) =>
-              slot.slotId === slotId ? { ...slot, status: "done" as const } : slot,
-            )
+                slot.slotId === slotId
+                  ? { ...slot, status: "done" as const }
+                  : slot,
+              )
             : state.slots;
 
           return { conversations, slots };
@@ -455,8 +580,10 @@ export const useChatStore = create<ChatState>()(
 
           const slots = slotId
             ? state.slots.map((slot) =>
-              slot.slotId === slotId ? { ...slot, status: "error" as const } : slot,
-            )
+                slot.slotId === slotId
+                  ? { ...slot, status: "error" as const }
+                  : slot,
+              )
             : state.slots;
 
           return { conversations, slots };

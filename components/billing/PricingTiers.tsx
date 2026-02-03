@@ -7,7 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useBillingStore } from "@/lib/billing/store";
 import { PLANS } from "@/lib/billing/plans";
-import { formatCurrency, formatCredits, getIncludedCredits, getPlanPrice } from "@/lib/billing/utils";
+import {
+  formatCurrency,
+  formatCredits,
+  getIncludedCredits,
+  getPlanPrice,
+} from "@/lib/billing/utils";
 
 export function PricingTiers() {
   const {
@@ -24,9 +29,12 @@ export function PricingTiers() {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <p className="text-xs uppercase text-muted-foreground">Pricing</p>
-          <h1 className="text-3xl font-semibold">Hybrid billing for every team</h1>
+          <h1 className="text-3xl font-semibold">
+            Hybrid billing for every team
+          </h1>
           <p className="text-sm text-muted-foreground">
-            Pick a plan, get included credits monthly, and top up only when you need more.
+            Pick a plan, get included credits monthly, and top up only when you
+            need more.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -35,7 +43,9 @@ export function PricingTiers() {
               type="button"
               onClick={() => setBillingCadence("monthly")}
               className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                billingCadence === "monthly" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                billingCadence === "monthly"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground"
               }`}
             >
               Monthly
@@ -44,7 +54,9 @@ export function PricingTiers() {
               type="button"
               onClick={() => setBillingCadence("annual")}
               className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                billingCadence === "annual" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                billingCadence === "annual"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground"
               }`}
             >
               Annual
@@ -55,7 +67,9 @@ export function PricingTiers() {
               type="button"
               onClick={() => setCurrency("USD")}
               className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                currency === "USD" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                currency === "USD"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground"
               }`}
             >
               USD
@@ -64,7 +78,9 @@ export function PricingTiers() {
               type="button"
               onClick={() => setCurrency("MNT")}
               className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                currency === "MNT" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                currency === "MNT"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground"
               }`}
             >
               MNT
@@ -102,10 +118,22 @@ export function PricingTiers() {
                     label={`${plan.maxEnabledModels} enabled model${plan.maxEnabledModels > 1 ? "s" : ""}`}
                     enabled
                   />
-                  <Feature label="Web search" enabled={plan.features.webSearch} />
-                  <Feature label="Tools & automations" enabled={plan.features.tools} />
-                  <Feature label="Image generation" enabled={plan.features.images} />
-                  <Feature label="Projects & workspace" enabled={plan.features.projects} />
+                  <Feature
+                    label="Web search"
+                    enabled={plan.features.webSearch}
+                  />
+                  <Feature
+                    label="Tools & automations"
+                    enabled={plan.features.tools}
+                  />
+                  <Feature
+                    label="Image generation"
+                    enabled={plan.features.images}
+                  />
+                  <Feature
+                    label="Projects & workspace"
+                    enabled={plan.features.projects}
+                  />
                 </div>
                 <Button
                   className="w-full"
@@ -127,7 +155,13 @@ export function PricingTiers() {
   );
 }
 
-function Feature({ label, enabled = true }: { label: string; enabled?: boolean }) {
+function Feature({
+  label,
+  enabled = true,
+}: {
+  label: string;
+  enabled?: boolean;
+}) {
   return (
     <div className="flex items-center gap-2">
       {enabled ? (

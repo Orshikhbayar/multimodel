@@ -29,8 +29,9 @@ const SheetOverlay = React.forwardRef<
 ));
 SheetOverlay.displayName = SheetPrimitive.Overlay.displayName;
 
-interface SheetContentProps
-  extends React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content> {
+interface SheetContentProps extends React.ComponentPropsWithoutRef<
+  typeof SheetPrimitive.Content
+> {
   side?: "top" | "bottom" | "left" | "right";
 }
 
@@ -45,13 +46,13 @@ const SheetContent = React.forwardRef<
       className={cn(
         "fixed inset-y-0 z-50 flex w-full gap-4 border bg-background p-6 shadow-lg duration-300 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
         side === "right" &&
-        "right-0 data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right",
+          "right-0 data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right",
         side === "left" &&
-        "left-0 data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left",
+          "left-0 data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left",
         side === "top" &&
-        "inset-x-0 top-0 inset-y-auto data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top",
+          "inset-x-0 top-0 inset-y-auto data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top",
         side === "bottom" &&
-        "inset-x-0 bottom-0 inset-y-auto data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
+          "inset-x-0 bottom-0 inset-y-auto data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
         "sm:max-w-xl",
         className,
       )}
@@ -67,18 +68,21 @@ const SheetContent = React.forwardRef<
 ));
 SheetContent.displayName = SheetPrimitive.Content.displayName;
 
-const SheetHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+const SheetHeader = ({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) => (
   <div
-    className={cn(
-      "grid gap-2 text-left sm:text-center",
-      className,
-    )}
+    className={cn("grid gap-2 text-left sm:text-center", className)}
     {...props}
   />
 );
 SheetHeader.displayName = "SheetHeader";
 
-const SheetFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+const SheetFooter = ({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
       "flex flex-col-reverse sm:flex-row sm:justify-end sm:gap-2",
@@ -95,7 +99,10 @@ const SheetTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SheetPrimitive.Title
     ref={ref}
-    className={cn("text-lg font-semibold leading-none tracking-tight", className)}
+    className={cn(
+      "text-lg font-semibold leading-none tracking-tight",
+      className,
+    )}
     {...props}
   />
 ));

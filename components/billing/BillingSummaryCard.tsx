@@ -8,7 +8,12 @@ import { Badge } from "@/components/ui/badge";
 import { useEffect } from "react";
 import { useBillingStore } from "@/lib/billing/store";
 import { getPlanById } from "@/lib/billing/plans";
-import { addMonths, formatCurrency, getIncludedCredits, getPlanPrice } from "@/lib/billing/utils";
+import {
+  addMonths,
+  formatCurrency,
+  getIncludedCredits,
+  getPlanPrice,
+} from "@/lib/billing/utils";
 import { UsageBars } from "@/components/billing/UsageBars";
 
 export function BillingSummaryCard() {
@@ -32,7 +37,10 @@ export function BillingSummaryCard() {
   const includedTotal = getIncludedCredits(plan, currency);
   const price = getPlanPrice(plan, currency, billingCadence);
   const startDate = new Date(periodStartISO);
-  const nextRenewal = addMonths(startDate, billingCadence === "annual" ? 12 : 1);
+  const nextRenewal = addMonths(
+    startDate,
+    billingCadence === "annual" ? 12 : 1,
+  );
 
   return (
     <Card className="border-muted/60 bg-card/60">
@@ -44,7 +52,8 @@ export function BillingSummaryCard() {
         <p className="text-sm text-muted-foreground">
           {price === 0
             ? "Free forever"
-            : `${formatCurrency(price, currency)} billed ${billingCadence}`} - Next renewal {nextRenewal.toLocaleDateString()}
+            : `${formatCurrency(price, currency)} billed ${billingCadence}`}{" "}
+          - Next renewal {nextRenewal.toLocaleDateString()}
         </p>
       </CardHeader>
       <CardContent className="space-y-6">

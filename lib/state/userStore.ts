@@ -40,7 +40,10 @@ export const useUserStore = create<UserStore>()(
               ...state.user,
               name: nextName,
               email: nextEmail,
-              avatarInitial: getInitialFromName(nextName || nextEmail, state.user.avatarInitial),
+              avatarInitial: getInitialFromName(
+                nextName || nextEmail,
+                state.user.avatarInitial,
+              ),
             },
           };
         }),

@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowUp, ChevronDown, Paperclip, Sparkles, Wrench, Globe } from "lucide-react";
+import {
+  ArrowUp,
+  ChevronDown,
+  Paperclip,
+  Sparkles,
+  Wrench,
+  Globe,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

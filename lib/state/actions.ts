@@ -11,7 +11,11 @@ import { useUserStore } from "./userStore";
 import { getInitialFromName } from "./utils";
 import type { UserPlanId } from "./types";
 
-export function signInLocal(payload: { name: string; email: string; plan?: UserPlanId }) {
+export function signInLocal(payload: {
+  name: string;
+  email: string;
+  plan?: UserPlanId;
+}) {
   const { name, email, plan } = payload;
   const resolvedName = name?.trim() || email?.split("@")[0] || "User";
   const avatarInitial = getInitialFromName(resolvedName || email, "U");

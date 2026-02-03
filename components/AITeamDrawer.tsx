@@ -4,7 +4,12 @@ import { useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -44,7 +49,9 @@ export function AITeamDrawer({ open, onOpenChange }: DrawerProps) {
 
   const updateDraftSlot = (slotId: string, updates: Partial<ModelSlot>) => {
     setDraftSlots((prev) =>
-      prev.map((slot) => (slot.slotId === slotId ? { ...slot, ...updates } : slot)),
+      prev.map((slot) =>
+        slot.slotId === slotId ? { ...slot, ...updates } : slot,
+      ),
     );
   };
 
@@ -136,7 +143,9 @@ export function AITeamDrawer({ open, onOpenChange }: DrawerProps) {
                             <Badge variant="secondary">Active</Badge>
                           ) : null}
                         </div>
-                        <p className="text-xs text-muted-foreground">{providerName}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {providerName}
+                        </p>
                       </div>
                     </label>
 
@@ -168,7 +177,8 @@ export function AITeamDrawer({ open, onOpenChange }: DrawerProps) {
               })}
             </div>
             <p className="text-xs text-muted-foreground">
-              Minimum one model required. Add more to unlock ensemble and debate.
+              Minimum one model required. Add more to unlock ensemble and
+              debate.
             </p>
           </div>
 
@@ -189,7 +199,9 @@ export function AITeamDrawer({ open, onOpenChange }: DrawerProps) {
                     <Label htmlFor={option.value} className="cursor-pointer">
                       {option.label}
                     </Label>
-                    <p className="text-xs text-muted-foreground">{option.description}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {option.description}
+                    </p>
                   </div>
                 </label>
               ))}

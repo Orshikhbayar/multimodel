@@ -30,7 +30,8 @@ export function OutOfCreditsModal() {
             <div>
               <DialogTitle>Out of credits</DialogTitle>
               <DialogDescription>
-                You&apos;ve used all your included and top-up credits for this period.
+                You&apos;ve used all your included and top-up credits for this
+                period.
               </DialogDescription>
             </div>
           </div>

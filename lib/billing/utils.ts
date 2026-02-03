@@ -30,8 +30,14 @@ export function formatCredits(amount: number, currency: Currency) {
   return `${Math.round(amount).toLocaleString("en-US")} MNT`;
 }
 
-export function getPlanPrice(plan: Plan, currency: Currency, cadence: BillingCadence) {
-  return cadence === "annual" ? plan.annualPrice[currency] : plan.monthlyPrice[currency];
+export function getPlanPrice(
+  plan: Plan,
+  currency: Currency,
+  cadence: BillingCadence,
+) {
+  return cadence === "annual"
+    ? plan.annualPrice[currency]
+    : plan.monthlyPrice[currency];
 }
 
 export function getIncludedCredits(plan: Plan, currency: Currency) {

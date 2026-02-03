@@ -15,7 +15,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { ContentColumn, PageHeader } from "@/components/layout";
 import { useChatStore } from "@/lib/store";
 
@@ -51,7 +57,8 @@ export default function ProjectsPage() {
                 <DialogHeader>
                   <DialogTitle>Create project</DialogTitle>
                   <DialogDescription>
-                    Organize chats by initiative. This data persists in localStorage only.
+                    Organize chats by initiative. This data persists in
+                    localStorage only.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-3">
@@ -90,7 +97,9 @@ export default function ProjectsPage() {
             <Card key={project.id} className="h-full">
               <CardHeader>
                 <CardTitle>{project.name}</CardTitle>
-                <CardDescription>{project.description || "No description yet."}</CardDescription>
+                <CardDescription>
+                  {project.description || "No description yet."}
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-xs text-muted-foreground">
@@ -103,7 +112,9 @@ export default function ProjectsPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Nothing here yet</CardTitle>
-                <CardDescription>Spin up a project to collect related chats.</CardDescription>
+                <CardDescription>
+                  Spin up a project to collect related chats.
+                </CardDescription>
               </CardHeader>
             </Card>
           )}
