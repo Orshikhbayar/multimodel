@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { Suspense, useEffect, useMemo, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTheme } from "next-themes";
 
@@ -19,7 +19,7 @@ import { useSession, useSettings } from "@/lib/state/hooks";
 import { useUserStore } from "@/lib/state/userStore";
 import { useBillingStore } from "@/lib/billing/store";
 
-export default function AccountPage() {
+function AccountPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { resolvedTheme, setTheme } = useTheme();
@@ -269,5 +269,19 @@ export default function AccountPage() {
         </Tabs>
       </ContentColumn>
     </div>
+  );
+}
+
+export default function AccountPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-0 flex-1 items-center justify-center text-sm text-muted-foreground">
+          Loading account…
+        </div>
+      }
+    >
+      <AccountPageContent />
+    </Suspense>
   );
 }
