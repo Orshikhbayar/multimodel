@@ -86,13 +86,21 @@ function formatLogEntry(
   context?: LogContext,
   error?: unknown,
 ): LogEntry {
-  return {
+  const entry: LogEntry = {
     timestamp: new Date().toISOString(),
     level,
     message,
-    ...(context && Object.keys(context).length > 0 && { context }),
-    ...(error && { error: formatError(error) }),
   };
+  
+  if (context && Object.keys(context).length > 0) {
+    entry.context = context;
+  }
+  
+  if (error) {
+    entry.error = formatError(error);
+  }
+  
+  return entry;
 }
 
 function outputLog(entry: LogEntry): void {

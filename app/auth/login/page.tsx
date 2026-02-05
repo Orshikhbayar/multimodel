@@ -9,8 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-// Check if we're in development mode (client-side check)
-const isDevelopment = process.env.NODE_ENV !== "production";
+// Always show email/password login form
+// OAuth buttons are additional options when configured
+const showCredentialsForm = true;
 
 // SVG Icons for OAuth providers
 function GoogleIcon() {
@@ -143,8 +144,8 @@ function LoginForm() {
       {/* OAuth providers - always show buttons (they'll redirect to configure if not set up) */}
       <OAuthButtons callbackUrl={callbackUrl} />
 
-      {/* Show credentials form only in development */}
-      {isDevelopment && (
+      {/* Email/password login form */}
+      {showCredentialsForm && (
         <>
           <Divider />
 
@@ -210,7 +211,7 @@ function LoginFormFallback() {
         <div className="h-11 animate-pulse rounded-md bg-muted" />
       </div>
 
-      {isDevelopment && (
+      {showCredentialsForm && (
         <>
           {/* Divider skeleton */}
           <div className="relative my-6">
@@ -256,13 +257,11 @@ export default function LoginPage() {
             <LoginForm />
           </Suspense>
 
-          {isDevelopment && (
-            <div className="mt-6 text-center">
-              <p className="text-xs text-muted-foreground">
-                Demo credentials: demo@example.com / demo123
-              </p>
-            </div>
-          )}
+          <div className="mt-6 text-center">
+            <p className="text-xs text-muted-foreground">
+              Demo: demo@example.com / demo123
+            </p>
+          </div>
         </div>
       </div>
     </div>

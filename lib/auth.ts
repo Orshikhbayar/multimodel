@@ -6,7 +6,7 @@ import GitHub from "next-auth/providers/github";
 import bcrypt from "bcryptjs";
 import prisma from "@/lib/db";
 
-// Demo users for development only - NEVER use in production
+// Demo user for testing - in production, use a proper user database
 const DEMO_USERS = [
   {
     id: "demo-user-1",
@@ -18,7 +18,8 @@ const DEMO_USERS = [
   },
 ];
 
-const isDevelopment = process.env.NODE_ENV !== "production";
+// Always enable credentials provider for email/password login
+const enableCredentials = true;
 
 // Build providers list dynamically based on environment
 const providers = [];
@@ -42,8 +43,8 @@ if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
   );
 }
 
-// Demo credentials provider - ONLY in development
-if (isDevelopment) {
+// Credentials provider for email/password login
+if (enableCredentials) {
   providers.push(
     Credentials({
       name: "Demo Credentials",

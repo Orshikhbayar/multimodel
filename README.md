@@ -2,6 +2,8 @@
 
 A Next.js 16 (App Router) multi-model chat application with per-model tabs, SSE streaming, NextAuth authentication, and Zustand state management.
 
+**Live Demo:** https://multimodel-ai.vercel.app
+
 ## Features
 
 - **Multi-model chat**: Query multiple AI models in parallel (GPT-4o, Claude, Gemini, Grok)
@@ -98,17 +100,41 @@ In development mode, use demo credentials:
 
 ### Vercel (Recommended)
 
-1. Push your code to GitHub/GitLab/Bitbucket
-2. Create a PostgreSQL database (Vercel Postgres, Neon, Supabase, or Railway)
-3. Import the project in [Vercel](https://vercel.com)
-4. Configure environment variables in Vercel dashboard:
-   - `DATABASE_URL` (required - your PostgreSQL connection string)
-   - `OPENAI_API_KEY` (required)
-   - `AUTH_SECRET` (required)
-   - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` (for OAuth)
-   - `NEXT_PUBLIC_APP_URL` (your production domain)
+#### Quick Deploy via CLI
 
-5. Deploy (Prisma migrations run automatically via build command)
+```bash
+# 1. Install and login to Vercel CLI
+npm i -g vercel
+vercel login
+
+# 2. Link to a new project
+vercel link --yes --project your-project-name
+
+# 3. Set required environment variables
+echo "$(openssl rand -base64 32)" | vercel env add AUTH_SECRET production
+grep "^OPENAI_API_KEY=" .env.local | cut -d= -f2 | vercel env add OPENAI_API_KEY production
+
+# 4. Deploy to production
+vercel deploy --prod --yes
+```
+
+#### Via Vercel Dashboard
+
+1. Push your code to GitHub/GitLab/Bitbucket
+2. Import the project in [Vercel](https://vercel.com)
+3. Configure environment variables in Vercel dashboard:
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `AUTH_SECRET` | Yes | NextAuth secret (generate with `openssl rand -base64 32`) |
+| `OPENAI_API_KEY` | Yes | Your OpenAI API key |
+| `DATABASE_URL` | For OAuth | PostgreSQL connection string |
+| `GOOGLE_CLIENT_ID` | For OAuth | Google OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | For OAuth | Google OAuth client secret |
+
+4. Deploy (Prisma migrations run automatically via build command)
+
+> **Note**: The app works without a database using demo credentials (`demo@example.com` / `demo123`). For production OAuth, configure `DATABASE_URL`.
 
 ### Self-Hosted
 
@@ -359,6 +385,7 @@ The app uses Server-Sent Events (SSE) for real-time streaming. Verified compatib
 - [x] **Phase 4**: Real token metering and quota enforcement
 - [x] **Phase 5**: Structured logging, Sentry error tracking, metrics
 - [x] **Phase 6**: CI/CD pipeline, deployment workflows
+- [x] **Phase 7**: Production deployment on Vercel
 
 ## License
 
