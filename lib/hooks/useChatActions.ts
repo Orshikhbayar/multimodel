@@ -10,16 +10,35 @@ import { analytics } from "@/lib/analytics";
 import { useUsageStore } from "@/lib/analytics/usage";
 
 /**
+ * Stream result with status information
+ */
+interface StreamResult {
+  status: "done" | "cancelled" | "timeout" | "error" | "rate_limited" | "concurrency_limited" | "quota_exceeded";
+  requestId?: string;
+  elapsedMs?: number;
+  error?: string;
+  retryAfter?: number;
+  usage?: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  };
+}
+
+/**
  * Fetch streaming chat completion from our API route
+ * Enhanced with proper handling of rate limits, timeouts, and cancellation
  */
 async function fetchStreamingChat(
   messages: { role: "user" | "assistant" | "system"; content: string }[],
   modelId: string,
   controller: AbortController,
   onToken: (token: string) => void,
-  onDone: () => void,
-  onError: (error: string) => void,
+  onDone: (result: StreamResult) => void,
+  onError: (error: string, result: StreamResult) => void,
 ) {
+  let requestId: string | undefined;
+
   try {
     const response = await fetch("/api/chat", {
       method: "POST",
@@ -28,6 +47,42 @@ async function fetchStreamingChat(
       signal: controller.signal,
     });
 
+    // Get request ID from headers
+    requestId = response.headers.get("X-Request-Id") ?? undefined;
+
+    // Handle quota exceeded (402 Payment Required)
+    if (response.status === 402) {
+      const errorData = await response.json().catch(() => ({}));
+      onError(errorData.message || "Quota exceeded", {
+        status: "quota_exceeded",
+        requestId,
+        error: errorData.error,
+      });
+      return;
+    }
+
+    // Handle rate limiting and concurrency limiting (both return 429)
+    if (response.status === 429) {
+      const errorData = await response.json().catch(() => ({}));
+      const retryAfter = parseInt(
+        response.headers.get("Retry-After") || "60",
+        10,
+      );
+      
+      // Check if it's a concurrency limit vs rate limit
+      const isConcurrencyLimit = errorData.error === "Too many concurrent requests" || 
+                                  errorData.activeStreams !== undefined;
+      
+      onError(errorData.message || errorData.error || "Rate limit exceeded", {
+        status: isConcurrencyLimit ? "concurrency_limited" : "rate_limited",
+        requestId,
+        retryAfter: isConcurrencyLimit ? undefined : retryAfter,
+        error: errorData.error,
+      });
+      return;
+    }
+
+    // Handle other errors
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.error || `API error: ${response.status}`);
@@ -38,6 +93,7 @@ async function fetchStreamingChat(
 
     const decoder = new TextDecoder();
     let buffer = "";
+    let lastElapsedMs = 0;
 
     while (true) {
       const { done, value } = await reader.read();
@@ -51,18 +107,58 @@ async function fetchStreamingChat(
         const trimmed = line.trim();
         if (!trimmed) continue;
         if (trimmed === "data: [DONE]") {
-          onDone();
+          onDone({
+            status: "done",
+            requestId,
+            elapsedMs: lastElapsedMs,
+          });
           return;
         }
         if (!trimmed.startsWith("data: ")) continue;
 
         try {
           const json = JSON.parse(trimmed.slice(6));
+
+          // Update request ID if present
+          if (json.requestId) {
+            requestId = json.requestId;
+          }
+
+          // Track elapsed time
+          if (json.elapsedMs) {
+            lastElapsedMs = json.elapsedMs;
+          }
+
+          // Handle tokens
           if (json.token) {
             onToken(json.token);
           }
+
+          // Handle completion
+          if (json.done) {
+            onDone({
+              status: "done",
+              requestId,
+              elapsedMs: json.elapsedMs,
+              usage: json.usage,
+            });
+            return;
+          }
+
+          // Handle errors (including timeouts)
           if (json.error) {
-            onError(json.error);
+            const status = json.status || "error";
+            onError(json.error, {
+              status:
+                status === "timeout"
+                  ? "timeout"
+                  : status === "cancelled"
+                    ? "cancelled"
+                    : "error",
+              requestId,
+              elapsedMs: json.elapsedMs,
+              error: json.error,
+            });
             return;
           }
         } catch {
@@ -71,13 +167,25 @@ async function fetchStreamingChat(
       }
     }
 
-    onDone();
+    onDone({
+      status: "done",
+      requestId,
+      elapsedMs: lastElapsedMs,
+    });
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {
-      // Stream was cancelled, not an error
+      // Stream was cancelled by user
+      onDone({
+        status: "cancelled",
+        requestId,
+      });
       return;
     }
-    onError(error instanceof Error ? error.message : "Unknown error");
+    onError(error instanceof Error ? error.message : "Unknown error", {
+      status: "error",
+      requestId,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
   }
 }
 
@@ -178,8 +286,26 @@ export function useChatActions() {
           );
         },
         // onDone
-        () => {
-          const latencyMs = Date.now() - startTime;
+        (result) => {
+          const latencyMs = result.elapsedMs ?? Date.now() - startTime;
+
+          // Handle cancelled streams (mark as interrupted, not error)
+          if (result.status === "cancelled") {
+            conversationStore.completeRun(
+              conversationId,
+              assistantMessageId,
+              run.id,
+              {
+                status: "done",
+                interrupted: true,
+              },
+            );
+            if (run.slotId) {
+              modelStore.updateSlotStatus(run.slotId, "done");
+            }
+            streamStore.removeStream(run.id);
+            return;
+          }
 
           conversationStore.completeRun(
             conversationId,
@@ -191,9 +317,14 @@ export function useChatActions() {
           }
           streamStore.removeStream(run.id);
 
-          // Track API usage
-          const inputTokens = Math.ceil(content.length / 4); // ~4 chars per token estimate
-          const outputTokens = Math.ceil(accumulatedText.length / 4);
+          // Track API usage - prefer real usage data from API
+          const inputTokens = result.usage?.promptTokens ?? Math.ceil(content.length / 4);
+          const outputTokens = result.usage?.completionTokens ?? Math.ceil(accumulatedText.length / 4);
+          
+          // Calculate cost based on model pricing
+          const costPerInputToken = 0.00015 / 1000; // gpt-4o-mini input
+          const costPerOutputToken = 0.0006 / 1000; // gpt-4o-mini output
+          const estimatedCostUsd = inputTokens * costPerInputToken + outputTokens * costPerOutputToken;
 
           usageStore.addRecord({
             timestamp: Date.now(),
@@ -201,7 +332,7 @@ export function useChatActions() {
             inputTokens,
             outputTokens,
             latencyMs,
-            estimatedCostUsd: inputTokens * 0.00003 + outputTokens * 0.00006, // GPT-4 pricing estimate
+            estimatedCostUsd,
           });
 
           analytics.trackApiUsage({
@@ -213,15 +344,59 @@ export function useChatActions() {
           });
         },
         // onError
-        (error) => {
-          const latencyMs = Date.now() - startTime;
+        (error, result) => {
+          const latencyMs = result.elapsedMs ?? Date.now() - startTime;
 
-          conversationStore.markRunError(
-            conversationId,
-            assistantMessageId,
-            run.id,
-            error,
-          );
+          // Handle quota exceeded
+          if (result.status === "quota_exceeded") {
+            conversationStore.markRunError(
+              conversationId,
+              assistantMessageId,
+              run.id,
+              "Daily token quota exceeded. Please upgrade your plan or wait until tomorrow.",
+            );
+          }
+          // Handle concurrency limiting
+          else if (result.status === "concurrency_limited") {
+            conversationStore.markRunError(
+              conversationId,
+              assistantMessageId,
+              run.id,
+              "Too many concurrent requests. Please wait for current responses to complete.",
+            );
+          }
+          // Handle rate limiting
+          else if (result.status === "rate_limited") {
+            const retryMessage = result.retryAfter
+              ? `Rate limited. Please wait ${result.retryAfter} seconds.`
+              : "Rate limited. Please try again later.";
+
+            conversationStore.markRunError(
+              conversationId,
+              assistantMessageId,
+              run.id,
+              retryMessage,
+            );
+          }
+          // Handle timeouts
+          else if (result.status === "timeout") {
+            conversationStore.markRunError(
+              conversationId,
+              assistantMessageId,
+              run.id,
+              "Request timed out. The response took too long.",
+            );
+          }
+          // Handle other errors
+          else {
+            conversationStore.markRunError(
+              conversationId,
+              assistantMessageId,
+              run.id,
+              error,
+            );
+          }
+
           if (run.slotId) {
             modelStore.updateSlotStatus(run.slotId, "error");
           }

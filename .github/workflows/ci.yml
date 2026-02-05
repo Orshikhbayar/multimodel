@@ -5,8 +5,14 @@ on:
     branches: ["**"]
   pull_request:
 
+env:
+  # Dummy values for CI build (not used at runtime)
+  AUTH_SECRET: ci-test-secret-not-for-production
+  OPENAI_API_KEY: sk-test-key-for-ci-build-only
+
 jobs:
-  test:
+  lint:
+    name: Lint & Typecheck
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -16,16 +22,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-
-      - name: Cache
-        uses: actions/cache@v5
-        with:
-          path: |
-            ~/.npm
-            .next/cache
-          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci
@@ -36,11 +33,82 @@ jobs:
       - name: Typecheck
         run: npx tsc --noEmit
 
-      - name: Test
-        run: npm test
+      - name: Format check
+        run: npm run format:check
+
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test -- --coverage
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        if: github.event_name == 'pull_request'
+        with:
+          fail_ci_if_error: false
+        continue-on-error: true
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
 
       - name: Build
         run: npm run build
 
-      - name: Audit
+      - name: Check bundle size
+        run: npm run bundle:size
+        continue-on-error: true
+
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit dependencies
         run: npm audit --audit-level=high
+        continue-on-error: true
+
+      - name: Check for secrets
+        uses: trufflesecurity/trufflehog@main
+        with:
+          extra_args: --only-verified

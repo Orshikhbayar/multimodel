@@ -17,8 +17,25 @@ export interface StreamOptions {
 
 export interface StreamCallbacks {
   onToken: (token: string) => void;
-  onDone: (fullText: string) => void;
+  onDone: (fullText: string, usage?: TokenUsage) => void;
   onError: (error: Error) => void;
+}
+
+/**
+ * Token usage information from OpenAI response
+ */
+export interface TokenUsage {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+}
+
+/**
+ * Result of a streaming completion
+ */
+export interface StreamResult {
+  fullText: string;
+  usage?: TokenUsage;
 }
 
 /**
@@ -36,12 +53,22 @@ export function getOpenAIModelName(modelId: string): string {
 }
 
 /**
+ * Token event - either a text token or usage data
+ */
+export type StreamEvent = 
+  | { type: "token"; content: string }
+  | { type: "usage"; usage: TokenUsage };
+
+/**
  * Creates a streaming request to OpenAI
- * Returns an async generator that yields tokens
+ * Returns an async generator that yields tokens and usage data
+ * 
+ * The generator yields token events during streaming,
+ * and a usage event at the end with actual token counts from OpenAI.
  */
 export async function* streamOpenAICompletion(
   options: StreamOptions,
-): AsyncGenerator<string, void, unknown> {
+): AsyncGenerator<StreamEvent, void, unknown> {
   const apiKey = process.env.OPENAI_API_KEY;
 
   if (!apiKey) {
@@ -60,6 +87,8 @@ export async function* streamOpenAICompletion(
       temperature: options.temperature ?? 0.7,
       max_tokens: options.maxTokens ?? 2048,
       stream: true,
+      // Request usage data in streaming response
+      stream_options: { include_usage: true },
     }),
     signal: options.signal,
   });
@@ -96,9 +125,23 @@ export async function* streamOpenAICompletion(
 
         try {
           const json = JSON.parse(trimmed.slice(6));
+          
+          // Check for token content
           const content = json.choices?.[0]?.delta?.content;
           if (content) {
-            yield content;
+            yield { type: "token", content };
+          }
+          
+          // Check for usage data (sent at the end of stream)
+          if (json.usage) {
+            yield {
+              type: "usage",
+              usage: {
+                promptTokens: json.usage.prompt_tokens ?? 0,
+                completionTokens: json.usage.completion_tokens ?? 0,
+                totalTokens: json.usage.total_tokens ?? 0,
+              },
+            };
           }
         } catch {
           // Skip malformed JSON
@@ -119,13 +162,18 @@ export async function streamWithCallbacks(
 ): Promise<void> {
   try {
     let fullText = "";
+    let usage: TokenUsage | undefined;
 
-    for await (const token of streamOpenAICompletion(options)) {
-      fullText += token;
-      callbacks.onToken(token);
+    for await (const event of streamOpenAICompletion(options)) {
+      if (event.type === "token") {
+        fullText += event.content;
+        callbacks.onToken(event.content);
+      } else if (event.type === "usage") {
+        usage = event.usage;
+      }
     }
 
-    callbacks.onDone(fullText);
+    callbacks.onDone(fullText, usage);
   } catch (error) {
     callbacks.onError(
       error instanceof Error ? error : new Error(String(error)),
