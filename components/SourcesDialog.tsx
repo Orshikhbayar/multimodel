@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useI18n } from "@/lib/i18n";
 import type { Source } from "@/lib/types";
 
 interface SourcesDialogProps {
@@ -23,15 +24,14 @@ export function SourcesDialog({
   onOpenChange,
   sources,
 }: SourcesDialogProps) {
+  const { t } = useI18n();
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Sources &amp; References</DialogTitle>
-          <DialogDescription>
-            Mocked citations for the current run. Replace with grounded sources
-            later.
-          </DialogDescription>
+          <DialogTitle>{t("chat.sourcesAndReferences")}</DialogTitle>
+          <DialogDescription>{t("chat.sourcesDescription")}</DialogDescription>
         </DialogHeader>
         <ScrollArea className="h-72">
           <ul className="space-y-3 pt-2">
@@ -46,7 +46,7 @@ export function SourcesDialog({
               return (
                 <li
                   key={source.url}
-                  className="ui-hover-lift-sm rounded-lg border bg-muted/40 px-3 py-2 transition hover:bg-muted"
+                  className="rounded-lg border bg-muted/40 px-3 py-2 transition hover:bg-muted"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div>
@@ -59,7 +59,7 @@ export function SourcesDialog({
                       href={source.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="ui-hover-lift-sm rounded-sm text-primary"
+                      className="text-primary"
                     >
                       <ExternalLink className="h-4 w-4" />
                     </a>
@@ -74,7 +74,7 @@ export function SourcesDialog({
             })}
             {sources.length === 0 && (
               <p className="text-sm text-muted-foreground">
-                No sources attached yet.
+                {t("chat.noSources")}
               </p>
             )}
           </ul>

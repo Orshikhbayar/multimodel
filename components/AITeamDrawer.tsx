@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { ModelPicker } from "@/components/ModelPicker";
 import { useChatStore, MODE_OPTIONS } from "@/lib/store";
 import { getModelById, getProviderById, MODELS } from "@/lib/modelCatalog";
+import { useI18n } from "@/lib/i18n";
 import type { InteractionMode, ModelSlot } from "@/lib/types";
 import { useBillingStore } from "@/lib/billing/store";
 import { getNextPlanForSlots, getPlanById } from "@/lib/billing/plans";
@@ -26,6 +27,7 @@ interface DrawerProps {
 }
 
 export function AITeamDrawer({ open, onOpenChange }: DrawerProps) {
+  const { t } = useI18n();
   const {
     slots,
     activeSlotId,
@@ -46,6 +48,10 @@ export function AITeamDrawer({ open, onOpenChange }: DrawerProps) {
   const [draftSlots, setDraftSlots] = useState<ModelSlot[]>(slots);
   const [draftMode, setDraftMode] = useState<InteractionMode>(mode);
   const [draftInstructions, setDraftInstructions] = useState(instructions);
+  const enabledModelCount = useMemo(
+    () => draftSlots.filter((slot) => slot.enabled).length,
+    [draftSlots],
+  );
 
   const updateDraftSlot = (slotId: string, updates: Partial<ModelSlot>) => {
     setDraftSlots((prev) =>
@@ -61,7 +67,7 @@ export function AITeamDrawer({ open, onOpenChange }: DrawerProps) {
       if (checked && enabledCount >= plan.maxEnabledModels) {
         const recommended = getNextPlanForSlots(enabledCount + 1);
         openUpgradeModal({
-          reason: "Your plan limits how many models can run in parallel.",
+          reason: t("billing.unlockMoreModels"),
           requiredPlanId: recommended?.id,
         });
         return prev;
@@ -109,15 +115,15 @@ export function AITeamDrawer({ open, onOpenChange }: DrawerProps) {
     >
       <SheetContent side="right" className="sm:max-w-xl">
         <SheetHeader className="items-start">
-          <SheetTitle>AI Team Settings</SheetTitle>
+          <SheetTitle>{t("settings.aiTeamSettings")}</SheetTitle>
           <p className="text-sm text-muted-foreground">
-            Choose which models participate and how they collaborate.
+            {t("settings.chooseModelsAndCollab")}
           </p>
         </SheetHeader>
 
         <div className="mt-4 space-y-6">
           <div className="space-y-3">
-            <h4 className="text-sm font-semibold">Models</h4>
+            <h4 className="text-sm font-semibold">{t("settings.models")}</h4>
             <div className="grid grid-cols-1 gap-2">
               {draftSlots.map((slot) => {
                 const providerName =
@@ -140,7 +146,7 @@ export function AITeamDrawer({ open, onOpenChange }: DrawerProps) {
                         <div className="flex items-center gap-2">
                           <p className="text-sm font-semibold">{slot.label}</p>
                           {isActive ? (
-                            <Badge variant="secondary">Active</Badge>
+                            <Badge variant="secondary">{t("common.active")}</Badge>
                           ) : null}
                         </div>
                         <p className="text-xs text-muted-foreground">
@@ -162,13 +168,13 @@ export function AITeamDrawer({ open, onOpenChange }: DrawerProps) {
                       lockedModelIds={lockedModelIds}
                       onSelectLocked={(modelId) =>
                         openUpgradeModal({
-                          reason: "This model is available on higher tiers.",
+                          reason: t("billing.unlockMoreModels"),
                           lockedModelId: modelId,
                         })
                       }
                       trigger={
                         <Button variant="outline" size="sm">
-                          Change
+                          {t("settings.change")}
                         </Button>
                       }
                     />
@@ -177,13 +183,12 @@ export function AITeamDrawer({ open, onOpenChange }: DrawerProps) {
               })}
             </div>
             <p className="text-xs text-muted-foreground">
-              Minimum one model required. Add more to unlock ensemble and
-              debate.
+              {t("settings.minOneModel")}
             </p>
           </div>
 
           <div className="space-y-3">
-            <h4 className="text-sm font-semibold">Mode</h4>
+            <h4 className="text-sm font-semibold">{t("settings.mode")}</h4>
             <RadioGroup
               value={draftMode}
               onValueChange={(val) => setDraftMode(val as InteractionMode)}
@@ -192,37 +197,67 @@ export function AITeamDrawer({ open, onOpenChange }: DrawerProps) {
               {MODE_OPTIONS.map((option) => (
                 <label
                   key={option.value}
-                  className="ui-hover-lift-sm flex cursor-pointer items-start gap-2 rounded-lg border bg-muted/30 px-3 py-2 hover:border-primary"
+                  className="flex cursor-pointer items-start gap-2 rounded-lg border bg-muted/30 px-3 py-2 hover:border-primary"
                 >
                   <RadioGroupItem value={option.value} id={option.value} />
                   <div>
                     <Label htmlFor={option.value} className="cursor-pointer">
-                      {option.label}
+                      {option.value === "smart"
+                        ? t("settings.modeAuto")
+                        : option.value === "conversation"
+                          ? t("settings.modeParallelAnswers")
+                          : option.value === "ensemble"
+                            ? t("settings.modeCombinedAnswer")
+                            : option.value === "expert"
+                              ? t("settings.modeExpertReview")
+                              : option.value === "debate"
+                                ? t("settings.modeProsAndCons")
+                                : option.value === "simulation"
+                                  ? t("settings.modeRolePlay")
+                                  : t("settings.modeWebBacked")}
                     </Label>
                     <p className="text-xs text-muted-foreground">
-                      {option.description}
+                      {option.value === "smart"
+                        ? t("settings.modeAutoDescription")
+                        : option.value === "conversation"
+                          ? t("settings.modeParallelDescription")
+                          : option.value === "ensemble"
+                            ? t("settings.modeCombinedDescription")
+                            : option.value === "expert"
+                              ? t("settings.modeExpertDescription")
+                              : option.value === "debate"
+                                ? t("settings.modeDebateDescription")
+                                : option.value === "simulation"
+                                  ? t("settings.modeRoleDescription")
+                                  : t("settings.modeWebDescription")}
                     </p>
                   </div>
                 </label>
               ))}
             </RadioGroup>
+            {(draftMode === "ensemble" || draftMode === "debate") &&
+            enabledModelCount === 1 ? (
+              <p className="text-xs text-muted-foreground">
+                {t("chat.needsTwoModelsForUnified")}
+              </p>
+            ) : null}
           </div>
 
           <div className="space-y-2">
-            <h4 className="text-sm font-semibold">Shared instructions</h4>
+            <h4 className="text-sm font-semibold">{t("settings.sharedInstructions")}</h4>
             <Textarea
               value={draftInstructions}
               onChange={(event) => setDraftInstructions(event.target.value)}
-              placeholder="Describe policies, tone, constraints, or routing hints."
+              placeholder={t("settings.sharedInstructionsPlaceholder")}
               className="min-h-[140px]"
             />
           </div>
 
           <div className="flex items-center justify-end gap-2">
             <Button variant="ghost" onClick={handleReset}>
-              Reset
+              {t("settings.reset")}
             </Button>
-            <Button onClick={handleSave}>Save</Button>
+            <Button onClick={handleSave}>{t("settings.save")}</Button>
           </div>
         </div>
       </SheetContent>

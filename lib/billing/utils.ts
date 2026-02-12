@@ -1,4 +1,6 @@
 import type { BillingCadence, Currency, Plan } from "./types";
+import type { I18nLocale } from "@/lib/i18n/types";
+import { toIntlLocale } from "@/lib/i18n/format";
 
 const DEFAULT_USD_TO_MNT = Number(
   process.env.NEXT_PUBLIC_USD_TO_MNT_RATE ?? "3568.5492",
@@ -21,25 +23,40 @@ export function convertCurrency(amount: number, from: Currency, to: Currency) {
   return amount;
 }
 
-export function formatCurrency(amount: number, currency: Currency) {
+export function formatCurrency(
+  amount: number,
+  currency: Currency,
+  locale: I18nLocale = "en",
+) {
+  const intlLocale = toIntlLocale(locale);
   if (currency === "USD") {
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat(intlLocale, {
       style: "currency",
       currency: "USD",
       maximumFractionDigits: 2,
     }).format(amount);
   }
 
-  return `${new Intl.NumberFormat("en-US", {
+  return `${new Intl.NumberFormat(intlLocale, {
     maximumFractionDigits: 0,
   }).format(Math.round(amount))} MNT`;
 }
 
-export function formatCredits(amount: number, currency: Currency) {
+export function formatCredits(
+  amount: number,
+  currency: Currency,
+  locale: I18nLocale = "en",
+) {
+  const intlLocale = toIntlLocale(locale);
   if (currency === "USD") {
-    return `${amount.toFixed(2)} USD`;
+    return `${new Intl.NumberFormat(intlLocale, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount)} USD`;
   }
-  return `${Math.round(amount).toLocaleString("en-US")} MNT`;
+  return `${new Intl.NumberFormat(intlLocale, {
+    maximumFractionDigits: 0,
+  }).format(Math.round(amount))} MNT`;
 }
 
 export function getPlanPrice(

@@ -15,8 +15,10 @@ import {
   getPlanPrice,
 } from "@/lib/billing/utils";
 import { UsageBars } from "@/components/billing/UsageBars";
+import { useI18n } from "@/lib/i18n";
 
 export function BillingSummaryCard() {
+  const { t, locale, formatDate, formatDateTime, formatNumber } = useI18n();
   const {
     currentPlanId,
     currency,
@@ -49,14 +51,17 @@ export function BillingSummaryCard() {
     <Card className="border-muted/60 bg-card/60">
       <CardHeader className="space-y-2">
         <div className="flex items-center justify-between">
-          <CardTitle>Current plan</CardTitle>
+          <CardTitle>{t("billing.currentPlanCardTitle")}</CardTitle>
           <Badge variant="secondary">{plan.name}</Badge>
         </div>
         <p className="text-sm text-muted-foreground">
           {price === 0
-            ? "Free forever"
-            : `${formatCurrency(price, currency)} billed ${billingCadence}`}{" "}
-          - Next renewal {nextRenewal.toLocaleDateString()}
+            ? t("billing.freeForever")
+            : t("billing.billedCadence", {
+                price: formatCurrency(price, currency, locale),
+                cadence: billingCadence,
+              })}{" "}
+          - {t("billing.nextRenewal", { date: formatDate(nextRenewal) })}
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -68,23 +73,30 @@ export function BillingSummaryCard() {
         />
 
         <div className="rounded-lg border border-dashed border-muted/60 bg-background/40 px-4 py-3 text-sm text-muted-foreground">
-          Credits reset on {new Date(periodEndISO).toLocaleDateString()}.
+          {t("billing.creditsResetOn", {
+            date: formatDate(new Date(periodEndISO)),
+          })}
           <br />
-          FX: 1 USD = {fxRateUsdToMnt.toFixed(4)} MNT
+          {t("billing.fxLine", {
+            rate: formatNumber(fxRateUsdToMnt, {
+              minimumFractionDigits: 4,
+              maximumFractionDigits: 4,
+            }),
+          })}
           {fxRateUpdatedAtISO
-            ? ` (${fxRateLive ? "live" : "fallback"} ${new Date(
-                fxRateUpdatedAtISO,
-              ).toLocaleString()})`
+            ? ` (${t(
+                fxRateLive ? "billing.fxLive" : "billing.fxFallback",
+              )} ${formatDateTime(new Date(fxRateUpdatedAtISO))})`
             : ""}
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <Button asChild variant="outline">
-            <Link href="/pricing">Change plan</Link>
+            <Link href="/pricing">{t("billing.changePlan")}</Link>
           </Button>
-          <Button onClick={openTopUpModal}>Top up credits</Button>
+          <Button onClick={openTopUpModal}>{t("billing.topUpCreditsAction")}</Button>
           <Button variant="ghost" className="text-muted-foreground">
-            Manage payment method
+            {t("billing.managePaymentMethod")}
           </Button>
         </div>
       </CardContent>

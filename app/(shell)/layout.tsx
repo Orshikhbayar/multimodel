@@ -1,10 +1,24 @@
 import { Sidebar } from "@/components/Sidebar";
 import { MobileSidebar } from "@/components/MobileSidebar";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { SupabaseBootstrap } from "@/components/SupabaseBootstrap";
+import { getAuthenticatedUser } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+export default async function AppLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const user = await getAuthenticatedUser();
+  if (!user) {
+    redirect("/auth/login");
+  }
+
   return (
     <main className="flex h-dvh min-h-dvh w-full overflow-hidden bg-[hsl(var(--app-bg))]">
+      <SupabaseBootstrap />
+
       {/* Mobile drawer - visible on small screens */}
       <MobileSidebar />
 

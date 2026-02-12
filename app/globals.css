@@ -360,6 +360,168 @@ html[data-reduce-motion="true"] .ui-hover-lift-sm:hover {
     line-clamp: var(--clamp-lines-mobile, 10);
   }
 }
+
+/* Unified multi-model merge visualization */
+.unified-flow {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.unified-flow__prompt {
+  margin-inline: auto;
+  max-width: min(100%, 860px);
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.9rem;
+  background: hsl(var(--background) / 0.82);
+  padding: 0.6rem 0.85rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.unified-flow__network {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow: hidden;
+}
+
+.unified-flow__rail {
+  position: relative;
+  height: 1px;
+  background: hsl(var(--border));
+}
+
+.unified-flow__center-line,
+.unified-flow__stem {
+  position: relative;
+  width: 1px;
+  background: hsl(var(--border));
+  align-self: center;
+}
+
+.unified-flow__center-line--top {
+  height: 1.7rem;
+}
+
+.unified-flow__center-line--bottom {
+  height: 1.55rem;
+}
+
+.unified-flow__stem--top,
+.unified-flow__stem--bottom {
+  height: 0.85rem;
+}
+
+.unified-flow__perspective-card {
+  min-height: 84px;
+}
+
+.unified-flow__perspective-card--streaming {
+  border-color: rgb(74 222 128 / 0.45);
+}
+
+.unified-flow__rail::after,
+.unified-flow__center-line::after,
+.unified-flow__stem::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+
+.unified-flow--active .unified-flow__rail::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgb(34 197 94 / 0) 35%,
+    rgb(34 197 94 / 0.95) 50%,
+    rgb(34 197 94 / 0) 65%,
+    transparent 100%
+  );
+  transform: translateX(-130%);
+  animation: unified-flow-x 1.75s linear infinite;
+  opacity: 1;
+}
+
+.unified-flow--active .unified-flow__center-line::after,
+.unified-flow--active .unified-flow__stem::after {
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgb(34 197 94 / 0) 25%,
+    rgb(34 197 94 / 0.95) 50%,
+    rgb(34 197 94 / 0) 75%,
+    transparent 100%
+  );
+  transform: translateY(-130%);
+  animation: unified-flow-y 1.75s linear infinite;
+  opacity: 1;
+}
+
+.unified-flow--active .unified-flow__center-line--top::after {
+  animation-delay: 0s;
+}
+
+.unified-flow--active .unified-flow__rail--top::after {
+  animation-delay: 0.25s;
+}
+
+.unified-flow--active .unified-flow__stem--top::after {
+  animation-delay: 0.45s;
+}
+
+.unified-flow--active .unified-flow__stem--bottom::after {
+  animation-delay: 0.85s;
+}
+
+.unified-flow--active .unified-flow__rail--bottom::after {
+  animation-delay: 1.05s;
+}
+
+.unified-flow--active .unified-flow__center-line--bottom::after {
+  animation-delay: 1.2s;
+}
+
+@keyframes unified-flow-x {
+  0% {
+    transform: translateX(-130%);
+  }
+  100% {
+    transform: translateX(130%);
+  }
+}
+
+@keyframes unified-flow-y {
+  0% {
+    transform: translateY(-130%);
+  }
+  100% {
+    transform: translateY(130%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .unified-flow--active .unified-flow__rail::after,
+  .unified-flow--active .unified-flow__center-line::after,
+  .unified-flow--active .unified-flow__stem::after {
+    animation: none;
+    opacity: 0.35;
+  }
+}
+
+html[data-reduce-motion="true"] .unified-flow--active .unified-flow__rail::after,
+html[data-reduce-motion="true"]
+  .unified-flow--active
+  .unified-flow__center-line::after,
+html[data-reduce-motion="true"] .unified-flow--active .unified-flow__stem::after {
+  animation: none;
+  opacity: 0.35;
+}
 @layer base {
   :root {
     --chat-max-width: 860px;

@@ -4,39 +4,41 @@ import { Check, Minus } from "lucide-react";
 
 import { useBillingStore } from "@/lib/billing/store";
 import { PLANS } from "@/lib/billing/plans";
+import { useI18n } from "@/lib/i18n";
 import { MODELS } from "@/lib/modelCatalog";
 import { formatCredits, getIncludedCredits } from "@/lib/billing/utils";
 
 export function PlanCompareTable() {
+  const { t, locale } = useI18n();
   const { currency } = useBillingStore();
 
   const featureRows = [
     {
-      label: "Included monthly credits",
+      label: t("billing.includedMonthlyCreditsLabel"),
       render: (plan: (typeof PLANS)[number]) =>
-        formatCredits(getIncludedCredits(plan, currency), currency),
+        formatCredits(getIncludedCredits(plan, currency), currency, locale),
     },
     {
-      label: "Max enabled models",
+      label: t("billing.maxEnabledModels"),
       render: (plan: (typeof PLANS)[number]) => `${plan.maxEnabledModels}`,
     },
     {
-      label: "Web search",
+      label: t("billing.webSearch"),
       render: (plan: (typeof PLANS)[number]) =>
         plan.features.webSearch ? <CheckIcon /> : <MinusIcon />,
     },
     {
-      label: "Tools",
+      label: t("billing.tools"),
       render: (plan: (typeof PLANS)[number]) =>
         plan.features.tools ? <CheckIcon /> : <MinusIcon />,
     },
     {
-      label: "Images",
+      label: t("billing.imagesFeature"),
       render: (plan: (typeof PLANS)[number]) =>
         plan.features.images ? <CheckIcon /> : <MinusIcon />,
     },
     {
-      label: "Projects",
+      label: t("billing.projectsFeature"),
       render: (plan: (typeof PLANS)[number]) =>
         plan.features.projects ? <CheckIcon /> : <MinusIcon />,
     },
@@ -45,9 +47,9 @@ export function PlanCompareTable() {
   return (
     <div className="overflow-hidden rounded-2xl border bg-card/60">
       <div className="border-b px-4 py-3">
-        <h2 className="text-lg font-semibold">Compare plans</h2>
+        <h2 className="text-lg font-semibold">{t("billing.comparePlans")}</h2>
         <p className="text-sm text-muted-foreground">
-          See which models and capabilities are included at each tier.
+          {t("billing.comparePlansDescription")}
         </p>
       </div>
       <div className="overflow-x-auto">
@@ -55,7 +57,7 @@ export function PlanCompareTable() {
           <thead className="bg-muted/40">
             <tr>
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted-foreground">
-                Feature
+                {t("billing.feature")}
               </th>
               {PLANS.map((plan) => (
                 <th

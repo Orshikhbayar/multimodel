@@ -1,6 +1,6 @@
 # Multi-Model AI Workspace
 
-A Next.js 16 (App Router) multi-model chat application with per-model tabs, SSE streaming, NextAuth authentication, and Zustand state management.
+A Next.js 16 (App Router) multi-model chat application with per-model tabs, SSE streaming, Supabase Auth + Postgres persistence, and Zustand state management.
 
 **Live Demo:** https://multimodel-ai.vercel.app
 
@@ -8,7 +8,8 @@ A Next.js 16 (App Router) multi-model chat application with per-model tabs, SSE 
 
 - **Multi-model chat**: Query multiple AI models in parallel (GPT-4o, Claude, Gemini, Grok)
 - **Real-time streaming**: Server-Sent Events (SSE) via Edge runtime
-- **Authentication**: NextAuth v5 with Google/GitHub OAuth (demo credentials in development)
+- **Authentication**: Supabase Auth with email magic links
+- **Persistence**: Supabase Postgres with RLS policies for workspace-scoped data
 - **Collaboration modes**: Smart, Conversation, Ensemble, Expert, Debate, Simulation, Web-Aided
 - **Billing**: Server-enforced plans, quotas, and credit ledger (mock checkout)
 - **Dark/Light theme**: System-aware with manual toggle
@@ -21,7 +22,8 @@ A Next.js 16 (App Router) multi-model chat application with per-model tabs, SSE 
 - Node.js 18+ (20+ recommended)
 - npm 9+
 - OpenAI API key
-- PostgreSQL database (for production)
+- Supabase project (cloud or local)
+- Supabase CLI
 
 ### Setup
 
@@ -42,27 +44,19 @@ cp .env.example .env.local
 ```bash
 # Required
 OPENAI_API_KEY=sk-your-openai-key
-AUTH_SECRET=your-generated-secret  # Generate with: openssl rand -base64 32
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_xxx
 
-# Database (required for production, optional for development)
-DATABASE_URL=postgresql://user:password@localhost:5432/multimodel_ai
-
-# For OAuth (optional in development, required in production)
-GOOGLE_CLIENT_ID=your-google-client-id
-GOOGLE_CLIENT_SECRET=your-google-client-secret
+# Server-only (admin/migrations only)
+SUPABASE_SERVICE_ROLE_KEY=sb_service_role_xxx
 ```
 
-4. Set up the database (if using DATABASE_URL):
+4. Apply Supabase migrations:
 
 ```bash
-# Start PostgreSQL (using Docker)
-docker run --name multimodel-postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres
-
-# Create database
-docker exec -it multimodel-postgres psql -U postgres -c "CREATE DATABASE multimodel_ai;"
-
-# Run migrations
-npx prisma migrate dev
+supabase login
+supabase link --project-ref <your-project-ref>
+supabase db push
 ```
 
 5. Start the development server:
@@ -75,11 +69,13 @@ npm run dev
 
 ### Development Login
 
-In development mode, use demo credentials:
-- **Email**: `demo@example.com`
-- **Password**: `demo123`
+Use `/auth/login`, enter your email, and open the magic link sent by Supabase.
 
-> **Note**: Demo credentials are disabled in production. Configure OAuth providers for production use.
+### Common Local Issues
+
+- Redirect loop: verify `NEXT_PUBLIC_SUPABASE_URL` and publishable key match the same project.
+- Callback succeeds but no session: ensure `/auth/callback` route exists and middleware is enabled.
+- Unauthorized DB access: run `supabase db push` and confirm RLS policies were created.
 
 ## Available Scripts
 
@@ -93,8 +89,8 @@ In development mode, use demo credentials:
 | `npm run e2e` | Run E2E tests (Playwright) |
 | `npm run format` | Format code with Prettier |
 | `npm run format:check` | Check formatting without changes |
-| `npm run db:migrate` | Run database migrations (dev) |
-| `npm run db:studio` | Open Prisma Studio |
+| `npm run db:push` | Apply SQL migrations to your Supabase project |
+| `npm run db:reset` | Reset local Supabase DB and re-run migrations |
 
 ## Deploying to Production
 
@@ -111,8 +107,10 @@ vercel login
 vercel link --yes --project your-project-name
 
 # 3. Set required environment variables
-echo "$(openssl rand -base64 32)" | vercel env add AUTH_SECRET production
 grep "^OPENAI_API_KEY=" .env.local | cut -d= -f2 | vercel env add OPENAI_API_KEY production
+grep "^NEXT_PUBLIC_SUPABASE_URL=" .env.local | cut -d= -f2 | vercel env add NEXT_PUBLIC_SUPABASE_URL production
+grep "^NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=" .env.local | cut -d= -f2 | vercel env add NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY production
+grep "^SUPABASE_SERVICE_ROLE_KEY=" .env.local | cut -d= -f2 | vercel env add SUPABASE_SERVICE_ROLE_KEY production
 
 # 4. Deploy to production
 vercel deploy --prod --yes
@@ -126,15 +124,14 @@ vercel deploy --prod --yes
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `AUTH_SECRET` | Yes | NextAuth secret (generate with `openssl rand -base64 32`) |
 | `OPENAI_API_KEY` | Yes | Your OpenAI API key |
-| `DATABASE_URL` | For OAuth | PostgreSQL connection string |
-| `GOOGLE_CLIENT_ID` | For OAuth | Google OAuth client ID |
-| `GOOGLE_CLIENT_SECRET` | For OAuth | Google OAuth client secret |
+| `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Yes | Supabase publishable key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-only | Supabase service role key (admin tasks only) |
 
-4. Deploy (Prisma migrations run automatically via build command)
+4. Deploy and run `supabase db push` before first production traffic.
 
-> **Note**: The app works without a database using demo credentials (`demo@example.com` / `demo123`). For production OAuth, configure `DATABASE_URL`.
+> **Note**: The app requires a Supabase Postgres schema + RLS policies before chat persistence works.
 
 ### Self-Hosted
 
@@ -154,11 +151,9 @@ npm run start
 
 ### Important Production Notes
 
-- **OAuth Required**: Demo credentials are disabled in production. Configure at least one OAuth provider.
-- **AUTH_SECRET**: Must be a strong, random secret (32+ characters)
-- **HTTPS**: Required for secure cookies and OAuth callbacks
-- **Database Required**: Configure `DATABASE_URL` with a PostgreSQL connection string
-- **Run Migrations**: Execute `npx prisma migrate deploy` before starting the app
+- **HTTPS Required**: secure auth cookies and callback URLs require HTTPS in production.
+- **Supabase Required**: configure project URL + publishable key in runtime env.
+- **Run Migrations**: execute `supabase db push` before starting production traffic.
 
 ## Project Structure
 
@@ -169,9 +164,8 @@ npm run start
 │   │   ├── account/       # Account settings
 │   │   └── projects/      # Projects page
 │   ├── api/               # API routes
-│   │   ├── auth/          # NextAuth handlers
 │   │   └── chat/          # Chat streaming endpoint
-│   └── auth/              # Auth pages (login)
+│   └── auth/              # Supabase auth pages + callback/logout routes
 ├── components/            # React components
 │   ├── chat/              # Chat-specific components
 │   ├── billing/           # Billing UI components
@@ -180,13 +174,12 @@ npm run start
 ├── lib/                   # Utilities and state
 │   ├── actions/           # Server actions (DB operations)
 │   ├── api/               # API client (OpenAI)
-│   ├── auth.ts            # NextAuth configuration
+│   ├── supabase/          # Supabase clients + persistence helpers
 │   ├── billing/           # Billing logic
-│   ├── db.ts              # Prisma client singleton
 │   ├── hooks/             # Custom React hooks
 │   └── stores/            # Zustand stores (local cache)
-├── prisma/                # Database schema and migrations
-│   └── schema.prisma      # Prisma schema
+├── supabase/              # SQL migrations
+│   └── migrations/        # RLS-aware schema changes
 └── middleware.ts          # Auth middleware
 ```
 
@@ -200,8 +193,8 @@ npm run start
 ## Tech Stack
 
 - **Framework**: Next.js 16 (App Router, Edge Runtime)
-- **Auth**: NextAuth v5 (beta) with Prisma adapter
-- **Database**: PostgreSQL with Prisma ORM
+- **Auth**: Supabase Auth (magic link)
+- **Database**: Supabase Postgres + SQL migrations + RLS
 - **State**: Zustand (local cache) + DB sync
 - **Styling**: Tailwind CSS + shadcn/ui
 - **Testing**: Vitest + Playwright
@@ -214,43 +207,28 @@ The `/api/chat` endpoint enforces the following limits:
 
 | Limit | Value | Description |
 |-------|-------|-------------|
-| Daily Token Quota | 2k tokens | Per-user daily limit (free tier) |
-| Monthly Token Quota | 30k tokens | Per-user monthly limit (free tier) |
 | Rate Limit | 20 req/min | Per-user request limit |
 | Concurrency | 2 streams | Maximum simultaneous streams per user |
 | Connect Timeout | 30s | Max time to establish connection |
 | Inactivity Timeout | 60s | Max time between chunks |
 | Max Duration | 5 min | Maximum total stream duration |
 
-### Quota Tiers
-
-| Plan | Daily Token Limit | Monthly Token Limit |
-|------|-------------------|---------------------|
-| Free | 2,000 tokens | 30,000 tokens |
-| Plus | 10,000 tokens | 250,000 tokens |
-| Pro | 25,000 tokens | 650,000 tokens |
-| Team | 60,000 tokens | 1,800,000 tokens |
-
 ### Error Responses
 
 | Status | Reason | Response |
 |--------|--------|----------|
 | 401 | Not authenticated | `{"error": "Authentication required"}` |
-| 402 | Quota exceeded | `{"error": "Quota exceeded", "code": "QUOTA_EXCEEDED", "used": N, "limit": N, "resetAt": "..."}` |
-| 402 | Insufficient credits | `{"error": "Insufficient credits", "code": "INSUFFICIENT_CREDITS", "availableCreditsUsd": N}` |
 | 429 | Rate/concurrency limit | `{"error": "Rate limit exceeded"}` or `{"error": "Too many concurrent requests"}` |
-| 503 | Billing unavailable | `{"error": "Billing unavailable", "code": "BILLING_UNAVAILABLE"}` |
+| 500 | Internal server error | `{"error": "...", "requestId": "..."}` |
 
 ## Usage Tracking
 
 Token usage is tracked in real-time using OpenAI's `stream_options: { include_usage: true }`. The system:
 
 1. **Records actual tokens** - Uses real token counts from OpenAI response (not estimates)
-2. **Calculates cost** - Model-specific pricing applied per request
-3. **Reserves credit holds** - Debits a preflight hold before upstream model calls
-4. **Settles/refunds precisely** - Settles to real usage or refunds on cancel/error
-5. **Enforces quotas** - Checks daily and monthly limits before processing requests
-6. **Persists to DB** - Usage + billing transactions are stored for analytics/audit
+2. **Calculates per-run cost** - Stores `cost_usd` with each model run
+3. **Persists run metadata** - Writes tokens, latency, status, and output to `model_runs`
+4. **Scopes access with RLS** - Data is readable/writable only through workspace membership
 
 View usage in the billing dashboard at `/account/billing`.
 
@@ -352,8 +330,9 @@ For full CI/CD functionality, configure these repository secrets:
 | `VERCEL_TOKEN` | For deploy | Vercel API token |
 | `VERCEL_ORG_ID` | For deploy | Vercel organization ID |
 | `VERCEL_PROJECT_ID` | For deploy | Vercel project ID |
-| `DATABASE_URL` | For migrations | Production database URL |
-| `AUTH_SECRET` | For build | NextAuth secret |
+| `NEXT_PUBLIC_SUPABASE_URL` | For auth/db | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | For auth/db | Supabase publishable key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-only | Supabase service role key |
 | `SENTRY_AUTH_TOKEN` | Optional | For source map uploads |
 
 ### Deployment
@@ -385,7 +364,7 @@ The app uses Server-Sent Events (SSE) for real-time streaming. Verified compatib
 ## Roadmap
 
 - [x] **Phase 1**: Authentication, route protection, security headers
-- [x] **Phase 2**: PostgreSQL + Prisma for data persistence
+- [x] **Phase 2**: Supabase Postgres + RLS for data persistence
 - [x] **Phase 3**: Rate limiting, timeouts, concurrency limits
 - [x] **Phase 4**: Real token metering and quota enforcement
 - [x] **Phase 5**: Structured logging, Sentry error tracking, metrics

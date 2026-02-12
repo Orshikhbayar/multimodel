@@ -32,7 +32,7 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline'", // Required for Tailwind CSS
       "img-src 'self' data: https: blob:",
       "font-src 'self' data:",
-      "connect-src 'self' https://api.openai.com https://accounts.google.com https://github.com https://*.sentry.io https://*.ingest.sentry.io",
+      "connect-src 'self' https://api.openai.com https://accounts.google.com https://github.com https://*.sentry.io https://*.ingest.sentry.io https://*.supabase.co wss://*.supabase.co",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",

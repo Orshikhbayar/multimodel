@@ -9,7 +9,7 @@
 
 import * as Sentry from "@sentry/nextjs";
 import { useEffect } from "react";
-import { Button } from "@/components/ui/button";
+import { useI18n } from "@/lib/i18n";
 
 export default function GlobalError({
   error,
@@ -18,6 +18,7 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const { t } = useI18n();
   useEffect(() => {
     // Report error to Sentry
     Sentry.captureException(error);
@@ -29,19 +30,22 @@ export default function GlobalError({
         <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
           <div className="max-w-md text-center">
             <h1 className="mb-4 text-2xl font-bold text-foreground">
-              Something went wrong
+              {t("errors.somethingWentWrong")}
             </h1>
             <p className="mb-6 text-muted-foreground">
-              We&apos;ve been notified and are working to fix the issue.
+              {t("errors.notifiedFixing")}
             </p>
             {error.digest && (
               <p className="mb-4 font-mono text-xs text-muted-foreground">
-                Error ID: {error.digest}
+                {t("errors.errorId", { id: error.digest })}
               </p>
             )}
-            <Button onClick={reset}>
-              Try again
-            </Button>
+            <button
+              onClick={reset}
+              className="rounded-lg bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90"
+            >
+              {t("errors.tryAgain")}
+            </button>
           </div>
         </div>
       </body>

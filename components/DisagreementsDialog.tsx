@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useI18n } from "@/lib/i18n";
 import type { Disagreement } from "@/lib/types";
 
 interface DisagreementsDialogProps {
@@ -21,13 +22,15 @@ export function DisagreementsDialog({
   onOpenChange,
   disagreements,
 }: DisagreementsDialogProps) {
+  const { t } = useI18n();
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Model Disagreements</DialogTitle>
+          <DialogTitle>{t("chat.modelDisagreements")}</DialogTitle>
           <DialogDescription>
-            Where the models diverged, and how they justify their stance.
+            {t("chat.modelDisagreementsDescription")}
           </DialogDescription>
         </DialogHeader>
         <ScrollArea className="h-72">
@@ -55,7 +58,7 @@ export function DisagreementsDialog({
             ))}
             {disagreements.length === 0 && (
               <p className="text-sm text-muted-foreground">
-                No disagreements captured.
+                {t("chat.noDisagreements")}
               </p>
             )}
           </div>

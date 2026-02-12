@@ -1,41 +1,17 @@
 "use client";
 
-import {
-  Brain,
-  ChevronDown,
-  Cloud,
-  Cpu,
-  Flame,
-  Layers,
-  Plus,
-  Settings,
-  Sparkles,
-} from "lucide-react";
+import { ChevronDown, Plus, Settings } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ModelPicker } from "@/components/ModelPicker";
+import { ModelGlyph } from "@/components/ModelGlyph";
 import type { ModelSlot } from "@/lib/types";
-import {
-  getProviderById,
-  type ProviderIconKey,
-  MODELS,
-} from "@/lib/modelCatalog";
+import { MODELS } from "@/lib/modelCatalog";
 import { cn } from "@/lib/utils";
 import { useBillingStore } from "@/lib/billing/store";
 import { getPlanById } from "@/lib/billing/plans";
-
-const PROVIDER_ICONS: Record<
-  ProviderIconKey,
-  React.ComponentType<{ className?: string }>
-> = {
-  sparkles: Sparkles,
-  brain: Brain,
-  cloud: Cloud,
-  flame: Flame,
-  cpu: Cpu,
-  layers: Layers,
-};
+import { useI18n } from "@/lib/i18n";
 
 interface TopBarProps {
   title: string;
@@ -52,16 +28,24 @@ export function TopBar({
   onOpenSettings,
   onSelectModel,
 }: TopBarProps) {
+  const { t } = useI18n();
   const { currentPlanId, openUpgradeModal } = useBillingStore();
   const plan = getPlanById(currentPlanId);
   const lockedModelIds = MODELS.filter(
     (model) => !plan.allowedModelIds.includes(model.id),
   ).map((model) => model.id);
+  const statusLabel =
+    activeSlot?.status === "streaming"
+      ? t("modelPicker.streaming")
+      : activeSlot?.status === "error"
+        ? t("modelPicker.error")
+        : t("modelPicker.done");
+
   return (
     <div className="flex items-center justify-between gap-4 border-b bg-card/70 px-4 py-3 backdrop-blur">
       <div className="min-w-0">
         <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-          Current chat
+          {t("navigation.currentChat")}
         </p>
         <div className="flex items-center gap-2">
           <h1 className="truncate text-base font-semibold">{title}</h1>
@@ -77,7 +61,7 @@ export function TopBar({
                       : "bg-emerald-400",
                 )}
               />
-              {activeSlot.status}
+              {statusLabel}
             </Badge>
           ) : null}
         </div>
@@ -91,26 +75,26 @@ export function TopBar({
           className="gap-2"
         >
           <Plus className="h-4 w-4" />
-          New
+          {t("navigation.new")}
         </Button>
         <ModelPicker
-          value={activeSlot?.modelId ?? "openai/gpt-4.1"}
+          value={activeSlot?.modelId ?? "openai/gpt-5.2"}
           onChange={onSelectModel}
           lockedModelIds={lockedModelIds}
           onSelectLocked={(modelId) =>
             openUpgradeModal({
-              reason: "This model is available on higher tiers.",
+              reason: t("billing.unlockMoreModels"),
               lockedModelId: modelId,
             })
           }
           trigger={
             <button
               type="button"
-              className="ui-hover-lift-sm flex items-center gap-2 rounded-full border bg-background px-3 py-1.5 text-sm shadow-sm transition hover:bg-muted/40"
+              className="flex items-center gap-2 rounded-full border bg-background px-3 py-1.5 text-sm shadow-sm transition-all duration-150 hover:bg-muted/40"
             >
-              <ProviderGlyph providerId={activeSlot?.providerId} />
+              <ModelGlyph modelId={activeSlot?.modelId} size="sm" />
               <span className="max-w-[160px] truncate font-semibold">
-                {activeSlot?.label ?? "Select model"}
+                {activeSlot?.label ?? t("topBar.selectModel")}
               </span>
               <ChevronDown className="h-4 w-4 text-muted-foreground" />
             </button>
@@ -120,21 +104,11 @@ export function TopBar({
           variant="ghost"
           size="icon"
           onClick={onOpenSettings}
-          title="Open settings"
+          title={t("accessibility.openSettings")}
         >
           <Settings className="h-4 w-4" />
         </Button>
       </div>
-    </div>
-  );
-}
-
-function ProviderGlyph({ providerId }: { providerId?: string }) {
-  const provider = providerId ? getProviderById(providerId) : undefined;
-  const Icon = provider?.icon ? PROVIDER_ICONS[provider.icon] : Layers;
-  return (
-    <div className="flex h-6 w-6 items-center justify-center rounded-full border bg-muted/40">
-      <Icon className="h-3.5 w-3.5" />
     </div>
   );
 }

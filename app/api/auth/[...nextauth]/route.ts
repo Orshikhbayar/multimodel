@@ -1,3 +1,18 @@
-import { handlers } from "@/lib/auth";
+import { NextResponse } from "next/server";
 
-export const { GET, POST } = handlers;
+function buildResponse() {
+  return NextResponse.json(
+    {
+      error: "Legacy NextAuth route removed. Use /auth/login with Supabase Auth.",
+    },
+    { status: 410 },
+  );
+}
+
+export async function GET() {
+  return buildResponse();
+}
+
+export async function POST() {
+  return buildResponse();
+}

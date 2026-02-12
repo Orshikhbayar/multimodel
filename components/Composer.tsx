@@ -6,13 +6,14 @@ import { ArrowUp, ChevronDown, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ModelPicker } from "@/components/ModelPicker";
+import { ModelGlyph } from "@/components/ModelGlyph";
 import { useChatActions } from "@/lib/hooks/useChatActions";
 import { useStreamStore } from "@/lib/stores";
 import { estimateChatCostForSlots } from "@/lib/billing/estimator";
 import { formatCredits } from "@/lib/billing/utils";
 import type { Currency } from "@/lib/billing/types";
-import { useAppSettingsStore } from "@/lib/state/settingsStore";
-import { getComposerCopy } from "@/lib/i18n/composerCopy";
+import { useSettingsStore, type WorkflowPreset } from "@/lib/stores";
+import { useI18n } from "@/lib/i18n";
 
 interface ComposerProps {
   onSend?: (value: string) => void;
@@ -42,10 +43,52 @@ export function Composer({
   const activeStreamCount = useStreamStore(
     (state) => state.activeStreams.size,
   );
-  const locale = useAppSettingsStore((state) => state.locale);
+  const { t, locale } = useI18n();
+  const workflowPreset = useSettingsStore((state) => state.workflowPreset);
   const isStreaming = activeStreamCount > 0;
   const trimmedValue = value.trim();
-  const composerCopy = useMemo(() => getComposerCopy(locale), [locale]);
+  const workflowPresetLabel = useMemo(() => {
+    const labels: Record<WorkflowPreset, string> = {
+      general: t("settings.presetGeneral"),
+      engineer: t("settings.presetEngineer"),
+      marketing: t("settings.presetMarketing"),
+    };
+    return labels[workflowPreset];
+  }, [t, workflowPreset]);
+  const quickStartPrompts = useMemo(
+    () => [
+      {
+        label: t("composer.quickDebugLabel"),
+        prompt: t("composer.quickDebugPrompt"),
+      },
+      {
+        label: t("composer.quickRefactorLabel"),
+        prompt: t("composer.quickRefactorPrompt"),
+      },
+      {
+        label: t("composer.quickLandingLabel"),
+        prompt: t("composer.quickLandingPrompt"),
+      },
+      {
+        label: t("composer.quickCampaignLabel"),
+        prompt: t("composer.quickCampaignPrompt"),
+      },
+      {
+        label: t("composer.quickAbLabel"),
+        prompt: t("composer.quickAbPrompt"),
+      },
+    ],
+    [t],
+  );
+  const filteredQuickStartPrompts = useMemo(() => {
+    if (workflowPreset === "engineer") {
+      return quickStartPrompts.slice(0, 2);
+    }
+    if (workflowPreset === "marketing") {
+      return quickStartPrompts.slice(2);
+    }
+    return quickStartPrompts;
+  }, [quickStartPrompts, workflowPreset]);
   const modelIdsForEstimate = useMemo(
     () => (enabledModelIds.length > 0 ? enabledModelIds : [modelId]),
     [enabledModelIds, modelId],
@@ -84,13 +127,13 @@ export function Composer({
         {value.length === 0 && (
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="text-[11px] text-muted-foreground">
-              {composerCopy.quickStartLabel}
+              {t("composer.quickStart")} {workflowPresetLabel}
             </span>
-            {composerCopy.quickStartPrompts.map((item) => (
+            {filteredQuickStartPrompts.map((item) => (
               <button
                 key={item.label}
                 type="button"
-                className="ui-hover-lift-sm rounded-full border px-2 py-1 text-[11px] text-muted-foreground transition hover:bg-muted/50 hover:text-foreground"
+                className="rounded-full border px-2 py-1 text-[11px] text-muted-foreground transition hover:bg-muted/50 hover:text-foreground"
                 onClick={() => {
                   setValue(item.prompt);
                   textareaRef.current?.focus();
@@ -105,7 +148,7 @@ export function Composer({
           ref={textareaRef}
           value={value}
           onChange={(event) => setValue(event.target.value)}
-          placeholder={composerCopy.placeholder}
+          placeholder={t("composer.placeholder")}
           className="min-h-[44px] max-h-[160px] w-full resize-none border-0 bg-transparent text-sm shadow-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 focus:ring-offset-0 focus-visible:ring-offset-0"
           onKeyDown={(event) => {
             if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
@@ -125,8 +168,9 @@ export function Composer({
             trigger={
               <button
                 type="button"
-                className="ui-hover-lift-sm relative flex items-center gap-2 rounded-full border bg-[hsl(var(--app-panel))] px-3 py-1.5 text-xs font-medium shadow-sm transition hover:bg-muted/40"
+                className="relative flex items-center gap-2 rounded-full border bg-[hsl(var(--app-panel))] px-3 py-1.5 text-xs font-medium shadow-sm transition-all duration-150 hover:bg-muted/40"
               >
+                <ModelGlyph modelId={modelId} size="sm" />
                 <span className="max-w-[120px] truncate">{modelLabel}</span>
                 <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
               </button>
@@ -144,17 +188,19 @@ export function Composer({
               <ArrowUp className="h-4 w-4" />
             )}
             <span className="sr-only">
-              {isStreaming ? composerCopy.stopGenerating : composerCopy.send}
+              {isStreaming
+                ? t("composer.stopGenerating")
+                : t("composer.send")}
             </span>
           </Button>
         </div>
       </div>
       <div className="mt-1 flex flex-wrap items-center justify-between gap-2 pb-1 text-[11px] text-muted-foreground">
-        <span>{composerCopy.shortcutsHint}</span>
+        <span>{t("composer.shortcutsHint")}</span>
         <span>
           {trimmedValue
-            ? `${composerCopy.estimatedCostLabel} ${formatCredits(estimatedCost, currency)} (${modelIdsForEstimate.length} ${modelIdsForEstimate.length === 1 ? composerCopy.modelSingular : composerCopy.modelPlural})`
-            : composerCopy.estimateAppearsHint}
+            ? `${t("composer.estimatedCost")} ${formatCredits(estimatedCost, currency, locale)} (${modelIdsForEstimate.length} ${modelIdsForEstimate.length === 1 ? t("composer.modelSingular") : t("composer.modelPlural")})`
+            : t("composer.estimateAppears")}
         </span>
       </div>
     </div>

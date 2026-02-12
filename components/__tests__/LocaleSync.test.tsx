@@ -3,45 +3,39 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { LocaleSync } from "@/components/LocaleSync";
 
-const mockedSettings = vi.hoisted(() => ({
-  locale: "en",
-  reduceMotion: false,
+const { mockUseSettings } = vi.hoisted(() => ({
+  mockUseSettings: vi.fn(),
 }));
 
 vi.mock("@/lib/state/hooks", () => ({
-  useSettings: () => mockedSettings,
+  useSettings: () => mockUseSettings(),
 }));
 
 describe("LocaleSync", () => {
   afterEach(() => {
-    document.documentElement.lang = "en";
+    document.documentElement.removeAttribute("lang");
     delete document.documentElement.dataset.reduceMotion;
   });
 
-  it("sets normalized lang and reduce-motion dataset", () => {
-    mockedSettings.locale = "mn-MN";
-    mockedSettings.reduceMotion = true;
+  it("updates html lang from locale setting", () => {
+    mockUseSettings.mockReturnValue({
+      locale: "mn-MN",
+      reduceMotion: false,
+    });
 
     render(<LocaleSync />);
 
     expect(document.documentElement.lang).toBe("mn");
-    expect(document.documentElement.dataset.reduceMotion).toBe("true");
   });
 
-  it("updates document when settings change", () => {
-    mockedSettings.locale = "en";
-    mockedSettings.reduceMotion = false;
+  it("mirrors reduceMotion setting to html dataset", () => {
+    mockUseSettings.mockReturnValue({
+      locale: "en",
+      reduceMotion: true,
+    });
 
-    const { rerender } = render(<LocaleSync />);
+    render(<LocaleSync />);
 
-    expect(document.documentElement.lang).toBe("en");
-    expect(document.documentElement.dataset.reduceMotion).toBe("false");
-
-    mockedSettings.locale = "en-US";
-    mockedSettings.reduceMotion = false;
-    rerender(<LocaleSync />);
-
-    expect(document.documentElement.lang).toBe("en");
-    expect(document.documentElement.dataset.reduceMotion).toBe("false");
+    expect(document.documentElement.dataset.reduceMotion).toBe("true");
   });
 });

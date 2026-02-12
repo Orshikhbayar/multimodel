@@ -1,8 +1,11 @@
 import { NextRequest } from "next/server";
 import { nanoid } from "nanoid";
 import * as Sentry from "@sentry/nextjs";
-import { auth } from "@/lib/auth";
-import { streamOpenAICompletion, getOpenAIModelName, type TokenUsage } from "@/lib/api/openai";
+import {
+  streamOpenAICompletion,
+  getOpenAIModelName,
+  type TokenUsage,
+} from "@/lib/api/openai";
 import {
   withStreamTimeouts,
   StreamTimeoutError,
@@ -17,38 +20,36 @@ import {
 import { createRequestLogger } from "@/lib/logger";
 import Metrics from "@/lib/metrics";
 import type { ChatMessage } from "@/lib/api/types";
-import {
-  BillingUnavailableError,
-  InsufficientCreditsError,
-  checkQuota,
-  ensureBillingUser,
-  estimatePromptTokensFromMessages,
-  refundUsageHold,
-  reserveUsageHold,
-  resetPeriodIfNeeded,
-  settleUsageHold,
-  type UsageHold,
-} from "@/lib/billing/service";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getProviderFromModelId } from "@/lib/supabase/chatPersistence";
+import { estimateTokenCostUsd } from "@/lib/billing/estimator";
 
 interface ChatRequestBody {
   messages: ChatMessage[];
   modelId: string;
   temperature?: number;
   maxTokens?: number;
+  conversationId?: string;
+  messageId?: string;
+  runId?: string;
 }
 
-/**
- * POST /api/chat
- *
- * Streams chat completions from OpenAI.
- * Proxies requests to keep API keys server-side.
- */
+function estimatePromptTokensFromMessages(messages: ChatMessage[]) {
+  return Math.max(
+    1,
+    messages.reduce((total, message) => total + Math.ceil(message.content.length / 4), 0),
+  );
+}
+
 export async function POST(request: NextRequest) {
   const requestId = nanoid(10);
   const startTime = Date.now();
 
-  const session = await auth();
-  if (!session?.user?.id) {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase.auth.getClaims();
+  const claims = data?.claims;
+
+  if (!claims?.sub) {
     Metrics.apiRequestCount({ endpoint: "/api/chat", status: 401 });
     return new Response(
       JSON.stringify({ error: "Authentication required", requestId }),
@@ -56,76 +57,11 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const sessionUserId = session.user.id;
+  const sessionUserId = claims.sub;
   const log = createRequestLogger(requestId, sessionUserId);
 
   Sentry.setUser({ id: sessionUserId });
   Sentry.setTag("requestId", requestId);
-
-  let billingUserId = sessionUserId;
-
-  try {
-    const billingUser = await ensureBillingUser({
-      id: sessionUserId,
-      email: session.user.email,
-      name: session.user.name,
-    });
-
-    const refreshedUser = await resetPeriodIfNeeded(billingUser.id);
-    billingUserId = refreshedUser.id;
-
-    const quota = await checkQuota(refreshedUser.id, refreshedUser.planId);
-    if (!quota.allowed) {
-      log.info("Quota exceeded", {
-        used: quota.used,
-        limit: quota.limit,
-        reason: quota.reason,
-      });
-      Metrics.rateLimitHit({ userId: sessionUserId, type: "quota" });
-      Metrics.apiRequestCount({ endpoint: "/api/chat", status: 402 });
-
-      const resetTime = quota.resetAt.toISOString();
-      return new Response(
-        JSON.stringify({
-          error: "Quota exceeded",
-          code: "QUOTA_EXCEEDED",
-          message:
-            quota.reason === "monthly"
-              ? `You've used ${quota.used.toLocaleString()} of ${quota.limit.toLocaleString()} tokens this month.`
-              : `You've used ${quota.used.toLocaleString()} of ${quota.limit.toLocaleString()} tokens today.`,
-          used: quota.used,
-          limit: quota.limit,
-          resetAt: resetTime,
-          requestId,
-        }),
-        {
-          status: 402,
-          headers: {
-            "Content-Type": "application/json",
-            "X-Quota-Limit": quota.limit.toString(),
-            "X-Quota-Remaining": "0",
-            "X-Quota-Reset": resetTime,
-          },
-        },
-      );
-    }
-  } catch (error) {
-    log.error("Billing unavailable during quota check", error);
-    Metrics.apiError({ endpoint: "/api/chat", errorType: "billing_unavailable" });
-    Metrics.apiRequestCount({ endpoint: "/api/chat", status: 503 });
-
-    return new Response(
-      JSON.stringify({
-        error: "Billing unavailable",
-        code: "BILLING_UNAVAILABLE",
-        requestId,
-      }),
-      {
-        status: 503,
-        headers: { "Content-Type": "application/json" },
-      },
-    );
-  }
 
   const permission = checkStreamPermission(sessionUserId);
 
@@ -180,11 +116,18 @@ export async function POST(request: NextRequest) {
   }
 
   const streamId = permission.concurrency.streamId!;
-  let hold: UsageHold | null = null;
 
   try {
     const body = (await request.json()) as ChatRequestBody;
-    const { messages, modelId, temperature, maxTokens } = body;
+    const {
+      messages,
+      modelId,
+      temperature,
+      maxTokens,
+      conversationId,
+      messageId,
+      runId,
+    } = body;
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       releaseConcurrencySlot(sessionUserId, streamId);
@@ -206,50 +149,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    try {
-      hold = await reserveUsageHold({
-        userId: billingUserId,
-        referenceId: `chat:${requestId}`,
-        modelId: modelId || "openai/gpt-4o-mini",
-        estimatedPromptTokens: estimatePromptTokensFromMessages(messages),
-        maxOutputTokens: maxTokens ?? 2048,
-      });
-    } catch (error) {
-      releaseConcurrencySlot(sessionUserId, streamId);
+    const resolvedModelId = modelId || "openai/gpt-4o-mini";
+    const resolvedProvider = getProviderFromModelId(resolvedModelId);
 
-      if (error instanceof InsufficientCreditsError) {
-        return new Response(
-          JSON.stringify({
-            error: "Insufficient credits",
-            code: "INSUFFICIENT_CREDITS",
-            availableCreditsUsd: Number((error.availableCreditsCents / 100).toFixed(2)),
-            requestId,
-          }),
-          {
-            status: 402,
-            headers: { "Content-Type": "application/json" },
-          },
-        );
-      }
-
-      return new Response(
-        JSON.stringify({
-          error: "Billing unavailable",
-          code: "BILLING_UNAVAILABLE",
-          requestId,
-        }),
+    if (conversationId && runId) {
+      await supabase.from("model_runs").upsert(
         {
-          status: 503,
-          headers: { "Content-Type": "application/json" },
+          id: runId,
+          conversation_id: conversationId,
+          message_id: messageId ?? null,
+          model: resolvedModelId,
+          provider: resolvedProvider,
+          status: "running",
         },
+        { onConflict: "id" },
       );
     }
 
     const encoder = new TextEncoder();
     let streamClosed = false;
-    let holdSettled = false;
     let fallbackCompletionTokens = 0;
-    const resolvedModel = getOpenAIModelName(modelId || "openai/gpt-4o-mini");
+    let accumulatedText = "";
+    const resolvedModel = getOpenAIModelName(resolvedModelId);
     const estimatedPromptTokens = estimatePromptTokensFromMessages(messages);
 
     let tokenUsage: TokenUsage | undefined;
@@ -258,7 +179,7 @@ export async function POST(request: NextRequest) {
       async start(controller) {
         try {
           const baseGenerator = streamOpenAICompletion({
-            model: modelId || "openai/gpt-4o-mini",
+            model: resolvedModelId,
             messages,
             temperature,
             maxTokens,
@@ -276,6 +197,7 @@ export async function POST(request: NextRequest) {
 
             if (event.type === "token") {
               fallbackCompletionTokens += Math.max(1, Math.ceil(event.content.length / 4));
+              accumulatedText += event.content;
               const data = JSON.stringify({ token: event.content, requestId });
               controller.enqueue(encoder.encode(`data: ${data}\n\n`));
             } else if (event.type === "usage") {
@@ -285,20 +207,31 @@ export async function POST(request: NextRequest) {
 
           if (!streamClosed) {
             const elapsed = Date.now() - startTime;
-
             const promptTokens = tokenUsage?.promptTokens ?? estimatedPromptTokens;
             const completionTokens =
               tokenUsage?.completionTokens ?? Math.max(1, fallbackCompletionTokens);
-
-            await settleUsageHold({
-              userId: billingUserId,
-              hold: hold!,
-              modelId: resolvedModel,
-              provider: "openai",
-              promptTokens,
-              completionTokens,
+            const costUsd = estimateTokenCostUsd({
+              modelId: resolvedModelId,
+              inputTokens: promptTokens,
+              outputTokens: completionTokens,
             });
-            holdSettled = true;
+
+            if (conversationId && runId) {
+              await supabase
+                .from("model_runs")
+                .update({
+                  message_id: messageId ?? null,
+                  status: "completed",
+                  output_text: accumulatedText,
+                  input_tokens: promptTokens,
+                  output_tokens: completionTokens,
+                  cost_usd: Number(costUsd.toFixed(6)),
+                  latency_ms: elapsed,
+                  error_text: null,
+                })
+                .eq("id", runId)
+                .eq("conversation_id", conversationId);
+            }
 
             Metrics.streamTokens(promptTokens, { model: resolvedModel, type: "prompt" });
             Metrics.streamTokens(completionTokens, {
@@ -330,6 +263,7 @@ export async function POST(request: NextRequest) {
                 completionTokens,
                 totalTokens: promptTokens + completionTokens,
               },
+              costUsd,
             });
             controller.enqueue(encoder.encode(`data: ${doneData}\n\n`));
             controller.enqueue(encoder.encode("data: [DONE]\n\n"));
@@ -347,24 +281,23 @@ export async function POST(request: NextRequest) {
             durationMs: elapsed,
           });
 
-          if (hold && !holdSettled) {
-            try {
-              await refundUsageHold({
-                userId: billingUserId,
-                hold,
-                reason: `stream_${status}`,
-              });
-              holdSettled = true;
-            } catch (refundError) {
-              log.error("Failed to refund hold", refundError, {
-                requestId,
-                holdId: hold.id,
-              });
-            }
-          }
-
           Metrics.apiError({ endpoint: "/api/chat", errorType: status });
           Metrics.streamDuration(elapsed, { model: resolvedModel, status });
+
+          if (conversationId && runId) {
+            const failedStatus = status === "cancelled" ? "completed" : "failed";
+            await supabase
+              .from("model_runs")
+              .update({
+                message_id: messageId ?? null,
+                status: failedStatus,
+                output_text: accumulatedText,
+                latency_ms: elapsed,
+                error_text: status === "cancelled" ? null : message,
+              })
+              .eq("id", runId)
+              .eq("conversation_id", conversationId);
+          }
 
           if (status !== "cancelled") {
             Sentry.captureException(error, {
@@ -378,14 +311,7 @@ export async function POST(request: NextRequest) {
           }
 
           const errorData = JSON.stringify({
-            error:
-              error instanceof BillingUnavailableError
-                ? "Billing unavailable"
-                : message,
-            code:
-              error instanceof BillingUnavailableError
-                ? "BILLING_UNAVAILABLE"
-                : undefined,
+            error: message,
             status,
             requestId,
             elapsedMs: elapsed,
@@ -406,22 +332,18 @@ export async function POST(request: NextRequest) {
         streamClosed = true;
         releaseConcurrencySlot(sessionUserId, streamId);
 
-        if (hold && !holdSettled) {
-          const activeHold = hold;
-          void refundUsageHold({
-            userId: billingUserId,
-            hold: activeHold,
-            reason: "client_cancel",
-          })
-            .then(() => {
-              holdSettled = true;
+        if (conversationId && runId) {
+          void supabase
+            .from("model_runs")
+            .update({
+              message_id: messageId ?? null,
+              status: "completed",
+              output_text: accumulatedText,
+              latency_ms: elapsed,
+              error_text: null,
             })
-            .catch((error) => {
-              log.error("Failed to refund hold after cancel", error, {
-                requestId,
-                holdId: activeHold.id,
-              });
-            });
+            .eq("id", runId)
+            .eq("conversation_id", conversationId);
         }
 
         log.info("Client disconnected", { durationMs: elapsed, model: resolvedModel });
@@ -441,21 +363,6 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     releaseConcurrencySlot(sessionUserId, streamId);
 
-    if (hold) {
-      try {
-        await refundUsageHold({
-          userId: billingUserId,
-          hold,
-          reason: "request_failure",
-        });
-      } catch (refundError) {
-        log.error("Failed to refund hold in request catch", refundError, {
-          requestId,
-          holdId: hold.id,
-        });
-      }
-    }
-
     const elapsed = Date.now() - startTime;
     log.error("Request failed", error, { durationMs: elapsed });
 
@@ -468,20 +375,13 @@ export async function POST(request: NextRequest) {
       extra: { elapsed, userId: sessionUserId },
     });
 
-    const isBillingUnavailable = error instanceof BillingUnavailableError;
-
     return new Response(
       JSON.stringify({
-        error: isBillingUnavailable
-          ? "Billing unavailable"
-          : error instanceof Error
-            ? error.message
-            : "Internal server error",
-        code: isBillingUnavailable ? "BILLING_UNAVAILABLE" : undefined,
+        error: error instanceof Error ? error.message : "Internal server error",
         requestId,
       }),
       {
-        status: isBillingUnavailable ? 503 : 500,
+        status: 500,
         headers: {
           "Content-Type": "application/json",
           "X-Request-Id": requestId,

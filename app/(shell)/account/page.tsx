@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useRef } from "react";
+import { Suspense, useMemo, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTheme } from "next-themes";
 
@@ -25,15 +25,16 @@ import {
   PLAN_DETAILS,
   PLAN_LABELS,
 } from "@/lib/state/constants";
-import { useSession, useSettings } from "@/lib/state/hooks";
+import { useSettings } from "@/lib/state/hooks";
 import { useUserStore } from "@/lib/state/userStore";
 import { useBillingStore } from "@/lib/billing/store";
+import { useI18n } from "@/lib/i18n";
 
 function AccountPageContent() {
+  const { t } = useI18n();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { resolvedTheme, setTheme } = useTheme();
-  const { isAuthenticated } = useSession();
   const settings = useSettings();
   const user = useUserStore((state) => state.user);
   const updateProfile = useUserStore((state) => state.updateProfile);
@@ -46,12 +47,6 @@ function AccountPageContent() {
   const activeTab =
     searchParams.get("tab") === "billing" ? "billing" : "settings";
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      router.replace("/login");
-    }
-  }, [isAuthenticated, router]);
-
   const usage = useMemo(() => {
     const totalCredits = 120;
     const usedCredits = 42;
@@ -62,18 +57,10 @@ function AccountPageContent() {
     return { totalCredits, usedCredits, percent };
   }, []);
 
-  if (!isAuthenticated) {
-    return (
-      <div className="flex min-h-0 flex-1 items-center justify-center text-sm text-muted-foreground">
-        Redirecting to login...
-      </div>
-    );
-  }
-
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-background py-6">
       <ContentColumn className="space-y-6">
-        <PageHeader label="Account" title="Plan & Settings" />
+        <PageHeader label={t("account.label")} title={t("account.title")} />
 
         <Tabs
           value={activeTab}
@@ -84,31 +71,29 @@ function AccountPageContent() {
           }
         >
           <TabsList>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
-            <TabsTrigger value="billing">Billing</TabsTrigger>
+            <TabsTrigger value="settings">{t("account.settingsTab")}</TabsTrigger>
+            <TabsTrigger value="billing">{t("account.billingTab")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="settings" className="space-y-4">
             <Card key={user.id}>
               <CardHeader>
-                <CardTitle>Profile</CardTitle>
-                <CardDescription>
-                  Update your local account details.
-                </CardDescription>
+                <CardTitle>{t("account.profile")}</CardTitle>
+                <CardDescription>{t("account.updateLocalDetails")}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="name">Display name</Label>
+                    <Label htmlFor="name">{t("account.displayName")}</Label>
                     <Input
                       id="name"
                       defaultValue={user.name}
                       ref={nameRef}
-                      placeholder="Demo User"
+                      placeholder={t("auth.name")}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email">{t("account.email")}</Label>
                     <Input
                       id="email"
                       type="email"
@@ -127,23 +112,23 @@ function AccountPageContent() {
                       })
                     }
                   >
-                    Save changes
+                    {t("account.saveChanges")}
                   </Button>
-                  <Badge variant="outline">{PLAN_LABELS[user.plan]} plan</Badge>
+                  <Badge variant="outline">
+                    {t("account.planSuffix", { plan: PLAN_LABELS[user.plan] })}
+                  </Badge>
                 </div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>Preferences</CardTitle>
-                <CardDescription>
-                  Control how the app feels for you.
-                </CardDescription>
+                <CardTitle>{t("account.preferences")}</CardTitle>
+                <CardDescription>{t("account.controlAppFeel")}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-3">
-                  <div className="text-sm font-medium">Language</div>
+                  <div className="text-sm font-medium">{t("account.language")}</div>
                   <RadioGroup
                     value={user.locale}
                     onValueChange={(value) => updateLocale(value)}
@@ -152,7 +137,7 @@ function AccountPageContent() {
                     {LANGUAGE_OPTIONS.map((option) => (
                       <label
                         key={option.id}
-                        className="ui-hover-lift-sm flex items-center justify-between rounded-lg border p-3 text-sm hover:bg-muted/40"
+                        className="flex items-center justify-between rounded-lg border p-3 text-sm hover:bg-muted/40"
                       >
                         <span>{option.label}</span>
                         <RadioGroupItem
@@ -166,7 +151,7 @@ function AccountPageContent() {
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <div className="text-sm font-medium">Theme</div>
+                    <div className="text-sm font-medium">{t("account.theme")}</div>
                     <div className="flex flex-wrap gap-2">
                       {(["light", "dark", "system"] as const).map((value) => (
                         <Button
@@ -181,19 +166,23 @@ function AccountPageContent() {
                             setTheme(value);
                           }}
                         >
-                          {value.charAt(0).toUpperCase() + value.slice(1)}
+                          {value === "light"
+                            ? t("common.light")
+                            : value === "dark"
+                              ? t("common.dark")
+                              : t("common.system")}
                         </Button>
                       ))}
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Current: {currentThemeLabel}
+                      {t("account.currentTheme", { theme: currentThemeLabel })}
                     </p>
                   </div>
                   <div className="flex items-center justify-between rounded-lg border p-3">
                     <div>
-                      <p className="text-sm font-medium">Reduce motion</p>
+                      <p className="text-sm font-medium">{t("account.reduceMotion")}</p>
                       <p className="text-xs text-muted-foreground">
-                        Minimize UI animations.
+                        {t("account.minimizeAnimations")}
                       </p>
                     </div>
                     <Switch
@@ -201,7 +190,7 @@ function AccountPageContent() {
                       onCheckedChange={(checked) =>
                         settings.setReduceMotion(checked)
                       }
-                      aria-label="Reduce motion"
+                      aria-label={t("account.reduceMotion")}
                     />
                   </div>
                 </div>
@@ -212,26 +201,24 @@ function AccountPageContent() {
           <TabsContent value="billing" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Current plan</CardTitle>
-                <CardDescription>
-                  Mocked billing state for the prototype.
-                </CardDescription>
+                <CardTitle>{t("account.currentPlan")}</CardTitle>
+                <CardDescription>{t("account.mockedBillingState")}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium">
-                      {PLAN_LABELS[user.plan]} plan
+                      {t("account.planSuffix", { plan: PLAN_LABELS[user.plan] })}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Renews monthly
+                      {t("account.renewsMonthly")}
                     </p>
                   </div>
-                  <Badge variant="outline">Active</Badge>
+                  <Badge variant="outline">{t("common.active")}</Badge>
                 </div>
                 <div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Credits used</span>
+                    <span className="text-muted-foreground">{t("account.creditsUsed")}</span>
                     <span className="font-medium">
                       {usage.usedCredits} / {usage.totalCredits}
                     </span>
@@ -243,7 +230,7 @@ function AccountPageContent() {
                     />
                   </div>
                   <p className="mt-2 text-xs text-muted-foreground">
-                    Usage refreshes monthly. This is mocked data for now.
+                    {t("account.usageRefreshesMonthly")}
                   </p>
                 </div>
               </CardContent>
@@ -251,14 +238,44 @@ function AccountPageContent() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Upgrade options</CardTitle>
-                <CardDescription>
-                  Choose the plan that fits your workflow.
-                </CardDescription>
+                <CardTitle>{t("account.upgradeOptions")}</CardTitle>
+                <CardDescription>{t("account.choosePlanWorkflow")}</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4 lg:grid-cols-3">
                 {PLAN_DETAILS.map((plan) => {
                   const isCurrent = plan.id === user.plan;
+                  const localizedDescription =
+                    plan.id === "free"
+                      ? t("billing.planFreeDescription")
+                      : plan.id === "plus"
+                        ? t("billing.planPlusDescription")
+                        : plan.id === "pro"
+                          ? t("billing.planProDescription")
+                          : t("billing.planTeamDescription");
+                  const localizedHighlights =
+                    plan.id === "free"
+                      ? [
+                          t("billing.highlight2ActiveModels"),
+                          t("billing.highlightCommunitySupport"),
+                          t("billing.highlightBasicChatHistory"),
+                        ]
+                      : plan.id === "plus"
+                        ? [
+                            t("billing.highlight2ActiveModels"),
+                            t("billing.highlightHigherQuotas"),
+                            t("billing.highlightProjectsSupport"),
+                          ]
+                        : plan.id === "pro"
+                          ? [
+                              t("billing.highlight3ActiveModels"),
+                              t("billing.highlightImageGeneration"),
+                              t("billing.highlightPrioritySupport"),
+                            ]
+                          : [
+                              t("billing.highlight6ActiveModels"),
+                              t("billing.highlightLargestQuotas"),
+                              t("billing.highlightTeamWorkflows"),
+                            ];
                   return (
                     <div
                       key={plan.id}
@@ -268,15 +285,15 @@ function AccountPageContent() {
                         <div className="flex items-center justify-between">
                           <p className="text-base font-semibold">{plan.name}</p>
                           {isCurrent ? (
-                            <Badge variant="outline">Current</Badge>
+                            <Badge variant="outline">{t("common.current")}</Badge>
                           ) : null}
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          {plan.description}
+                          {localizedDescription}
                         </p>
                         <p className="text-2xl font-semibold">{plan.price}</p>
                         <ul className="space-y-1 text-xs text-muted-foreground">
-                          {plan.highlights.map((item) => (
+                          {localizedHighlights.map((item) => (
                             <li key={item}>• {item}</li>
                           ))}
                         </ul>
@@ -290,7 +307,7 @@ function AccountPageContent() {
                           choosePlan(plan.id);
                         }}
                       >
-                        {isCurrent ? "Current plan" : "Choose plan"}
+                        {isCurrent ? t("billing.currentPlan") : t("account.choosePlan")}
                       </Button>
                     </div>
                   );
@@ -300,13 +317,11 @@ function AccountPageContent() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Billing backend</CardTitle>
-                <CardDescription>Coming soon.</CardDescription>
+                <CardTitle>{t("account.billingBackend")}</CardTitle>
+                <CardDescription>{t("account.comingSoon")}</CardDescription>
               </CardHeader>
               <CardContent className="text-sm text-muted-foreground">
-                We will connect this to a real billing system in a future
-                release. For now, the UI is fully interactive and stored
-                locally.
+                {t("account.billingBackendDescription")}
               </CardContent>
             </Card>
           </TabsContent>
@@ -317,11 +332,13 @@ function AccountPageContent() {
 }
 
 export default function AccountPage() {
+  const { t } = useI18n();
+
   return (
     <Suspense
       fallback={
         <div className="flex min-h-0 flex-1 items-center justify-center text-sm text-muted-foreground">
-          Loading account…
+          {t("account.loadingAccount")}
         </div>
       }
     >

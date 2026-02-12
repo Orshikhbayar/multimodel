@@ -1,6 +1,6 @@
 // Core types
-export type Role = "user" | "assistant";
-export type RunStatus = "streaming" | "done" | "error";
+export type Role = "user" | "assistant" | "system";
+export type RunStatus = "queued" | "streaming" | "done" | "error";
 export type SlotStatus = "idle" | "streaming" | "done" | "error";
 
 export interface Source {
@@ -33,6 +33,8 @@ export interface Run {
   };
   /** Latency in milliseconds */
   latencyMs?: number;
+  /** Actual run cost in USD */
+  costUsd?: number;
   /** Error details if status is 'error' */
   error?: {
     message: string;

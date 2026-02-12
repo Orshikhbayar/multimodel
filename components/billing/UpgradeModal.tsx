@@ -13,10 +13,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useBillingStore } from "@/lib/billing/store";
+import { useI18n } from "@/lib/i18n";
 import { getNextPlanForModel, getPlanById } from "@/lib/billing/plans";
 import { getModelLabel } from "@/lib/modelCatalog";
 
 export function UpgradeModal() {
+  const { t } = useI18n();
   const { ui, closeUpgradeModal, choosePlan, currentPlanId } =
     useBillingStore();
 
@@ -40,9 +42,9 @@ export function UpgradeModal() {
               <Lock className="h-4 w-4" />
             </div>
             <div>
-              <DialogTitle>Upgrade required</DialogTitle>
+              <DialogTitle>{t("billing.upgradeRequired")}</DialogTitle>
               <DialogDescription>
-                {ui.upgradeReason ?? "This action needs a higher plan."}
+                {ui.upgradeReason ?? t("billing.upgradeNeededAction")}
               </DialogDescription>
             </div>
           </div>
@@ -51,28 +53,27 @@ export function UpgradeModal() {
         <div className="rounded-lg border bg-muted/30 p-4 text-sm">
           {lockedModelLabel ? (
             <p>
-              <span className="font-semibold">{lockedModelLabel}</span> is
-              locked on your current plan.
+              {t("billing.lockedOnCurrentPlan", { model: lockedModelLabel })}
             </p>
           ) : (
-            <p>Unlock more models and higher limits with an upgraded plan.</p>
+            <p>{t("billing.unlockMoreModels")}</p>
           )}
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <Badge variant="secondary">
-              Recommended: {recommendedPlan?.name}
+              {t("billing.recommendedPlan", { plan: recommendedPlan?.name ?? "" })}
             </Badge>
             <span className="text-xs text-muted-foreground">
-              Higher included credits and more active models.
+              {t("billing.higherCreditsMoreModels")}
             </span>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-2">
           <Button variant="ghost" onClick={closeUpgradeModal}>
-            Not now
+            {t("billing.notNow")}
           </Button>
           <Button asChild variant="outline">
-            <Link href="/pricing">See all plans</Link>
+            <Link href="/pricing">{t("billing.seeAllPlans")}</Link>
           </Button>
           {recommendedPlan ? (
             <Button
@@ -81,7 +82,7 @@ export function UpgradeModal() {
                 closeUpgradeModal();
               }}
             >
-              Upgrade to {recommendedPlan.name}
+              {t("billing.upgradeToPlan", { plan: recommendedPlan.name })}
             </Button>
           ) : null}
         </div>

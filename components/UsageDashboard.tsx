@@ -9,12 +9,14 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { RefreshCw, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/lib/i18n";
 
 /**
  * Usage Dashboard - displays API usage statistics
  * Shows real usage from DB when available, falls back to local estimates
  */
 export function UsageDashboard() {
+  const { t, formatDate, formatNumber: formatLocalizedNumber } = useI18n();
   // Local usage store (client-side estimates)
   const localUsage = useUsageStore();
   
@@ -26,8 +28,8 @@ export function UsageDashboard() {
   const totalTokens = hasDbData ? dbSummary.totalTokens : (localUsage.totalInputTokens + localUsage.totalOutputTokens);
   const totalCostUsd = hasDbData ? dbSummary.totalCostUsd : localUsage.totalCostUsd;
   const periodStart = hasDbData 
-    ? dbSummary.periodStart.toLocaleDateString() 
-    : new Date(localUsage.periodStart).toLocaleDateString();
+    ? formatDate(dbSummary.periodStart)
+    : formatDate(new Date(localUsage.periodStart));
 
   const modelBreakdown = useMemo(() => {
     if (hasDbData && dbSummary.byModel) {
@@ -54,12 +56,14 @@ export function UsageDashboard() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold">Usage Statistics</h2>
+          <h2 className="text-lg font-semibold">{t("billing.usageStatistics")}</h2>
           <p className="text-sm text-muted-foreground">
-            {hasDbData ? "Current billing period" : `Since ${periodStart}`}
+            {hasDbData
+              ? t("billing.currentBillingPeriod")
+              : t("billing.sinceDate", { date: periodStart })}
             {!hasDbData && (
               <Badge variant="outline" className="ml-2 text-xs">
-                Local estimates
+                {t("billing.localEstimates")}
               </Badge>
             )}
           </p>
@@ -72,7 +76,7 @@ export function UsageDashboard() {
           className="h-8 w-8 p-0"
         >
           <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-          <span className="sr-only">Refresh usage</span>
+          <span className="sr-only">{t("billing.refreshUsage")}</span>
         </Button>
       </div>
 
@@ -80,9 +84,9 @@ export function UsageDashboard() {
       {quota && (
         <div className="rounded-lg border bg-card p-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">Daily Token Quota</span>
+            <span className="text-sm font-medium">{t("billing.dailyTokenQuota")}</span>
             <span className="text-sm text-muted-foreground">
-              {formatNumber(quota.used)} / {formatNumber(quota.limit)}
+              {formatCompactNumber(quota.used, formatLocalizedNumber)} / {formatCompactNumber(quota.limit, formatLocalizedNumber)}
             </span>
           </div>
           <Progress 
@@ -91,17 +95,19 @@ export function UsageDashboard() {
           />
           <div className="mt-2 flex items-center justify-between">
             <span className="text-xs text-muted-foreground">
-              {formatNumber(quota.remaining)} tokens remaining today
+              {t("billing.tokensRemainingToday", {
+                count: formatCompactNumber(quota.remaining, formatLocalizedNumber),
+              })}
             </span>
             {quotaStatus.isNearLimit && !quotaStatus.isOverLimit && (
               <Badge variant="outline" className="text-yellow-600 border-yellow-300">
                 <AlertTriangle className="h-3 w-3 mr-1" />
-                Near limit
+                {t("billing.nearLimit")}
               </Badge>
             )}
             {quotaStatus.isOverLimit && (
               <Badge variant="destructive">
-                Quota exceeded
+                {t("billing.quotaExceeded")}
               </Badge>
             )}
           </div>
@@ -110,33 +116,53 @@ export function UsageDashboard() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          title="Total Tokens"
-          value={formatNumber(totalTokens)}
-          description={hasDbData ? "Actual token usage" : "Estimated tokens"}
+          title={t("billing.totalTokens")}
+          value={formatCompactNumber(totalTokens, formatLocalizedNumber)}
+          description={
+            hasDbData
+              ? t("billing.actualTokenUsage")
+              : t("billing.estimatedTokens")
+          }
         />
         <StatCard
-          title="Input Tokens"
-          value={formatNumber(hasDbData ? Object.values(dbSummary.byModel).reduce((sum, m) => sum + m.promptTokens, 0) : localUsage.totalInputTokens)}
-          description="Prompt tokens"
+          title={t("billing.inputTokens")}
+          value={formatCompactNumber(
+            hasDbData
+              ? Object.values(dbSummary.byModel).reduce(
+                  (sum, m) => sum + m.promptTokens,
+                  0,
+                )
+              : localUsage.totalInputTokens,
+            formatLocalizedNumber,
+          )}
+          description={t("billing.promptTokens")}
         />
         <StatCard
-          title="Output Tokens"
-          value={formatNumber(hasDbData ? Object.values(dbSummary.byModel).reduce((sum, m) => sum + m.completionTokens, 0) : localUsage.totalOutputTokens)}
-          description="Completion tokens"
+          title={t("billing.outputTokens")}
+          value={formatCompactNumber(
+            hasDbData
+              ? Object.values(dbSummary.byModel).reduce(
+                  (sum, m) => sum + m.completionTokens,
+                  0,
+                )
+              : localUsage.totalOutputTokens,
+            formatLocalizedNumber,
+          )}
+          description={t("billing.completionTokens")}
         />
         <StatCard
-          title="Cost"
+          title={t("billing.cost")}
           value={`$${totalCostUsd.toFixed(4)}`}
-          description={hasDbData ? "Actual cost" : "Estimated cost"}
+          description={hasDbData ? t("billing.actualCost") : t("billing.estimatedCost")}
         />
       </div>
 
       <Separator />
 
       <div>
-        <h3 className="mb-4 text-sm font-semibold">Usage by Model</h3>
+        <h3 className="mb-4 text-sm font-semibold">{t("billing.usageByModel")}</h3>
         {modelBreakdown.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No usage data yet.</p>
+          <p className="text-sm text-muted-foreground">{t("billing.noUsageDataYet")}</p>
         ) : (
           <div className="space-y-2">
             {modelBreakdown.map(({ model, count, tokens, cost }) => (
@@ -147,7 +173,10 @@ export function UsageDashboard() {
                 <div>
                   <p className="font-medium">{model}</p>
                   <p className="text-xs text-muted-foreground">
-                    {count} requests · {formatNumber(tokens)} tokens
+                    {t("billing.requestsAndTokens", {
+                      count,
+                      tokens: formatCompactNumber(tokens, formatLocalizedNumber),
+                    })}
                   </p>
                 </div>
                 <span className="font-mono text-sm">
@@ -186,8 +215,12 @@ function StatCard({
   );
 }
 
-function formatNumber(num: number): string {
-  if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
-  if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
-  return num.toString();
+function formatCompactNumber(
+  num: number,
+  formatNumber: (value: number, options?: Intl.NumberFormatOptions) => string,
+): string {
+  return formatNumber(num, {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  });
 }

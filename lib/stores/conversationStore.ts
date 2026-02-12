@@ -1,7 +1,7 @@
-import { nanoid } from "nanoid";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
+import { normalizeLocale } from "@/lib/i18n/locale";
 import type {
   Conversation,
   Message,
@@ -60,7 +60,7 @@ interface ConversationStoreActions {
 export type ConversationStore = ConversationStoreState &
   ConversationStoreActions;
 
-const defaultProjects: Project[] = [
+const defaultProjectsEn: Project[] = [
   {
     id: "proj-ops",
     name: "Ops Automation",
@@ -75,15 +75,51 @@ const defaultProjects: Project[] = [
   },
 ];
 
+const defaultProjectsMn: Project[] = [
+  {
+    id: "proj-ops",
+    name: "Үйл ажиллагааны автоматжуулалт",
+    description: "Дэмжлэг ба төлбөрийн асуултыг ангилж автоматжуулна",
+    createdAt: Date.now() - 1000 * 60 * 60 * 24 * 3,
+  },
+  {
+    id: "proj-research",
+    name: "Судалгааны дэвтэр",
+    description: "Эшлэлтэй олон загварын судалгааны туршилтууд",
+    createdAt: Date.now() - 1000 * 60 * 60 * 24 * 10,
+  },
+];
+
+function getSeedLocale(): "en" | "mn" {
+  if (typeof window === "undefined") return "en";
+  try {
+    const raw = window.localStorage.getItem("multi-model-app-settings");
+    if (!raw) return "en";
+    const parsed = JSON.parse(raw) as { state?: { locale?: string } };
+    return normalizeLocale(parsed.state?.locale) === "mn" ? "mn" : "en";
+  } catch {
+    return "en";
+  }
+}
+
+function getDefaultChatTitle(): string {
+  return getSeedLocale() === "mn" ? "Шинэ чат" : "New chat";
+}
+
+function getDefaultProjects(): Project[] {
+  const source = getSeedLocale() === "mn" ? defaultProjectsMn : defaultProjectsEn;
+  return source.map((project) => ({ ...project }));
+}
+
 export const useConversationStore = create<ConversationStore>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       conversations: [],
-      projects: defaultProjects,
+      projects: getDefaultProjects(),
       currentConversationId: null,
 
-      createConversation: (title = "New chat", projectId) => {
-        const id = nanoid();
+      createConversation: (title = getDefaultChatTitle(), projectId) => {
+        const id = crypto.randomUUID();
         const conversation: Conversation = {
           id,
           title,
@@ -126,7 +162,7 @@ export const useConversationStore = create<ConversationStore>()(
         set((state) => ({
           projects: [
             {
-              id: nanoid(),
+              id: crypto.randomUUID(),
               name,
               description,
               createdAt: Date.now(),
@@ -138,7 +174,7 @@ export const useConversationStore = create<ConversationStore>()(
       resetConversations: () =>
         set({
           conversations: [],
-          projects: defaultProjects,
+          projects: getDefaultProjects(),
           currentConversationId: null,
         }),
 
@@ -206,7 +242,7 @@ export const useConversationStore = create<ConversationStore>()(
                 return {
                   ...msg,
                   runs: msg.runs.map((run) =>
-                    run.status === "streaming"
+                    run.status === "streaming" || run.status === "queued"
                       ? {
                           ...run,
                           status: "done" as RunStatus,

@@ -12,8 +12,10 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useBillingStore } from "@/lib/billing/store";
+import { useI18n } from "@/lib/i18n";
 
 export function OutOfCreditsModal() {
+  const { t } = useI18n();
   const { ui, closeOutOfCreditsModal, openTopUpModal } = useBillingStore();
 
   return (
@@ -28,21 +30,18 @@ export function OutOfCreditsModal() {
               <AlertTriangle className="h-4 w-4" />
             </div>
             <div>
-              <DialogTitle>Out of credits</DialogTitle>
-              <DialogDescription>
-                You&apos;ve used all your included and top-up credits for this
-                period.
-              </DialogDescription>
+              <DialogTitle>{t("billing.outOfCredits")}</DialogTitle>
+              <DialogDescription>{t("billing.outOfCreditsDescription")}</DialogDescription>
             </div>
           </div>
         </DialogHeader>
 
         <div className="flex flex-wrap items-center justify-end gap-2">
           <Button variant="ghost" onClick={closeOutOfCreditsModal}>
-            Not now
+            {t("billing.notNow")}
           </Button>
           <Button asChild variant="outline">
-            <Link href="/pricing">Upgrade plan</Link>
+            <Link href="/pricing">{t("billing.upgradePlan")}</Link>
           </Button>
           <Button
             onClick={() => {
@@ -50,7 +49,7 @@ export function OutOfCreditsModal() {
               openTopUpModal();
             }}
           >
-            Top up credits
+            {t("billing.topUpCreditsAction")}
           </Button>
         </div>
       </DialogContent>

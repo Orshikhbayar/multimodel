@@ -1,5 +1,6 @@
 import { formatCredits } from "@/lib/billing/utils";
 import type { Currency } from "@/lib/billing/types";
+import { useI18n } from "@/lib/i18n";
 
 export function UsageBars({
   includedRemaining,
@@ -12,6 +13,7 @@ export function UsageBars({
   topUpBalance: number;
   currency: Currency;
 }) {
+  const { t, locale } = useI18n();
   const includedUsed = Math.max(0, includedTotal - includedRemaining);
   const includedPercent =
     includedTotal > 0 ? (includedUsed / includedTotal) * 100 : 0;
@@ -20,9 +22,11 @@ export function UsageBars({
     <div className="space-y-4">
       <div className="space-y-2">
         <div className="flex items-center justify-between text-xs">
-          <span className="text-muted-foreground">Included credits</span>
+          <span className="text-muted-foreground">{t("billing.includedCredits")}</span>
           <span className="font-medium">
-            {formatCredits(includedRemaining, currency)} remaining
+            {t("billing.remaining", {
+              credits: formatCredits(includedRemaining, currency, locale),
+            })}
           </span>
         </div>
         <div className="h-2 w-full rounded-full bg-muted">
@@ -34,15 +38,15 @@ export function UsageBars({
           />
         </div>
         <p className="text-[11px] text-muted-foreground">
-          Included credits reset monthly.
+          {t("billing.includedCreditsResetMonthly")}
         </p>
       </div>
 
       <div className="space-y-2">
         <div className="flex items-center justify-between text-xs">
-          <span className="text-muted-foreground">Top-up balance</span>
+          <span className="text-muted-foreground">{t("billing.topUpBalance")}</span>
           <span className="font-medium">
-            {formatCredits(topUpBalance, currency)}
+            {formatCredits(topUpBalance, currency, locale)}
           </span>
         </div>
         <div className="h-2 w-full rounded-full bg-muted">
@@ -52,7 +56,7 @@ export function UsageBars({
           />
         </div>
         <p className="text-[11px] text-muted-foreground">
-          Top-ups never expire.
+          {t("billing.topUpsNeverExpireShort")}
         </p>
       </div>
     </div>

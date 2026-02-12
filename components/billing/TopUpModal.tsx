@@ -10,10 +10,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useBillingStore } from "@/lib/billing/store";
+import { useI18n } from "@/lib/i18n";
 import { formatCurrency } from "@/lib/billing/utils";
 import { TOP_UP_PACKS, getTopUpPayPrice } from "@/lib/billing/plans";
 
 export function TopUpModal() {
+  const { t, locale } = useI18n();
   const { ui, currency, topUp, closeTopUpModal } = useBillingStore();
 
   return (
@@ -23,10 +25,8 @@ export function TopUpModal() {
     >
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Top up credits</DialogTitle>
-          <DialogDescription>
-            Add pay-as-you-go credits on top of your included monthly balance.
-          </DialogDescription>
+          <DialogTitle>{t("billing.topUpCreditsTitle")}</DialogTitle>
+          <DialogDescription>{t("billing.topUpCreditsDescription")}</DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-3 md:grid-cols-3">
@@ -39,14 +39,15 @@ export function TopUpModal() {
               >
                 <div className="flex items-center justify-between">
                   <p className="font-semibold">{pack.label}</p>
-                  <Badge variant="secondary">One-time</Badge>
+                  <Badge variant="secondary">{t("billing.oneTime")}</Badge>
                 </div>
                 <p className="mt-3 text-2xl font-semibold">
-                  {formatCurrency(amount, currency)}
+                  {formatCurrency(amount, currency, locale)}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {formatCurrency(pack.creditUsd, "USD")} ledger credits - no
-                  expiry
+                  {t("billing.ledgerCreditsNoExpiry", {
+                    credits: formatCurrency(pack.creditUsd, "USD", locale),
+                  })}
                 </p>
                 <Button
                   className="mt-4 w-full"
@@ -55,7 +56,7 @@ export function TopUpModal() {
                     closeTopUpModal();
                   }}
                 >
-                  Add credits
+                  {t("billing.addCredits")}
                 </Button>
               </div>
             );
@@ -63,8 +64,7 @@ export function TopUpModal() {
         </div>
 
         <div className="rounded-lg border border-dashed border-muted/60 bg-background/40 px-4 py-3 text-xs text-muted-foreground">
-          Top-ups never expire. They are used only after your included monthly
-          credits are spent.
+          {t("billing.topUpsNeverExpire")}
         </div>
       </DialogContent>
     </Dialog>

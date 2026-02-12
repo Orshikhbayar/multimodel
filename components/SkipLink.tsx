@@ -1,10 +1,14 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n";
+
 /**
  * Skip navigation link for accessibility
  * Hidden by default, appears on focus for keyboard users
  */
 export function SkipLink({ targetId = "main-content" }: { targetId?: string }) {
+  const { t } = useI18n();
+
   return (
     <a
       href={`#${targetId}`}
@@ -29,7 +33,7 @@ export function SkipLink({ targetId = "main-content" }: { targetId?: string }) {
         focus:ring-offset-2
       "
     >
-      Skip to main content
+      {t("accessibility.skipToMainContent")}
     </a>
   );
 }

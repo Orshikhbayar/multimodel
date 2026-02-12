@@ -10,6 +10,11 @@ export { useModelStore, type ModelStore } from "./modelStore";
 export {
   useSettingsStore,
   type SettingsStore,
+  type WorkflowPreset,
+  type ModeOption,
+  type WorkflowPresetOption,
   MODE_OPTIONS,
+  WORKFLOW_PRESETS,
 } from "./settingsStore";
 export { useStreamStore, type StreamStore } from "./streamStore";
+export { useWorkspaceStore, type WorkspaceStore } from "./workspaceStore";

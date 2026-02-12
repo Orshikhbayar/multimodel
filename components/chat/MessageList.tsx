@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageItem } from "./MessageItem";
 import { ContentColumn } from "@/components/layout";
+import { useI18n } from "@/lib/i18n";
 import type { Conversation, ModelSlot, Run } from "@/lib/types";
 
 interface MessageListProps {
@@ -22,6 +23,7 @@ export function MessageList({
   onShowSources,
   onShowDisagreements,
 }: MessageListProps) {
+  const { t } = useI18n();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const stickToBottomRef = useRef(true);
@@ -72,7 +74,7 @@ export function MessageList({
       ref={scrollAreaRef}
       className="flex-1 rounded-2xl bg-[hsl(var(--app-panel))] shadow-inner"
       role="log"
-      aria-label="Chat messages"
+      aria-label={t("accessibility.chatMessages")}
       aria-live="polite"
     >
       <ContentColumn
@@ -85,6 +87,12 @@ export function MessageList({
             message.role === "assistant" &&
             (!nextMessage || nextMessage.role === "user");
           const retryContent =
+            message.role === "assistant"
+              ? [...messages.slice(0, index)]
+                  .reverse()
+                  .find((entry) => entry.role === "user")?.content
+              : undefined;
+          const prompt =
             message.role === "assistant"
               ? [...messages.slice(0, index)]
                   .reverse()
@@ -106,6 +114,7 @@ export function MessageList({
               message={message}
               conversationId={conversation?.id}
               run={message.role === "assistant" ? run : undefined}
+              prompt={prompt}
               retryContent={retryContent}
               isTurnEnd={isTurnEnd}
               onShowSources={onShowSources}

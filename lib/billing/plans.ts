@@ -1,19 +1,37 @@
 import type { Plan, PlanId, TopUpPack, TopUpPackId } from "./types";
 import { convertCurrency } from "./utils";
+import { MODELS } from "@/lib/modelCatalog";
 
 const FREE_MODELS = [
-  "openai/gpt-4.1",
-  "anthropic/claude-3.5",
-  "google/gemini-2.0",
-  "xai/grok-3",
+  "openai/gpt-5.2",
+  "anthropic/claude-sonnet-4",
+  "google/gemini-3-pro-preview",
+  "xai/grok-4",
   "deepseek/deepseek-chat",
 ];
 
-const PLUS_MODELS = [...FREE_MODELS, "openai/gpt-5.1"];
+const PLUS_MODELS = [
+  ...FREE_MODELS,
+  "openai/gpt-5-mini",
+  "google/gemini-3-flash-preview",
+  "deepseek/deepseek-reasoner",
+  "openai/gpt-4.1",
+  "anthropic/claude-3.5",
+  "google/gemini-2.5-flash",
+  "google/gemini-2.0",
+  "xai/grok-3",
+];
 
-const PRO_MODELS = [...PLUS_MODELS, "anthropic/claude-opus-4"];
+const PRO_MODELS = [
+  ...PLUS_MODELS,
+  "openai/gpt-5.2-codex",
+  "anthropic/claude-opus-4.1",
+  "google/gemini-3-pro-image-preview",
+  "openai/gpt-5.1",
+  "anthropic/claude-opus-4",
+];
 
-const TEAM_MODELS = [...PRO_MODELS];
+const TEAM_MODELS = MODELS.map((model) => model.id);
 
 export const PLANS: Plan[] = [
   {

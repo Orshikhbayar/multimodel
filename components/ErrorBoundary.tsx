@@ -3,6 +3,9 @@
 import React, { Component, type ReactNode } from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/lib/i18n";
+import { t } from "@/lib/i18n/translate";
+import { useAppSettingsStore } from "@/lib/state/settingsStore";
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -39,6 +42,7 @@ export class ErrorBoundary extends Component<
 
   render() {
     if (this.state.hasError) {
+      const locale = useAppSettingsStore.getState().locale;
       if (this.props.fallback) {
         return this.props.fallback;
       }
@@ -49,9 +53,11 @@ export class ErrorBoundary extends Component<
             <AlertTriangle className="h-6 w-6 text-destructive" />
           </div>
           <div className="space-y-2">
-            <h3 className="text-lg font-semibold">Something went wrong</h3>
+            <h3 className="text-lg font-semibold">
+              {t(locale, "errors.somethingWentWrong")}
+            </h3>
             <p className="text-sm text-muted-foreground max-w-md">
-              {this.state.error?.message || "An unexpected error occurred."}
+              {this.state.error?.message || t(locale, "auth.unexpectedError")}
             </p>
           </div>
           <Button
@@ -61,7 +67,7 @@ export class ErrorBoundary extends Component<
             className="gap-2"
           >
             <RefreshCw className="h-4 w-4" />
-            Try again
+            {t(locale, "errors.tryAgain")}
           </Button>
         </div>
       );
@@ -75,6 +81,7 @@ export class ErrorBoundary extends Component<
  * Wrapper for chat-specific error handling with recovery options
  */
 export function ChatErrorBoundary({ children }: { children: ReactNode }) {
+  const { t } = useI18n();
   return (
     <ErrorBoundary
       fallback={
@@ -83,15 +90,14 @@ export function ChatErrorBoundary({ children }: { children: ReactNode }) {
             <AlertTriangle className="h-8 w-8 text-muted-foreground" />
           </div>
           <div className="space-y-2 text-center">
-            <h2 className="text-xl font-semibold">Chat failed to load</h2>
+            <h2 className="text-xl font-semibold">{t("errors.chatFailedLoad")}</h2>
             <p className="text-sm text-muted-foreground max-w-sm">
-              There was a problem loading this conversation. Try refreshing the
-              page.
+              {t("errors.chatFailedLoadDescription")}
             </p>
           </div>
           <Button onClick={() => window.location.reload()} className="gap-2">
             <RefreshCw className="h-4 w-4" />
-            Refresh page
+            {t("errors.refreshPage")}
           </Button>
         </div>
       }

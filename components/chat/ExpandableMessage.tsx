@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 export type ExpandableMessageProps = {
@@ -41,6 +42,7 @@ export function ExpandableMessage({
   showLongHint = true,
 }: ExpandableMessageProps) {
   const [expanded, setExpanded] = useState(false);
+  const { t } = useI18n();
 
   const estimatedLineCount = Math.ceil(contentLength / 90);
   const effectiveLineCount = Math.max(contentLineCount, estimatedLineCount);
@@ -104,17 +106,17 @@ export function ExpandableMessage({
               onClick={() => setExpanded((v) => !v)}
               aria-expanded={expanded}
               aria-controls={contentId}
-              className="ui-hover-lift-sm inline-flex items-center gap-1 rounded-sm text-xs font-medium text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
             >
               {expanded ? (
                 <>
                   <ChevronUp className="h-3.5 w-3.5" aria-hidden="true" />
-                  Show less
+                  {t("chat.showLess")}
                 </>
               ) : (
                 <>
                   <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
-                  {isVeryLong ? longTextLabel : "Show more"}
+                  {isVeryLong ? longTextLabel : t("chat.showMore")}
                 </>
               )}
             </button>
@@ -122,7 +124,7 @@ export function ExpandableMessage({
             {/* Hint for very long content */}
             {!expanded && isVeryLong && showLongHint && (
               <span className="mt-1 text-xs text-muted-foreground">
-                Long paste collapsed
+                {t("chat.longPasteCollapsed")}
               </span>
             )}
           </div>

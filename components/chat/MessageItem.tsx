@@ -17,11 +17,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { ContentColumn } from "@/components/layout";
 import { ExpandableMessage } from "./ExpandableMessage";
+import { UnifiedAnswerFlow } from "./UnifiedAnswerFlow";
 import {
   PrismLight,
   SUPPORTED_LANGUAGES,
   normalizeLanguage,
 } from "./codeHighlight";
+import { useI18n } from "@/lib/i18n";
 import type { Message, Run } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useChatActions } from "@/lib/hooks/useChatActions";
@@ -30,6 +32,7 @@ import { useConversationStore } from "@/lib/stores";
 interface MessageItemProps {
   message: Message;
   run?: Run;
+  prompt?: string;
   conversationId?: string;
   retryContent?: string;
   isTurnEnd?: boolean;
@@ -40,6 +43,7 @@ interface MessageItemProps {
 export function MessageItem({
   message,
   run,
+  prompt,
   conversationId,
   retryContent,
   isTurnEnd = false,
@@ -47,8 +51,14 @@ export function MessageItem({
   onShowDisagreements,
 }: MessageItemProps) {
   const isUser = message.role === "user";
-  const text = run?.text?.trim() || message.content;
+  const assistantRuns = message.runs ?? (run ? [run] : []);
+  const unifiedRun = assistantRuns.find((entry) => entry.model === "Unified");
+  const perspectiveRuns = assistantRuns.filter((entry) => entry.model !== "Unified");
+  const showUnifiedFlow = !isUser && Boolean(unifiedRun) && perspectiveRuns.length >= 2;
+  const selectedRun = showUnifiedFlow ? unifiedRun : run;
+  const text = selectedRun?.text?.trim() || message.content;
   const { sendMessage, respondToEditedMessage } = useChatActions();
+  const { t, formatTime } = useI18n();
   const { updateMessageContent } = useConversationStore();
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(message.content);
@@ -63,11 +73,11 @@ export function MessageItem({
 
   const sentAt = useMemo(() => {
     if (!message.createdAt) return "";
-    return new Date(message.createdAt).toLocaleTimeString([], {
+    return formatTime(new Date(message.createdAt), {
       hour: "numeric",
       minute: "2-digit",
     });
-  }, [message.createdAt]);
+  }, [formatTime, message.createdAt]);
 
   const displayContent = isUser ? message.content : text;
   const displayLineCount = displayContent.split("\n").length;
@@ -76,7 +86,7 @@ export function MessageItem({
     <ContentColumn withPadding={false} className="w-full">
       <article
         role="article"
-        aria-label={isUser ? "Your message" : "Assistant response"}
+        aria-label={isUser ? t("chat.yourMessage") : t("chat.assistantResponse")}
         className={cn(
           "w-full space-y-1",
           isUser ? "flex justify-end" : "flex justify-start",
@@ -91,117 +101,124 @@ export function MessageItem({
         >
           {!isUser && (
             <div className="mb-1 text-[11px] text-muted-foreground">
-              {run?.model ?? "Assistant"}
+              {showUnifiedFlow
+                ? t("chat.unifiedAnswer")
+                : selectedRun?.model ?? t("chat.assistant")}
             </div>
           )}
-          <ExpandableMessage
-            id={`message-${message.id}`}
-            align={isUser ? "end" : "start"}
-            collapsible={isUser}
-            containerClassName={cn(
-              isUser
-                ? "ml-auto w-fit max-w-[85%]"
-                : "w-full max-w-[85%]",
-            )}
-            contentClassName={cn(
-              "message-bubble prose prose-sm dark:prose-invert max-w-none leading-relaxed break-words",
-              "prose-p:my-2 prose-li:my-1 prose-ul:my-2 prose-ol:my-2",
-              "prose-headings:my-3 prose-blockquote:my-2",
-              isUser
-                ? cn(
-                    "w-fit rounded-2xl bg-primary/15 px-4 py-3 text-foreground/90 whitespace-pre-wrap",
-                    isEditing ? "bg-primary/10" : "",
-                  )
-                : cn(
-                    "w-full rounded-2xl bg-muted/20 px-4 py-3 text-foreground/90",
-                    "chat-markdown",
-                  ),
-            )}
-            fadeFromClassName={
-              isUser ? "from-muted/50" : "from-[hsl(var(--app-panel))]"
-            }
-            contentLength={displayContent.length}
-            contentLineCount={displayLineCount}
-            longTextLabel="Show full text"
-          >
-            {isUser && isEditing ? (
-              <div className="space-y-3">
-                <textarea
-                  ref={editRef}
-                  value={draft}
-                  onChange={(event) => setDraft(event.target.value)}
-                  className="w-full min-h-[160px] rounded-xl border border-white/10 bg-background/60 p-4 text-sm leading-relaxed outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                />
-                <div className="flex items-center justify-end gap-3 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setDraft(message.content);
-                      setIsEditing(false);
-                    }}
-                    className="ui-hover-lift-sm inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-muted-foreground transition hover:text-foreground"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const next = draft.trim();
-                      if (!next || !conversationId) {
+          {showUnifiedFlow && unifiedRun ? (
+            <div className="w-full max-w-[95%]">
+              <UnifiedAnswerFlow
+                prompt={prompt}
+                unifiedRun={unifiedRun}
+                perspectiveRuns={perspectiveRuns}
+              />
+            </div>
+          ) : (
+            <ExpandableMessage
+              id={`message-${message.id}`}
+              align={isUser ? "end" : "start"}
+              collapsible={isUser}
+              containerClassName={cn(
+                isUser ? "ml-auto w-fit max-w-[85%]" : "w-full max-w-[85%]",
+              )}
+              contentClassName={cn(
+                "message-bubble prose prose-sm dark:prose-invert max-w-none leading-relaxed break-words",
+                "prose-p:my-2 prose-li:my-1 prose-ul:my-2 prose-ol:my-2",
+                "prose-headings:my-3 prose-blockquote:my-2",
+                isUser
+                  ? cn(
+                      "w-fit rounded-2xl bg-primary/15 px-4 py-3 text-foreground/90 whitespace-pre-wrap",
+                      isEditing ? "bg-primary/10" : "",
+                    )
+                  : cn(
+                      "w-full rounded-2xl bg-muted/20 px-4 py-3 text-foreground/90",
+                      "chat-markdown",
+                    ),
+              )}
+              fadeFromClassName={
+                isUser ? "from-muted/50" : "from-[hsl(var(--app-panel))]"
+              }
+              contentLength={displayContent.length}
+              contentLineCount={displayLineCount}
+              longTextLabel={t("chat.showFullText")}
+            >
+              {isUser && isEditing ? (
+                <div className="space-y-3">
+                  <textarea
+                    ref={editRef}
+                    value={draft}
+                    onChange={(event) => setDraft(event.target.value)}
+                    className="w-full min-h-[160px] rounded-xl border border-white/10 bg-background/60 p-4 text-sm leading-relaxed outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+                  <div className="flex items-center justify-end gap-3 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDraft(message.content);
                         setIsEditing(false);
-                        return;
-                      }
-                      updateMessageContent(conversationId, message.id, next);
-                      respondToEditedMessage(
-                        conversationId,
-                        message.id,
-                        next,
-                      );
-                      setIsEditing(false);
-                    }}
-                    className="ui-hover-lift-sm inline-flex items-center gap-1 rounded-md border border-white/10 px-3 py-1.5 text-foreground transition hover:bg-muted/40"
-                  >
-                    <Check className="h-3.5 w-3.5" />
-                    Save
-                  </button>
+                      }}
+                      className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-muted-foreground transition hover:text-foreground"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                      {t("common.cancel")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = draft.trim();
+                        if (!next || !conversationId) {
+                          setIsEditing(false);
+                          return;
+                        }
+                        updateMessageContent(conversationId, message.id, next);
+                        respondToEditedMessage(conversationId, message.id, next);
+                        setIsEditing(false);
+                      }}
+                      className="inline-flex items-center gap-1 rounded-md border border-white/10 px-3 py-1.5 text-foreground transition hover:bg-muted/40"
+                    >
+                      <Check className="h-3.5 w-3.5" />
+                      {t("common.save")}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                skipHtml
-                components={{
-                  p: ({ children }) => (
-                    <p className="mb-2 last:mb-0">{children}</p>
-                  ),
-                  code: ({ className, children, ...props }) => {
-                    const isInline = !className;
+              ) : (
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  skipHtml
+                  components={{
+                    p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                    code: ({ className, children, ...props }) => {
+                      const isInline = !className;
 
-                    if (isInline) {
-                      return (
-                        <code
-                          className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono"
-                          {...props}
-                        >
-                          {children}
-                        </code>
-                      );
-                    }
+                      if (isInline) {
+                        return (
+                          <code
+                            className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono"
+                            {...props}
+                          >
+                            {children}
+                          </code>
+                        );
+                      }
 
-                    const language =
-                      className?.replace("language-", "") ?? "text";
-                    const code = String(children).replace(/\n$/, "");
-                    return <CodeBlock code={code} language={language} />;
-                  },
-                  pre: ({ children }) => <>{children}</>,
-                }}
-              >
-                {displayContent ||
-                  (run?.status === "streaming" ? "Thinking..." : "")}
-              </ReactMarkdown>
-            )}
-          </ExpandableMessage>
+                      const language = className?.replace("language-", "") ?? "text";
+                      const code = String(children).replace(/\n$/, "");
+                      return <CodeBlock code={code} language={language} />;
+                    },
+                    pre: ({ children }) => <>{children}</>,
+                  }}
+                >
+                  {displayContent ||
+                    (selectedRun?.status === "queued"
+                      ? t("chat.waitingForSlot")
+                      : selectedRun?.status === "streaming"
+                        ? t("chat.thinking")
+                        : "")}
+                </ReactMarkdown>
+              )}
+            </ExpandableMessage>
+          )}
 
           {/* Action buttons for assistant messages */}
           {isUser && !isEditing && (
@@ -211,18 +228,18 @@ export function MessageItem({
               )}
               <button
                 type="button"
-                className="ui-hover-lift-sm rounded-sm hover:text-foreground transition-colors"
-                title="Retry"
-                aria-label="Retry"
+                className="hover:text-foreground transition-colors"
+                title={t("chat.retry")}
+                aria-label={t("chat.retry")}
                 onClick={() => sendMessage(message.content)}
               >
                 <RotateCcw className="h-4 w-4" />
               </button>
               <button
                 type="button"
-                className="ui-hover-lift-sm rounded-sm hover:text-foreground transition-colors"
-                title="Edit"
-                aria-label="Edit"
+                className="hover:text-foreground transition-colors"
+                title={t("chat.edit")}
+                aria-label={t("chat.edit")}
                 onClick={() => {
                   setDraft(message.content);
                   setIsEditing(true);
@@ -233,91 +250,93 @@ export function MessageItem({
               <CopyButton text={message.content} />
               {message.editedAt ? (
                 <span className="text-[11px] text-muted-foreground">
-                  Edited
+                  {t("chat.edited")}
                 </span>
               ) : null}
             </div>
           )}
-          {!isUser && run?.interrupted && (
+          {!isUser && selectedRun?.interrupted && (
             <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-background/40 px-3 py-2 text-[12px] text-muted-foreground">
-              <span>Response was interrupted</span>
+              <span>{t("chat.responseInterrupted")}</span>
               {retryContent ? (
                 <button
                   type="button"
                   onClick={() => sendMessage(retryContent)}
-                  className="ui-hover-lift-sm rounded-md border border-white/10 px-2 py-1 text-[11px] text-foreground transition hover:bg-muted/40"
+                  className="rounded-md border border-white/10 px-2 py-1 text-[11px] text-foreground transition hover:bg-muted/40"
                 >
-                  Retry
+                  {t("chat.retry")}
                 </button>
               ) : null}
             </div>
           )}
-          {!isUser && run && (
+          {!isUser && selectedRun && (
             <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
               <div className="flex items-center gap-2">
                 <CopyButton text={text} />
                 <button
                   type="button"
-                  className="ui-hover-lift-sm rounded-sm hover:text-foreground transition-colors"
-                  title="Upvote"
+                  className="hover:text-foreground transition-colors"
+                  title={t("chat.upvote")}
                 >
                   <ThumbsUp className="h-4 w-4" />
                 </button>
                 <button
                   type="button"
-                  className="ui-hover-lift-sm rounded-sm hover:text-foreground transition-colors"
-                  title="Downvote"
+                  className="hover:text-foreground transition-colors"
+                  title={t("chat.downvote")}
                 >
                   <ThumbsDown className="h-4 w-4" />
                 </button>
                 <div className="relative flex items-center group">
                   <button
                     type="button"
-                    className="ui-hover-lift-sm rounded-sm hover:text-foreground transition-colors"
-                    title="Try again"
+                    className="hover:text-foreground transition-colors"
+                    title={t("chat.tryAgain")}
                     onClick={() =>
                       retryContent ? sendMessage(retryContent) : undefined
                     }
                     disabled={!retryContent}
-                    aria-label="Try again"
+                    aria-label={t("chat.tryAgain")}
                   >
                     <RotateCcw className="h-4 w-4" />
                   </button>
                   {retryContent && (
                     <div className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 w-max -translate-x-1/2 rounded-md bg-black/90 px-2.5 py-2 text-[11px] text-white opacity-0 shadow-lg transition group-hover:opacity-100">
-                      <div className="font-medium">Try again...</div>
+                      <div className="font-medium">{t("chat.tryAgainEllipsis")}</div>
                       <div className="text-[10px] text-white/70">
-                        Used {run.model ?? "Assistant"}
+                        {t("chat.usedModel", {
+                          model: selectedRun.model ?? t("chat.assistant"),
+                        })}
                       </div>
                     </div>
                   )}
                 </div>
-                {run?.status === "error" && (
+                {selectedRun.status === "error" && (
                   <span className="flex items-center gap-1 text-destructive">
                     <TriangleAlert className="h-3 w-3" />
-                    error
+                    {t("chat.error")}
                   </span>
                 )}
               </div>
 
-              {run.sources && (
+              {selectedRun.sources && (
                 <Button
                   variant="ghost"
                   size="sm"
                   className="h-7 px-2 text-xs"
-                  onClick={() => onShowSources?.(run)}
+                  onClick={() => onShowSources?.(selectedRun)}
                 >
-                  Sources
+                  {t("chat.sources")}
                 </Button>
               )}
-              {run.disagreements && (
+              {selectedRun.disagreements && (
                 <Button
                   variant="ghost"
                   size="sm"
                   className="h-7 px-2 text-xs"
-                  onClick={() => onShowDisagreements?.(run)}
+                  onClick={() => onShowDisagreements?.(selectedRun)}
                 >
-                  Disagreements
+                  {t("chat.disagreements")}
                 </Button>
               )}
             </div>
@@ -331,6 +350,7 @@ export function MessageItem({
 /** Copy button with feedback */
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
+  const { t } = useI18n();
 
   const handleCopy = async () => {
     try {
@@ -345,8 +365,8 @@ function CopyButton({ text }: { text: string }) {
   return (
     <button
       type="button"
-      className="ui-hover-lift-sm rounded-sm hover:text-foreground transition-colors"
-      title="Copy"
+      className="hover:text-foreground transition-colors"
+      title={t("common.copy")}
       onClick={handleCopy}
     >
       {copied ? (
@@ -361,11 +381,12 @@ function CopyButton({ text }: { text: string }) {
 /** Code block with copy functionality */
 function CodeBlock({ code, language }: { code: string; language?: string }) {
   const [copied, setCopied] = useState(false);
+  const { t } = useI18n();
   const normalizedLanguage = normalizeLanguage(language);
   const isSupported = SUPPORTED_LANGUAGES.has(normalizedLanguage);
   const label = isSupported
     ? normalizedLanguage.toUpperCase()
-    : "TEXT";
+    : t("common.text");
 
   const handleCopy = async () => {
     try {
@@ -384,14 +405,14 @@ function CodeBlock({ code, language }: { code: string; language?: string }) {
         <button
           type="button"
           onClick={handleCopy}
-          className="code-block__copy ui-hover-lift-sm"
+          className="code-block__copy"
         >
           {copied ? (
             <Check className="h-3 w-3" />
           ) : (
             <Copy className="h-3 w-3" />
           )}
-          {copied ? "Copied" : "Copy"}
+          {copied ? t("common.copied") : t("common.copy")}
         </button>
       </div>
       <PrismLight

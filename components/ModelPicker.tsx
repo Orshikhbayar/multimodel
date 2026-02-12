@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Popover,
   PopoverContent,
@@ -12,38 +12,32 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import {
-  Check,
-  ChevronDown,
-  Layers,
-  Lock,
-  Plus,
-  Settings,
-  Sparkles,
-  Cloud,
-  Brain,
-  Flame,
-  Cpu,
-} from "lucide-react";
+import { Check, ChevronDown, Lock, Plus, Search, Settings } from "lucide-react";
 
-import {
-  MODELS,
-  PROVIDERS,
-  type ProviderIconKey,
-  getProviderById,
-} from "@/lib/modelCatalog";
+import { ModelGlyph } from "@/components/ModelGlyph";
+import { MODELS, PROVIDERS, getProviderById } from "@/lib/modelCatalog";
+import { useI18n, type I18nKey } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
-const PROVIDER_ICONS: Record<
-  ProviderIconKey,
-  React.ComponentType<{ className?: string }>
-> = {
-  sparkles: Sparkles,
-  brain: Brain,
-  cloud: Cloud,
-  flame: Flame,
-  cpu: Cpu,
-  layers: Layers,
+const MODEL_DESCRIPTION_KEYS: Partial<Record<string, I18nKey>> = {
+  "openai/gpt-5.2": "modelPicker.descGpt52",
+  "openai/gpt-5.2-codex": "modelPicker.descGpt52Codex",
+  "openai/gpt-5-mini": "modelPicker.descGpt5Mini",
+  "openai/gpt-4.1": "modelPicker.descGpt41",
+  "openai/gpt-5.1": "modelPicker.descGpt51",
+  "anthropic/claude-opus-4.1": "modelPicker.descClaudeOpus41",
+  "anthropic/claude-sonnet-4": "modelPicker.descClaudeSonnet4",
+  "anthropic/claude-3.5": "modelPicker.descClaude35",
+  "anthropic/claude-opus-4": "modelPicker.descClaudeOpus4",
+  "google/gemini-3-pro-preview": "modelPicker.descGemini3Pro",
+  "google/gemini-3-pro-image-preview": "modelPicker.descGemini3ProImage",
+  "google/gemini-3-flash-preview": "modelPicker.descGemini3Flash",
+  "google/gemini-2.5-flash": "modelPicker.descGemini25Flash",
+  "google/gemini-2.0": "modelPicker.descGemini20",
+  "xai/grok-4": "modelPicker.descGrok4",
+  "deepseek/deepseek-chat": "modelPicker.descDeepSeekChat",
+  "deepseek/deepseek-reasoner": "modelPicker.descDeepSeekReasoner",
+  "xai/grok-3": "modelPicker.descGrok3",
 };
 
 export function ModelPicker({
@@ -71,8 +65,10 @@ export function ModelPicker({
   popoverSideOffset?: number;
   popoverCollisionPadding?: number;
 }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const selectedModel = MODELS.find((model) => model.id === value) ?? MODELS[0];
   const selectedProvider =
@@ -87,16 +83,33 @@ export function ModelPicker({
   );
 
   const groupedProviders = useMemo(() => {
+    const newModelIdSet = new Set(newModels.map((model) => model.id));
+
     return PROVIDERS.map((provider) => ({
       provider,
-      models: MODELS.filter((model) => model.providerId === provider.id),
+      models: MODELS.filter(
+        (model) =>
+          model.providerId === provider.id && !newModelIdSet.has(model.id),
+      ),
     })).filter((group) => group.models.length > 0);
-  }, []);
+  }, [newModels]);
 
   const searchResults = useMemo(() => {
     if (!query) return [];
-    return MODELS.filter((model) => model.label.toLowerCase().includes(query));
-  }, [query]);
+    return MODELS.filter((model) => {
+      const descriptionKey = MODEL_DESCRIPTION_KEYS[model.id];
+      const description = descriptionKey ? t(descriptionKey) : model.description;
+      return [model.label, description ?? ""].join(" ").toLowerCase().includes(query);
+    });
+  }, [query, t]);
+
+  useEffect(() => {
+    if (!open) return;
+    const frame = window.requestAnimationFrame(() => {
+      searchInputRef.current?.focus();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [open]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -104,7 +117,7 @@ export function ModelPicker({
         {trigger ?? (
           <Button variant="secondary" className="gap-2">
             <span className="truncate">
-              {selectedModel?.label ?? "Select model"}
+              {selectedModel?.label ?? t("topBar.selectModel")}
             </span>
             <ChevronDown className="h-4 w-4" />
           </Button>
@@ -121,14 +134,18 @@ export function ModelPicker({
           maxHeight:
             "min(calc(100vh - 120px), var(--radix-popover-content-available-height))",
         }}
-        className="flex w-[360px] max-w-[85vw] flex-col overflow-hidden rounded-2xl border bg-card p-0 shadow-xl z-[9999]"
+        className="z-[9999] flex w-[380px] max-w-[92vw] flex-col overflow-hidden rounded-2xl border bg-card/95 p-0 shadow-2xl backdrop-blur-xl"
       >
         <div className="flex items-center justify-between px-3 py-3">
           <div className="flex items-center gap-2">
-            <ProviderGlyph providerId={selectedProvider.id} />
+            <ModelGlyph
+              modelId={selectedModel?.id}
+              providerId={selectedProvider.id}
+              size="lg"
+            />
             <div>
               <p className="text-sm font-semibold">
-                {selectedModel?.label ?? "Model"}
+                {selectedModel?.label ?? t("topBar.model")}
               </p>
               <p className="text-xs text-muted-foreground">
                 {selectedProvider?.name ?? ""}
@@ -146,26 +163,29 @@ export function ModelPicker({
 
         <div className="p-2">
           <p className="px-1 pb-2 text-[11px] text-muted-foreground">
-            Tip: use faster models for drafts and stronger models for final
-            answers.
+            {t("modelPicker.tip")}
           </p>
-          <Input
-            value={q}
-            onChange={(event) => setQ(event.target.value)}
-            placeholder="Search models..."
-            className="h-9 text-sm"
-          />
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              ref={searchInputRef}
+              value={q}
+              onChange={(event) => setQ(event.target.value)}
+              placeholder={t("modelPicker.searchModels")}
+              className="h-9 border-border/60 bg-background/70 pl-8 text-sm transition-colors focus-visible:border-primary/60"
+            />
+          </div>
         </div>
 
         <ScrollArea
-          className="flex-1 min-h-0"
+          className="min-h-0 flex-1"
           style={{ maxHeight: "min(360px, 50vh)" }}
         >
           <div className="space-y-3 px-2 pb-2">
             {isSearching ? (
               searchResults.length > 0 ? (
                 <ModelSection
-                  title="Search results"
+                  title={t("modelPicker.searchResults")}
                   models={searchResults}
                   activeId={selectedModel?.id}
                   lockedModelIds={lockedModelIds}
@@ -180,14 +200,14 @@ export function ModelPicker({
                 />
               ) : (
                 <div className="rounded-lg border bg-muted/20 px-3 py-4 text-sm text-muted-foreground">
-                  No models match your search.
+                  {t("modelPicker.noModelsMatch")}
                 </div>
               )
             ) : (
               <>
                 {newModels.length > 0 && (
                   <ModelSection
-                    title="New models"
+                    title={t("modelPicker.newModels")}
                     models={newModels}
                     activeId={selectedModel?.id}
                     lockedModelIds={lockedModelIds}
@@ -234,27 +254,17 @@ export function ModelPicker({
                 setOpen(false);
               }}
               className={cn(
-                "ui-hover-lift-sm flex w-full items-center gap-2 px-3 py-2 text-sm",
-                "text-muted-foreground hover:bg-muted/40",
+                "flex w-full items-center gap-2 px-3 py-2 text-sm text-muted-foreground",
+                "transition-colors duration-150 hover:bg-muted/40 hover:text-foreground",
               )}
             >
               <Settings className="h-4 w-4" />
-              Manage models
+              {t("modelPicker.manageModels")}
             </button>
           </>
         ) : null}
       </PopoverContent>
     </Popover>
-  );
-}
-
-function ProviderGlyph({ providerId }: { providerId: string }) {
-  const provider = getProviderById(providerId);
-  const Icon = provider?.icon ? PROVIDER_ICONS[provider.icon] : Layers;
-  return (
-    <div className="flex h-7 w-7 items-center justify-center rounded-full border bg-muted/40">
-      <Icon className="h-3.5 w-3.5" />
-    </div>
   );
 }
 
@@ -273,25 +283,30 @@ function ModelSection({
   lockedModelIds?: string[];
   onSelectLocked?: (modelId: string) => void;
 }) {
+  const { t } = useI18n();
   if (models.length === 0) return null;
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-1.5">
       <p className="px-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
         {title}
       </p>
       <div className="space-y-1">
         {models.map((model) => {
-          const provider = getProviderById(model.providerId);
           const active = model.id === activeId;
           const locked = lockedModelIds?.includes(model.id);
+          const descriptionKey = MODEL_DESCRIPTION_KEYS[model.id];
+          const description = descriptionKey ? t(descriptionKey) : model.description;
           return (
             <div
               key={model.id}
               className={cn(
-                "ui-hover-lift-sm flex items-center justify-between gap-2 rounded-lg px-2 py-2",
-                active ? "bg-muted/50" : "hover:bg-muted/40",
-                locked && "opacity-70",
+                "group flex items-center justify-between gap-2 rounded-xl border px-2 py-2",
+                "transition-all duration-150",
+                active
+                  ? "border-border bg-muted/60"
+                  : "border-transparent hover:border-border/60 hover:bg-muted/40",
+                locked && "opacity-75",
               )}
             >
               <button
@@ -308,27 +323,32 @@ function ModelSection({
                   locked && "cursor-not-allowed",
                 )}
                 aria-disabled={locked}
-                title={locked ? "Upgrade to unlock this model" : undefined}
+                title={locked ? t("modelPicker.upgradeToUnlock") : undefined}
               >
-                <ProviderGlyph providerId={provider?.id ?? ""} />
-                <div>
+                <ModelGlyph modelId={model.id} providerId={model.providerId} />
+                <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold">{model.label}</span>
+                    <span className="truncate text-sm font-semibold">
+                      {model.label}
+                    </span>
                     {locked ? (
                       <span className="flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] text-muted-foreground">
                         <Lock className="h-3 w-3" />
-                        Locked
+                        {t("modelPicker.locked")}
                       </span>
                     ) : null}
                     {model.tags?.includes("new") ? (
-                      <Badge variant="secondary" className="text-[10px]">
-                        New
+                      <Badge
+                        variant="muted"
+                        className="border-emerald-500/20 bg-emerald-500/10 text-[10px] text-emerald-500 dark:text-emerald-400"
+                      >
+                        {t("navigation.new")}
                       </Badge>
                     ) : null}
                   </div>
-                  {model.description ? (
-                    <p className="text-xs text-muted-foreground">
-                      {model.description}
+                  {description ? (
+                    <p className="truncate text-xs text-muted-foreground">
+                      {description}
                     </p>
                   ) : null}
                 </div>
@@ -343,7 +363,10 @@ function ModelSection({
                   type="button"
                   size="icon"
                   variant={active ? "secondary" : "ghost"}
-                  className={cn("h-7 w-7", locked && "opacity-60")}
+                  className={cn(
+                    "h-7 w-7 transition-all duration-150 group-hover:scale-[1.03]",
+                    locked && "opacity-60",
+                  )}
                   onClick={() => {
                     if (locked) {
                       onSelectLocked?.(model.id);
@@ -351,7 +374,11 @@ function ModelSection({
                     }
                     onSelect(model.id);
                   }}
-                  aria-label={active ? "Selected" : "Select model"}
+                  aria-label={
+                    active
+                      ? t("modelPicker.selected")
+                      : t("modelPicker.selectModelAria")
+                  }
                   aria-disabled={locked}
                 >
                   {locked ? (

@@ -11,6 +11,7 @@ import type { ModelSlot, Run } from "@/lib/types";
 import { useBillingStore } from "@/lib/billing/store";
 import { getPlanById } from "@/lib/billing/plans";
 import { MODELS } from "@/lib/modelCatalog";
+import { useI18n } from "@/lib/i18n";
 
 interface ModelTabsProps {
   runs?: Run[];
@@ -33,6 +34,7 @@ export function ModelTabs({
   onSelectModel,
   onOpenProviderSettings,
 }: ModelTabsProps) {
+  const { t } = useI18n();
   const { currentPlanId, openUpgradeModal } = useBillingStore();
   const plan = getPlanById(currentPlanId);
   const lockedModelIds = MODELS.filter(
@@ -101,10 +103,10 @@ export function ModelTabs({
                     }
                   >
                     {status === "streaming"
-                      ? "Streaming"
+                      ? t("modelPicker.streaming")
                       : status === "done"
-                        ? "Done"
-                        : "Error"}
+                        ? t("modelPicker.done")
+                        : t("modelPicker.error")}
                   </Badge>
                 </div>
                 {status === "streaming" && (
@@ -128,7 +130,7 @@ export function ModelTabs({
                   lockedModelIds={lockedModelIds}
                   onSelectLocked={(modelId) =>
                     openUpgradeModal({
-                      reason: "This model is available on higher tiers.",
+                      reason: t("billing.unlockMoreModels"),
                       lockedModelId: modelId,
                     })
                   }
@@ -137,7 +139,7 @@ export function ModelTabs({
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8 rounded-md border bg-background"
-                      title="Change model"
+                      title={t("modelPicker.changeModel")}
                     >
                       <ChevronDown className="h-4 w-4" />
                     </Button>

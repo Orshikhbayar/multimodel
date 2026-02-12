@@ -6,6 +6,7 @@ import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Sidebar } from "@/components/Sidebar";
+import { useI18n } from "@/lib/i18n";
 
 /**
  * Mobile sidebar wrapper using Sheet drawer
@@ -13,6 +14,7 @@ import { Sidebar } from "@/components/Sidebar";
  */
 export function MobileSidebar() {
   const [open, setOpen] = useState(false);
+  const { t } = useI18n();
 
   return (
     <>
@@ -22,7 +24,7 @@ export function MobileSidebar() {
           variant="outline"
           size="icon"
           onClick={() => setOpen(true)}
-          aria-label="Open navigation menu"
+          aria-label={t("accessibility.openNavigationMenu")}
           className="bg-background/80 backdrop-blur"
         >
           <Menu className="h-5 w-5" />
@@ -32,7 +34,7 @@ export function MobileSidebar() {
       {/* Mobile drawer */}
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="left" className="w-72 p-0">
-          <SheetTitle className="sr-only">Navigation</SheetTitle>
+          <SheetTitle className="sr-only">{t("accessibility.navigation")}</SheetTitle>
           <Sidebar onNavigate={() => setOpen(false)} />
         </SheetContent>
       </Sheet>

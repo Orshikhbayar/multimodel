@@ -42,8 +42,11 @@ export interface StreamResult {
  * Maps internal model IDs to OpenAI model names
  */
 const MODEL_MAP: Record<string, string> = {
+  "openai/gpt-5.2": "gpt-5.2",
+  "openai/gpt-5.2-codex": "gpt-5.2-codex",
+  "openai/gpt-5-mini": "gpt-5-mini",
   "openai/gpt-4.1": "gpt-4.1",
-  "openai/gpt-5.1": "gpt-4.1", // Fallback to gpt-4.1 if 5.1 not available
+  "openai/gpt-5.1": "gpt-5.2", // Legacy alias
   "openai/gpt-4o": "gpt-4o",
   "openai/gpt-4o-mini": "gpt-4o-mini",
 };
