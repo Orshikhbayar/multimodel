@@ -4,6 +4,7 @@ import { useConversationStore } from "@/lib/stores/conversationStore";
 import { useModelStore } from "@/lib/stores/modelStore";
 import { useSettingsStore } from "@/lib/stores/settingsStore";
 import { useBillingStore } from "@/lib/billing/store";
+import { normalizeLocale } from "@/lib/i18n/locale";
 
 import { useAppSettingsStore } from "./settingsStore";
 import { useSessionStore } from "./sessionStore";
@@ -19,7 +20,7 @@ export function signInLocal(payload: {
   const { name, email, plan } = payload;
   const resolvedName = name?.trim() || email?.split("@")[0] || "User";
   const avatarInitial = getInitialFromName(resolvedName || email, "U");
-  const locale = useAppSettingsStore.getState().locale;
+  const locale = normalizeLocale(useAppSettingsStore.getState().locale);
 
   useUserStore.getState().setUser({
     id: `user-${nanoid(8)}`,
@@ -34,8 +35,9 @@ export function signInLocal(payload: {
 }
 
 export function updateLocale(locale: string) {
-  useAppSettingsStore.getState().setLocale(locale);
-  useUserStore.getState().setLocale(locale);
+  const normalizedLocale = normalizeLocale(locale);
+  useAppSettingsStore.getState().setLocale(normalizedLocale);
+  useUserStore.getState().setLocale(normalizedLocale);
 }
 
 export function logoutLocal() {

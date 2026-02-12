@@ -8,12 +8,27 @@ import {
 import type { Message, Run, InteractionMode, ModelSlot } from "@/lib/types";
 import { analytics } from "@/lib/analytics";
 import { useUsageStore } from "@/lib/analytics/usage";
+import { useBillingStore } from "@/lib/billing/store";
+import { useAppSettingsStore } from "@/lib/state/settingsStore";
+import {
+  getLocaleResponseInstruction,
+  normalizeLocale,
+} from "@/lib/i18n/locale";
 
 /**
  * Stream result with status information
  */
 interface StreamResult {
-  status: "done" | "cancelled" | "timeout" | "error" | "rate_limited" | "concurrency_limited" | "quota_exceeded";
+  status:
+    | "done"
+    | "cancelled"
+    | "timeout"
+    | "error"
+    | "rate_limited"
+    | "concurrency_limited"
+    | "quota_exceeded"
+    | "insufficient_credits"
+    | "billing_unavailable";
   requestId?: string;
   elapsedMs?: number;
   error?: string;
@@ -50,11 +65,25 @@ async function fetchStreamingChat(
     // Get request ID from headers
     requestId = response.headers.get("X-Request-Id") ?? undefined;
 
-    // Handle quota exceeded (402 Payment Required)
+    // Handle billing failures (402 Payment Required)
     if (response.status === 402) {
       const errorData = await response.json().catch(() => ({}));
-      onError(errorData.message || "Quota exceeded", {
-        status: "quota_exceeded",
+      const status =
+        errorData.code === "INSUFFICIENT_CREDITS"
+          ? "insufficient_credits"
+          : "quota_exceeded";
+      onError(errorData.message || errorData.error || "Billing check failed", {
+        status,
+        requestId,
+        error: errorData.error,
+      });
+      return;
+    }
+
+    if (response.status === 503) {
+      const errorData = await response.json().catch(() => ({}));
+      onError(errorData.error || "Billing unavailable", {
+        status: "billing_unavailable",
         requestId,
         error: errorData.error,
       });
@@ -148,9 +177,11 @@ async function fetchStreamingChat(
           // Handle errors (including timeouts)
           if (json.error) {
             const status = json.status || "error";
+            const isBillingUnavailable = json.code === "BILLING_UNAVAILABLE";
             onError(json.error, {
-              status:
-                status === "timeout"
+              status: isBillingUnavailable
+                ? "billing_unavailable"
+                : status === "timeout"
                   ? "timeout"
                   : status === "cancelled"
                     ? "cancelled"
@@ -226,6 +257,10 @@ export function useChatActions() {
   const settingsStore = useSettingsStore();
   const streamStore = useStreamStore();
   const usageStore = useUsageStore();
+  const locale = useAppSettingsStore((state) => state.locale);
+  const openOutOfCreditsModal = useBillingStore(
+    (state) => state.openOutOfCreditsModal,
+  );
 
   const startRuns = async (
     conversationId: string,
@@ -347,13 +382,31 @@ export function useChatActions() {
         (error, result) => {
           const latencyMs = result.elapsedMs ?? Date.now() - startTime;
 
-          // Handle quota exceeded
-          if (result.status === "quota_exceeded") {
+          if (result.status === "insufficient_credits") {
+            openOutOfCreditsModal();
             conversationStore.markRunError(
               conversationId,
               assistantMessageId,
               run.id,
-              "Daily token quota exceeded. Please upgrade your plan or wait until tomorrow.",
+              "Insufficient credits. Please top up or change plan.",
+            );
+          }
+          // Handle quota exceeded
+          else if (result.status === "quota_exceeded") {
+            conversationStore.markRunError(
+              conversationId,
+              assistantMessageId,
+              run.id,
+              "Token quota exceeded. Please upgrade your plan or wait for reset.",
+            );
+          }
+          // Handle billing service failures
+          else if (result.status === "billing_unavailable") {
+            conversationStore.markRunError(
+              conversationId,
+              assistantMessageId,
+              run.id,
+              "Billing temporarily unavailable. Please try again in a moment.",
             );
           }
           // Handle concurrency limiting
@@ -427,7 +480,9 @@ export function useChatActions() {
     // Get or create conversation
     let conversationId = conversationStore.currentConversationId;
     if (!conversationId) {
-      conversationId = conversationStore.createConversation("New chat");
+      conversationId = conversationStore.createConversation(
+        normalizeLocale(locale) === "mn" ? "Шинэ чат" : "New chat",
+      );
     }
 
     const { slots } = modelStore;
@@ -488,6 +543,10 @@ export function useChatActions() {
     }[] = [];
     if (instructions.trim()) {
       apiMessages.push({ role: "system", content: instructions });
+    }
+    const localeInstruction = getLocaleResponseInstruction(locale);
+    if (localeInstruction) {
+      apiMessages.push({ role: "system", content: localeInstruction });
     }
     apiMessages.push(...historyMessages);
     apiMessages.push({ role: "user", content });
@@ -557,6 +616,10 @@ export function useChatActions() {
     }[] = [];
     if (instructions.trim()) {
       apiMessages.push({ role: "system", content: instructions });
+    }
+    const localeInstruction = getLocaleResponseInstruction(locale);
+    if (localeInstruction) {
+      apiMessages.push({ role: "system", content: localeInstruction });
     }
     apiMessages.push(...historyMessages);
     apiMessages.push({ role: "user", content });

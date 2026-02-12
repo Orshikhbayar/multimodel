@@ -8,14 +8,12 @@ import {
   ArrowLeftRight,
   CreditCard,
   FolderKanban,
-  FolderPlus,
   Home,
   MessageSquare,
   MoreHorizontal,
   Moon,
   Pencil,
   Plus,
-  Star,
   Sun,
   Tag,
   Trash2,
@@ -24,6 +22,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Popover,
   PopoverContent,
@@ -48,7 +55,15 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
   const { resolvedTheme, setTheme } = useTheme();
   const setAppTheme = useAppSettingsStore((state) => state.setTheme);
   const [collapsed, setCollapsed] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
+  const [pendingRename, setPendingRename] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
+  const [renameDraft, setRenameDraft] = useState("");
   const {
     conversations,
     currentConversationId,
@@ -62,7 +77,12 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
     currency,
     includedCreditsRemaining,
     topUpCreditsBalance,
+    resetPeriodIfNeeded,
   } = useBillingStore();
+
+  useEffect(() => {
+    resetPeriodIfNeeded();
+  }, [resetPeriodIfNeeded]);
 
   const handleNewChat = useCallback(() => {
     const id = createConversation("Untitled chat");
@@ -72,7 +92,6 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
   }, [createConversation, setCurrentConversation, router, onNavigate]);
 
   useEffect(() => {
-    setMounted(true);
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
@@ -88,7 +107,7 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
     () => [
       { href: "/", label: "Chat", icon: Home },
       { href: "/projects", label: "Projects", icon: FolderKanban },
-      { href: "/account?tab=billing", label: "Billing", icon: CreditCard },
+      { href: "/account/billing", label: "Billing", icon: CreditCard },
       { href: "/pricing", label: "Pricing", icon: Tag },
     ],
     [],
@@ -100,6 +119,8 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
   const creditsRemaining = includedCreditsRemaining + topUpCreditsBalance;
   const remainingPercent =
     includedTotal > 0 ? (includedCreditsRemaining / includedTotal) * 100 : 0;
+  const isDark = resolvedTheme === "dark";
+  const hasResolvedTheme = Boolean(resolvedTheme);
 
   return (
     <aside
@@ -117,7 +138,7 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
         {!collapsed && (
           <Link
             href="/"
-            className="text-sm font-semibold text-foreground transition hover:text-foreground/80"
+            className="ui-hover-tint rounded-sm text-sm font-semibold text-foreground transition hover:text-foreground/80"
           >
             MultiModel
           </Link>
@@ -148,7 +169,7 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
         <div
           className={cn(
             "grid gap-2",
-            collapsed ? "grid-cols-1" : "grid-cols-4",
+            collapsed ? "grid-cols-1" : "grid-cols-2",
           )}
         >
           {navItems.map((item) => {
@@ -158,14 +179,16 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
               <Link key={item.href} href={item.href}>
                 <span
                   className={cn(
-                    "flex items-center justify-center rounded-lg border px-3 py-2 text-xs font-medium uppercase tracking-wide transition",
+                    "ui-hover-lift-sm flex items-center rounded-lg border px-3 py-2 text-xs font-medium uppercase tracking-wide transition",
+                    collapsed ? "justify-center" : "gap-2",
                     active
                       ? "bg-accent text-foreground"
                       : "text-muted-foreground hover:bg-muted/60",
                   )}
+                  title={item.label}
                 >
                   <Icon className="h-4 w-4" />
-                  {!collapsed && <span className="sr-only">{item.label}</span>}
+                  {!collapsed && <span>{item.label}</span>}
                 </span>
               </Link>
             );
@@ -173,8 +196,8 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
         </div>
 
         {!collapsed && (
-          <Link href="/account?tab=billing">
-            <div className="rounded-xl border bg-card/60 px-3 py-2 text-xs transition hover:bg-muted/40">
+          <Link href="/account/billing">
+            <div className="ui-hover-lift rounded-xl border bg-card/60 px-3 py-2 text-xs transition hover:bg-muted/40">
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Plan</span>
                 <Badge variant="secondary">{activePlan.name}</Badge>
@@ -228,15 +251,19 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
                     onNavigate?.();
                   }}
                   onRename={() => {
-                    const next = window.prompt(
-                      "Rename chat",
-                      conv.title || "Untitled chat",
-                    );
-                    if (next && next.trim()) {
-                      updateConversationTitle(conv.id, next.trim());
-                    }
+                    const currentTitle = conv.title || "Untitled chat";
+                    setPendingRename({
+                      id: conv.id,
+                      title: currentTitle,
+                    });
+                    setRenameDraft(currentTitle);
                   }}
-                  onDelete={() => removeConversation(conv.id)}
+                  onDelete={() =>
+                    setPendingDelete({
+                      id: conv.id,
+                      title: conv.title || "Untitled chat",
+                    })
+                  }
                 />
               </Fragment>
             ))}
@@ -247,8 +274,8 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
       <div className="mt-4 space-y-3 px-1 pb-2 shrink-0">
         <div className="flex items-center justify-between rounded-lg border px-3 py-2">
           <div className="flex items-center gap-2">
-            {mounted && resolvedTheme ? (
-              resolvedTheme === "dark" ? (
+            {hasResolvedTheme ? (
+              isDark ? (
                 <Moon className="h-4 w-4" />
               ) : (
                 <Sun className="h-4 w-4" />
@@ -259,18 +286,107 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
             {!collapsed && <span className="text-sm font-medium">Theme</span>}
           </div>
           <Switch
-            checked={mounted && resolvedTheme === "dark"}
+            checked={isDark}
             onCheckedChange={(checked) => {
               const nextTheme = checked ? "dark" : "light";
               setTheme(nextTheme);
               setAppTheme(nextTheme);
             }}
             aria-label="Toggle dark mode"
-            disabled={!mounted || !resolvedTheme}
+            disabled={!hasResolvedTheme}
           />
         </div>
         {!collapsed && <UserMenu key={pathname} />}
       </div>
+
+      <Dialog
+        open={Boolean(pendingRename)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPendingRename(null);
+            setRenameDraft("");
+          }
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Rename chat</DialogTitle>
+            <DialogDescription>
+              Use a short, clear title so this chat is easy to find later.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            value={renameDraft}
+            onChange={(event) => setRenameDraft(event.target.value)}
+            autoFocus
+            placeholder="Enter chat title"
+            onKeyDown={(event) => {
+              if (event.key !== "Enter") return;
+              const nextTitle = renameDraft.trim();
+              if (!nextTitle || !pendingRename) return;
+              updateConversationTitle(pendingRename.id, nextTitle);
+              setPendingRename(null);
+              setRenameDraft("");
+            }}
+          />
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setPendingRename(null);
+                setRenameDraft("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                const nextTitle = renameDraft.trim();
+                if (!nextTitle || !pendingRename) return;
+                updateConversationTitle(pendingRename.id, nextTitle);
+                setPendingRename(null);
+                setRenameDraft("");
+              }}
+              disabled={!renameDraft.trim()}
+            >
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(pendingDelete)}
+        onOpenChange={(open) => !open && setPendingDelete(null)}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete chat?</DialogTitle>
+            <DialogDescription>
+              This will permanently remove{" "}
+              <span className="font-medium text-foreground">
+                {pendingDelete?.title}
+              </span>
+              .
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setPendingDelete(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (!pendingDelete) return;
+                removeConversation(pendingDelete.id);
+                setPendingDelete(null);
+              }}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </aside>
   );
 }
@@ -291,6 +407,7 @@ function ChatListItem({
   onDelete: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const shortLabel = (title.trim().charAt(0) || "•").toUpperCase();
 
   return (
     <div
@@ -302,8 +419,10 @@ function ChatListItem({
       <button
         type="button"
         onClick={onSelect}
+        title={title}
+        aria-label={title}
         className={cn(
-          "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition",
+          "ui-hover-lift-sm flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition",
           active
             ? "bg-accent text-foreground"
             : "text-muted-foreground hover:bg-muted/60",
@@ -313,7 +432,9 @@ function ChatListItem({
         {!collapsed ? (
           <span className="line-clamp-1 flex-1">{title}</span>
         ) : (
-          <span className="h-2 w-2 rounded-full bg-muted-foreground" />
+          <span className="flex h-6 w-6 items-center justify-center rounded-full border text-[11px] font-semibold">
+            {shortLabel}
+          </span>
         )}
       </button>
 
@@ -323,7 +444,7 @@ function ChatListItem({
             <button
               type="button"
               className={cn(
-                "mr-1 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground opacity-0 transition hover:bg-muted/60 group-hover:opacity-100",
+                "ui-hover-lift-sm mr-1 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground opacity-0 transition hover:bg-muted/60 group-hover:opacity-100",
                 active && "opacity-100",
               )}
               aria-label={`Open chat menu for ${title}`}
@@ -333,25 +454,11 @@ function ChatListItem({
           </PopoverTrigger>
           <PopoverContent align="end" className="w-44 p-1">
             <ChatMenuItem
-              icon={Star}
-              label="Star"
-              onClick={() => {
-                setOpen(false);
-              }}
-            />
-            <ChatMenuItem
               icon={Pencil}
               label="Rename"
               onClick={() => {
                 setOpen(false);
                 onRename();
-              }}
-            />
-            <ChatMenuItem
-              icon={FolderPlus}
-              label="Add to project"
-              onClick={() => {
-                setOpen(false);
               }}
             />
             <div className="my-1 h-px bg-border" />
@@ -387,7 +494,7 @@ function ChatMenuItem({
       type="button"
       onClick={onClick}
       className={cn(
-        "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition hover:bg-muted/60",
+        "ui-hover-lift-sm flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition hover:bg-muted/60",
         destructive && "text-destructive hover:bg-destructive/10",
       )}
     >

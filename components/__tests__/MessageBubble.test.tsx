@@ -117,7 +117,7 @@ describe("MessageBubble", () => {
       expect(screen.getByText("Save")).toBeInTheDocument();
     });
 
-    it("hides action bar until hover via classes", () => {
+    it("keeps action bar available without hover-only classes", () => {
       const message = createUserMessage("Hover check");
 
       render(
@@ -132,10 +132,8 @@ describe("MessageBubble", () => {
       const actionBar = retryButton.closest("div");
 
       expect(actionBar).not.toBeNull();
-      expect(actionBar).toHaveClass("opacity-0");
-      expect(actionBar).toHaveClass("group-hover:opacity-100");
-      expect(actionBar).toHaveClass("pointer-events-none");
-      expect(actionBar).toHaveClass("group-hover:pointer-events-auto");
+      expect(actionBar).not.toHaveClass("opacity-0");
+      expect(actionBar).not.toHaveClass("pointer-events-none");
     });
 
     it("saves edited content and exits edit mode", async () => {

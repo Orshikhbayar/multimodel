@@ -1,4 +1,5 @@
-import type { Plan, PlanId } from "./types";
+import type { Plan, PlanId, TopUpPack, TopUpPackId } from "./types";
+import { convertCurrency } from "./utils";
 
 const FREE_MODELS = [
   "openai/gpt-4.1",
@@ -20,7 +21,9 @@ export const PLANS: Plan[] = [
     name: "Free",
     monthlyPrice: { USD: 0, MNT: 0 },
     annualPrice: { USD: 0, MNT: 0 },
-    includedMonthlyCredits: { USD: 12, MNT: 42000 },
+    includedMonthlyCredits: { USD: 1, MNT: 3450 },
+    dailyTokenCap: 2_000,
+    monthlyTokenCap: 30_000,
     maxEnabledModels: 1,
     features: {
       webSearch: false,
@@ -33,9 +36,11 @@ export const PLANS: Plan[] = [
   {
     id: "plus",
     name: "Plus",
-    monthlyPrice: { USD: 20, MNT: 69000 },
-    annualPrice: { USD: 204, MNT: 703000 },
-    includedMonthlyCredits: { USD: 60, MNT: 210000 },
+    monthlyPrice: { USD: 19, MNT: 65550 },
+    annualPrice: { USD: 190, MNT: 655500 },
+    includedMonthlyCredits: { USD: 7, MNT: 24150 },
+    dailyTokenCap: 10_000,
+    monthlyTokenCap: 250_000,
     maxEnabledModels: 2,
     features: {
       webSearch: true,
@@ -48,9 +53,11 @@ export const PLANS: Plan[] = [
   {
     id: "pro",
     name: "Pro",
-    monthlyPrice: { USD: 45, MNT: 155000 },
-    annualPrice: { USD: 456, MNT: 1570000 },
-    includedMonthlyCredits: { USD: 150, MNT: 520000 },
+    monthlyPrice: { USD: 49, MNT: 169050 },
+    annualPrice: { USD: 490, MNT: 1690500 },
+    includedMonthlyCredits: { USD: 18, MNT: 62100 },
+    dailyTokenCap: 25_000,
+    monthlyTokenCap: 650_000,
     maxEnabledModels: 3,
     features: {
       webSearch: true,
@@ -63,9 +70,11 @@ export const PLANS: Plan[] = [
   {
     id: "team",
     name: "Team",
-    monthlyPrice: { USD: 120, MNT: 415000 },
-    annualPrice: { USD: 1188, MNT: 4110000 },
-    includedMonthlyCredits: { USD: 400, MNT: 1380000 },
+    monthlyPrice: { USD: 129, MNT: 445050 },
+    annualPrice: { USD: 1290, MNT: 4450500 },
+    includedMonthlyCredits: { USD: 50, MNT: 172500 },
+    dailyTokenCap: 60_000,
+    monthlyTokenCap: 1_800_000,
     maxEnabledModels: 6,
     features: {
       webSearch: true,
@@ -79,6 +88,12 @@ export const PLANS: Plan[] = [
 
 export const PLAN_ORDER: PlanId[] = ["free", "plus", "pro", "team"];
 
+export const TOP_UP_PACKS: TopUpPack[] = [
+  { id: "starter", label: "Starter", payPriceUsd: 12, creditUsd: 10 },
+  { id: "boost", label: "Boost", payPriceUsd: 30, creditUsd: 25 },
+  { id: "power", label: "Power", payPriceUsd: 72, creditUsd: 60 },
+];
+
 export function getPlanById(id: PlanId) {
   return PLANS.find((plan) => plan.id === id) ?? PLANS[0];
 }
@@ -89,4 +104,13 @@ export function getNextPlanForModel(modelId: string) {
 
 export function getNextPlanForSlots(desiredSlots: number) {
   return PLANS.find((plan) => plan.maxEnabledModels >= desiredSlots);
+}
+
+export function getTopUpPackById(id: TopUpPackId) {
+  return TOP_UP_PACKS.find((pack) => pack.id === id);
+}
+
+export function getTopUpPayPrice(pack: TopUpPack, currency: "USD" | "MNT") {
+  if (currency === "USD") return pack.payPriceUsd;
+  return Math.round(convertCurrency(pack.payPriceUsd, "USD", "MNT"));
 }

@@ -11,12 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useBillingStore } from "@/lib/billing/store";
 import { formatCurrency } from "@/lib/billing/utils";
-
-const TOP_UP_PACKS = [
-  { id: "starter", label: "Starter", USD: 10, MNT: 35000 },
-  { id: "boost", label: "Boost", USD: 25, MNT: 86000 },
-  { id: "power", label: "Power", USD: 60, MNT: 207000 },
-];
+import { TOP_UP_PACKS, getTopUpPayPrice } from "@/lib/billing/plans";
 
 export function TopUpModal() {
   const { ui, currency, topUp, closeTopUpModal } = useBillingStore();
@@ -36,7 +31,7 @@ export function TopUpModal() {
 
         <div className="grid gap-3 md:grid-cols-3">
           {TOP_UP_PACKS.map((pack) => {
-            const amount = currency === "USD" ? pack.USD : pack.MNT;
+            const amount = getTopUpPayPrice(pack, currency);
             return (
               <div
                 key={pack.id}
@@ -50,12 +45,13 @@ export function TopUpModal() {
                   {formatCurrency(amount, currency)}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Instant credits - no expiry
+                  {formatCurrency(pack.creditUsd, "USD")} ledger credits - no
+                  expiry
                 </p>
                 <Button
                   className="mt-4 w-full"
-                  onClick={() => {
-                    topUp(amount, currency);
+                  onClick={async () => {
+                    await topUp(pack.id);
                     closeTopUpModal();
                   }}
                 >

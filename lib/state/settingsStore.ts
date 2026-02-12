@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
+import { normalizeLocale } from "@/lib/i18n/locale";
 import type { AppSettings } from "./types";
 
 const STORAGE_VERSION = 1;
@@ -25,7 +26,7 @@ export const useAppSettingsStore = create<AppSettingsStore>()(
     (set, get) => ({
       ...DEFAULT_SETTINGS,
       setTheme: (theme) => set({ theme }),
-      setLocale: (locale) => set({ locale }),
+      setLocale: (locale) => set({ locale: normalizeLocale(locale) }),
       setReduceMotion: (reduceMotion) => set({ reduceMotion }),
       resetSettings: (options) => {
         const keepTheme = options?.keepTheme;
@@ -45,6 +46,7 @@ export const useAppSettingsStore = create<AppSettingsStore>()(
         return {
           ...DEFAULT_SETTINGS,
           ...typed,
+          locale: normalizeLocale(typed.locale),
         } as AppSettingsStore;
       },
       partialize: (state) => ({

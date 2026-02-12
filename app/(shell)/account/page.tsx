@@ -152,7 +152,7 @@ function AccountPageContent() {
                     {LANGUAGE_OPTIONS.map((option) => (
                       <label
                         key={option.id}
-                        className="flex items-center justify-between rounded-lg border p-3 text-sm hover:bg-muted/40"
+                        className="ui-hover-lift-sm flex items-center justify-between rounded-lg border p-3 text-sm hover:bg-muted/40"
                       >
                         <span>{option.label}</span>
                         <RadioGroupItem

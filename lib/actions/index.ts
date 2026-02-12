@@ -30,3 +30,13 @@ export {
   type UsageSummary,
   type UsageRecord,
 } from "./usage";
+
+export {
+  getBillingSummary,
+  changePlan,
+  purchaseTopUp,
+  getBillingTransactions,
+  setBillingCurrency,
+  type BillingSummary,
+  type BillingTransactionView,
+} from "./billing";

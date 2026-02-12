@@ -40,7 +40,9 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <LocaleSync />
-            {children}
+            <div id="main-content" tabIndex={-1}>
+              {children}
+            </div>
           </ThemeProvider>
         </SessionProvider>
       </body>

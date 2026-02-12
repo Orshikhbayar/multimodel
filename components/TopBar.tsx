@@ -10,8 +10,6 @@ import {
   Plus,
   Settings,
   Sparkles,
-  Star,
-  Zap,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -86,12 +84,6 @@ export function TopBar({
       </div>
 
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" title="Star chat">
-          <Star className="h-4 w-4" />
-        </Button>
-        <Button variant="ghost" size="icon" title="Quick action">
-          <Zap className="h-4 w-4" />
-        </Button>
         <Button
           variant="outline"
           size="sm"
@@ -114,7 +106,7 @@ export function TopBar({
           trigger={
             <button
               type="button"
-              className="flex items-center gap-2 rounded-full border bg-background px-3 py-1.5 text-sm shadow-sm transition hover:bg-muted/40"
+              className="ui-hover-lift-sm flex items-center gap-2 rounded-full border bg-background px-3 py-1.5 text-sm shadow-sm transition hover:bg-muted/40"
             >
               <ProviderGlyph providerId={activeSlot?.providerId} />
               <span className="max-w-[160px] truncate font-semibold">

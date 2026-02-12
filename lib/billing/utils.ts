@@ -1,11 +1,23 @@
 import type { BillingCadence, Currency, Plan } from "./types";
 
-export const USD_TO_MNT = 3450;
+const DEFAULT_USD_TO_MNT = Number(
+  process.env.NEXT_PUBLIC_USD_TO_MNT_RATE ?? "3568.5492",
+);
+let usdToMntRate = DEFAULT_USD_TO_MNT;
+
+export function setUsdToMntRate(rate: number) {
+  if (!Number.isFinite(rate) || rate <= 0) return;
+  usdToMntRate = rate;
+}
+
+export function getUsdToMntRate() {
+  return usdToMntRate;
+}
 
 export function convertCurrency(amount: number, from: Currency, to: Currency) {
   if (from === to) return amount;
-  if (from === "USD" && to === "MNT") return amount * USD_TO_MNT;
-  if (from === "MNT" && to === "USD") return amount / USD_TO_MNT;
+  if (from === "USD" && to === "MNT") return amount * usdToMntRate;
+  if (from === "MNT" && to === "USD") return amount / usdToMntRate;
   return amount;
 }
 
@@ -35,13 +47,22 @@ export function getPlanPrice(
   currency: Currency,
   cadence: BillingCadence,
 ) {
-  return cadence === "annual"
-    ? plan.annualPrice[currency]
-    : plan.monthlyPrice[currency];
+  const usdAmount =
+    cadence === "annual" ? plan.annualPrice.USD : plan.monthlyPrice.USD;
+
+  if (currency === "USD") {
+    return usdAmount;
+  }
+
+  return Math.round(convertCurrency(usdAmount, "USD", "MNT"));
 }
 
 export function getIncludedCredits(plan: Plan, currency: Currency) {
-  return plan.includedMonthlyCredits[currency];
+  const usdAmount = plan.includedMonthlyCredits.USD;
+  if (currency === "USD") {
+    return usdAmount;
+  }
+  return Math.round(convertCurrency(usdAmount, "USD", "MNT"));
 }
 
 export function addMonths(date: Date, months: number) {

@@ -192,7 +192,7 @@ export function AITeamDrawer({ open, onOpenChange }: DrawerProps) {
               {MODE_OPTIONS.map((option) => (
                 <label
                   key={option.value}
-                  className="flex cursor-pointer items-start gap-2 rounded-lg border bg-muted/30 px-3 py-2 hover:border-primary"
+                  className="ui-hover-lift-sm flex cursor-pointer items-start gap-2 rounded-lg border bg-muted/30 px-3 py-2 hover:border-primary"
                 >
                   <RadioGroupItem value={option.value} id={option.value} />
                   <div>

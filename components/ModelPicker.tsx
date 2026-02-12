@@ -145,6 +145,10 @@ export function ModelPicker({
         <Separator />
 
         <div className="p-2">
+          <p className="px-1 pb-2 text-[11px] text-muted-foreground">
+            Tip: use faster models for drafts and stronger models for final
+            answers.
+          </p>
           <Input
             value={q}
             onChange={(event) => setQ(event.target.value)}
@@ -220,22 +224,25 @@ export function ModelPicker({
           </div>
         </ScrollArea>
 
-        <Separator />
-        <button
-          type="button"
-          onClick={() => {
-            onOpenProviderSettings?.(selectedProvider.id);
-            setOpen(false);
-          }}
-          className={cn(
-            "flex w-full items-center gap-2 px-3 py-2 text-sm",
-            "text-muted-foreground hover:bg-muted/40",
-            !onOpenProviderSettings && "cursor-default",
-          )}
-        >
-          <Settings className="h-4 w-4" />
-          Manage models
-        </button>
+        {onOpenProviderSettings ? (
+          <>
+            <Separator />
+            <button
+              type="button"
+              onClick={() => {
+                onOpenProviderSettings(selectedProvider.id);
+                setOpen(false);
+              }}
+              className={cn(
+                "ui-hover-lift-sm flex w-full items-center gap-2 px-3 py-2 text-sm",
+                "text-muted-foreground hover:bg-muted/40",
+              )}
+            >
+              <Settings className="h-4 w-4" />
+              Manage models
+            </button>
+          </>
+        ) : null}
       </PopoverContent>
     </Popover>
   );
@@ -282,7 +289,7 @@ function ModelSection({
             <div
               key={model.id}
               className={cn(
-                "flex items-center justify-between gap-2 rounded-lg px-2 py-2",
+                "ui-hover-lift-sm flex items-center justify-between gap-2 rounded-lg px-2 py-2",
                 active ? "bg-muted/50" : "hover:bg-muted/40",
                 locked && "opacity-70",
               )}

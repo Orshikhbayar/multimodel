@@ -13,6 +13,22 @@ test("app loads and user menu opens", async ({ page }) => {
 
   await expect(page.getByText("Chat", { exact: true })).toBeVisible();
 
+  const chatNavItem = page.locator('span[title="Chat"]').first();
+  await chatNavItem.hover();
+  await expect
+    .poll(async () =>
+      chatNavItem.evaluate((el) => getComputedStyle(el).transform),
+    )
+    .not.toBe("none");
+
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await chatNavItem.hover();
+  await expect
+    .poll(async () =>
+      chatNavItem.evaluate((el) => getComputedStyle(el).transform),
+    )
+    .toBe("none");
+
   // Open user menu
   await page.getByRole("button", { name: /demo user|guest/i }).click();
   await expect(page.getByText("Settings", { exact: true })).toBeVisible();

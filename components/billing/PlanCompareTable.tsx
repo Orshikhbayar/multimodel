@@ -5,7 +5,7 @@ import { Check, Minus } from "lucide-react";
 import { useBillingStore } from "@/lib/billing/store";
 import { PLANS } from "@/lib/billing/plans";
 import { MODELS } from "@/lib/modelCatalog";
-import { formatCredits } from "@/lib/billing/utils";
+import { formatCredits, getIncludedCredits } from "@/lib/billing/utils";
 
 export function PlanCompareTable() {
   const { currency } = useBillingStore();
@@ -14,7 +14,7 @@ export function PlanCompareTable() {
     {
       label: "Included monthly credits",
       render: (plan: (typeof PLANS)[number]) =>
-        formatCredits(plan.includedMonthlyCredits[currency], currency),
+        formatCredits(getIncludedCredits(plan, currency), currency),
     },
     {
       label: "Max enabled models",

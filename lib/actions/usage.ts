@@ -2,6 +2,11 @@
 
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/db";
+import {
+  checkQuota as checkBillingQuota,
+  ensureBillingUser,
+  resetPeriodIfNeeded,
+} from "@/lib/billing/service";
 
 // ============================================
 // Usage Record Types
@@ -172,36 +177,19 @@ export async function checkQuota(): Promise<{
     return { allowed: false, remaining: 0, limit: 0, used: 0 };
   }
 
-  // Default limits (can be customized per plan later)
-  const FREE_TIER_DAILY_TOKENS = 100_000; // 100k tokens per day
-
-  // Get today's usage
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-
-  const todayUsage = await prisma.usageRecord.aggregate({
-    where: {
-      userId: session.user.id,
-      createdAt: {
-        gte: today,
-        lt: tomorrow,
-      },
-    },
-    _sum: {
-      totalTokens: true,
-    },
+  const user = await ensureBillingUser({
+    id: session.user.id,
+    email: session.user.email,
+    name: session.user.name,
   });
-
-  const used = todayUsage._sum.totalTokens ?? 0;
-  const remaining = FREE_TIER_DAILY_TOKENS - used;
+  const refreshed = await resetPeriodIfNeeded(user.id);
+  const quota = await checkBillingQuota(refreshed.id, refreshed.planId);
 
   return {
-    allowed: remaining > 0,
-    remaining: Math.max(0, remaining),
-    limit: FREE_TIER_DAILY_TOKENS,
-    used,
+    allowed: quota.allowed,
+    remaining: quota.daily.remaining,
+    limit: quota.daily.limit,
+    used: quota.daily.used,
   };
 }
 

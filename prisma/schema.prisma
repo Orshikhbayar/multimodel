@@ -21,6 +21,13 @@ model User {
   image         String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  planId               String   @default("free")
+  billingCadence       String   @default("monthly")
+  billingCurrency      String   @default("USD")
+  periodStartAt        DateTime @default(now())
+  periodEndAt          DateTime @default(dbgenerated("(CURRENT_TIMESTAMP + INTERVAL '1 month')"))
+  includedCreditsCents Int      @default(0)
+  topUpCreditsCents    Int      @default(0)
 
   // Relations
   accounts      Account[]
@@ -28,6 +35,7 @@ model User {
   projects      Project[]
   conversations Conversation[]
   usageRecords  UsageRecord[]
+  billingTransactions BillingTransaction[]
 
   @@map("users")
 }
@@ -188,4 +196,23 @@ model UsageRecord {
   @@index([userId])
   @@index([createdAt])
   @@map("usage_records")
+}
+
+model BillingTransaction {
+  id               String   @id @default(cuid())
+  userId           String
+  type             String
+  amountPaidCents  Int
+  creditDeltaCents Int
+  balanceAfterCents Int
+  currency         String
+  referenceId      String?
+  metadata         Json?
+  createdAt        DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([referenceId])
+  @@map("billing_transactions")
 }

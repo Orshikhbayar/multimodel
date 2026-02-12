@@ -104,7 +104,7 @@ export function ExpandableMessage({
               onClick={() => setExpanded((v) => !v)}
               aria-expanded={expanded}
               aria-controls={contentId}
-              className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
+              className="ui-hover-lift-sm inline-flex items-center gap-1 rounded-sm text-xs font-medium text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               {expanded ? (
                 <>

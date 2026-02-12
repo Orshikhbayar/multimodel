@@ -15,9 +15,20 @@ export type Plan = {
   monthlyPrice: Record<Currency, number>;
   annualPrice: Record<Currency, number>;
   includedMonthlyCredits: Record<Currency, number>;
+  dailyTokenCap: number;
+  monthlyTokenCap: number;
   maxEnabledModels: number;
   features: PlanFeatures;
   allowedModelIds: string[];
+};
+
+export type TopUpPackId = "starter" | "boost" | "power";
+
+export type TopUpPack = {
+  id: TopUpPackId;
+  label: string;
+  payPriceUsd: number;
+  creditUsd: number;
 };
 
 export type BillingTransaction = {

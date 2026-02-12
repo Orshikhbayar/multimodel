@@ -37,7 +37,6 @@ export function MessageList({
   );
   const activeIsSlot = slotIds.has(activeTab);
   const activeSlot = activeIsSlot ? slotById.get(activeTab) : undefined;
-  let lastUserContent: string | undefined;
 
   useEffect(() => {
     const viewport = scrollAreaRef.current?.querySelector(
@@ -78,7 +77,6 @@ export function MessageList({
     >
       <ContentColumn
         className="space-y-6 py-6 pb-28"
-        id="main-content"
         maxWidth="var(--chat-max-width)"
       >
         {messages.map((message, index) => {
@@ -86,9 +84,12 @@ export function MessageList({
           const isTurnEnd =
             message.role === "assistant" &&
             (!nextMessage || nextMessage.role === "user");
-          if (message.role === "user") {
-            lastUserContent = message.content;
-          }
+          const retryContent =
+            message.role === "assistant"
+              ? [...messages.slice(0, index)]
+                  .reverse()
+                  .find((entry) => entry.role === "user")?.content
+              : undefined;
           const run = message.runs
             ? activeIsSlot
               ? (message.runs.find((r) => r.slotId === activeTab) ??
@@ -105,9 +106,7 @@ export function MessageList({
               message={message}
               conversationId={conversation?.id}
               run={message.role === "assistant" ? run : undefined}
-              retryContent={
-                message.role === "assistant" ? lastUserContent : undefined
-              }
+              retryContent={retryContent}
               isTurnEnd={isTurnEnd}
               onShowSources={onShowSources}
               onShowDisagreements={onShowDisagreements}

@@ -9,6 +9,7 @@
 
 import * as Sentry from "@sentry/nextjs";
 import { useEffect } from "react";
+import { Button } from "@/components/ui/button";
 
 export default function GlobalError({
   error,
@@ -31,19 +32,16 @@ export default function GlobalError({
               Something went wrong
             </h1>
             <p className="mb-6 text-muted-foreground">
-              We've been notified and are working to fix the issue.
+              We&apos;ve been notified and are working to fix the issue.
             </p>
             {error.digest && (
               <p className="mb-4 font-mono text-xs text-muted-foreground">
                 Error ID: {error.digest}
               </p>
             )}
-            <button
-              onClick={reset}
-              className="rounded-lg bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90"
-            >
+            <Button onClick={reset}>
               Try again
-            </button>
+            </Button>
           </div>
         </div>
       </body>

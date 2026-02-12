@@ -45,6 +45,12 @@
     --code-token-class: 260 40% 46%;
     --code-token-operator: 220 18% 35%;
     --code-token-property: 196 45% 38%;
+    --motion-hover-duration: 140ms;
+    --motion-hover-ease: cubic-bezier(0.2, 0, 0, 1);
+    --motion-hover-lift: translateY(-1px) scale(1.01);
+    --motion-hover-lift-sm: translateY(-0.5px) scale(1.006);
+    --motion-hover-shadow:
+      0 14px 26px -18px hsl(var(--foreground) / 0.38);
     --radius: 0.75rem;
   }
 
@@ -90,6 +96,8 @@
     --code-token-class: 265 65% 75%;
     --code-token-operator: 220 20% 75%;
     --code-token-property: 185 60% 65%;
+    --motion-hover-shadow:
+      0 14px 24px -18px hsl(220 50% 2% / 0.85);
   }
 
   * {
@@ -107,6 +115,69 @@
 /* Glass effect utility */
 .glass {
   @apply bg-background/70 backdrop-blur;
+}
+
+.ui-hover-lift,
+.ui-hover-lift-sm {
+  transition:
+    transform var(--motion-hover-duration) var(--motion-hover-ease),
+    box-shadow var(--motion-hover-duration) var(--motion-hover-ease),
+    background-color var(--motion-hover-duration) var(--motion-hover-ease),
+    border-color var(--motion-hover-duration) var(--motion-hover-ease),
+    color var(--motion-hover-duration) var(--motion-hover-ease),
+    opacity var(--motion-hover-duration) var(--motion-hover-ease);
+}
+
+.ui-hover-tint {
+  transition:
+    background-color var(--motion-hover-duration) var(--motion-hover-ease),
+    border-color var(--motion-hover-duration) var(--motion-hover-ease),
+    color var(--motion-hover-duration) var(--motion-hover-ease),
+    opacity var(--motion-hover-duration) var(--motion-hover-ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ui-hover-lift:not(.ui-no-lift):not(:disabled):not([aria-disabled="true"]):hover {
+    transform: var(--motion-hover-lift);
+    box-shadow: var(--motion-hover-shadow);
+  }
+
+  .ui-hover-lift-sm:not(.ui-no-lift):not(:disabled):not([aria-disabled="true"]):hover {
+    transform: var(--motion-hover-lift-sm);
+    box-shadow: var(--motion-hover-shadow);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-hover-lift,
+  .ui-hover-lift-sm {
+    transition:
+      background-color var(--motion-hover-duration) var(--motion-hover-ease),
+      border-color var(--motion-hover-duration) var(--motion-hover-ease),
+      color var(--motion-hover-duration) var(--motion-hover-ease),
+      opacity var(--motion-hover-duration) var(--motion-hover-ease);
+  }
+
+  .ui-hover-lift:hover,
+  .ui-hover-lift-sm:hover {
+    transform: none !important;
+    box-shadow: none !important;
+  }
+}
+
+html[data-reduce-motion="true"] .ui-hover-lift,
+html[data-reduce-motion="true"] .ui-hover-lift-sm {
+  transition:
+    background-color var(--motion-hover-duration) var(--motion-hover-ease),
+    border-color var(--motion-hover-duration) var(--motion-hover-ease),
+    color var(--motion-hover-duration) var(--motion-hover-ease),
+    opacity var(--motion-hover-duration) var(--motion-hover-ease);
+}
+
+html[data-reduce-motion="true"] .ui-hover-lift:hover,
+html[data-reduce-motion="true"] .ui-hover-lift-sm:hover {
+  transform: none !important;
+  box-shadow: none !important;
 }
 
 /* Prose overrides for proper text wrapping */

@@ -4,7 +4,7 @@ This document summarizes the current implementation, architecture, and major sys
 
 ## Overview
 
-Multi-Model AI is a Next.js (App Router) chat workspace that supports multi-model responses, per-model runs, streaming output, and a modular state architecture. It includes demo authentication, billing/usage scaffolding, and a UI modeled after modern AI chat products.
+Multi-Model AI is a Next.js (App Router) chat workspace that supports multi-model responses, per-model runs, streaming output, and a modular state architecture. It includes demo authentication, server-enforced billing/usage with a mock checkout flow, and a UI modeled after modern AI chat products.
 
 ## Stack
 
@@ -26,7 +26,7 @@ Multi-Model AI is a Next.js (App Router) chat workspace that supports multi-mode
 - Backwards-compatibility wrapper (`lib/store.ts`) for older UI usage
 - Message editing + retry flows
 - Sources and disagreements UI (data model + dialogs wired)
-- Billing and usage scaffolding (plans, credits, cost estimation)
+- Billing and usage enforcement (plans, quotas, credit holds, server ledger)
 - Demo authentication with NextAuth Credentials + middleware protection
 - Error boundaries for application and chat-specific recovery
 - Unit tests for the conversation store and a Playwright smoke test
@@ -133,10 +133,11 @@ Only OpenAI is wired in the API implementation; other providers are listed in th
 
 ### Billing and Usage
 
-- `lib/billing/*` implements plan definitions, credit balances, and pricing estimation
-- `estimateChatCostForSlots` is used before sending a message
-- `useBillingStore` handles credit spend, top-ups, and modals
-- Costs are estimates only; no real billing integration is present
+- `lib/billing/service.ts` is the server source of truth for provisioning, quotas, hold/settle/refund, and ledger writes
+- `lib/actions/billing.ts` powers billing UI actions (`getBillingSummary`, `changePlan`, `purchaseTopUp`, `getBillingTransactions`)
+- `/api/chat` reserves a hold before upstream calls and settles/refunds against real token usage
+- `useBillingStore` hydrates from server state; local storage retains only UI preferences
+- Checkout is currently mocked (no Stripe), but all balances/transactions are server-persisted
 
 ### Analytics
 

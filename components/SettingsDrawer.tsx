@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Plug, SlidersHorizontal, Wrench } from "lucide-react";
+import { useMemo } from "react";
+import { SlidersHorizontal, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -13,15 +13,16 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Textarea } from "@/components/ui/textarea";
 import { ModelPicker } from "@/components/ModelPicker";
 import {
   MODELS,
-  PROVIDERS,
   getProviderById,
   getModelById,
 } from "@/lib/modelCatalog";
-import { useChatStore } from "@/lib/store";
-import { cn } from "@/lib/utils";
+import { MODE_OPTIONS, useChatStore } from "@/lib/store";
 import { useBillingStore } from "@/lib/billing/store";
 import { getNextPlanForSlots, getPlanById } from "@/lib/billing/plans";
 
@@ -31,23 +32,22 @@ interface SettingsDrawerProps {
 }
 
 export function SettingsDrawer({ open, onOpenChange }: SettingsDrawerProps) {
-  const { slots, activeSlotId, setActiveSlot, setSlotModel, toggleSlot } =
-    useChatStore();
+  const {
+    slots,
+    activeSlotId,
+    mode,
+    instructions,
+    setActiveSlot,
+    setSlotModel,
+    toggleSlot,
+    setMode,
+    setInstructions,
+  } = useChatStore();
   const { currentPlanId, openUpgradeModal } = useBillingStore();
   const plan = getPlanById(currentPlanId);
   const lockedModelIds = MODELS.filter(
     (model) => !plan.allowedModelIds.includes(model.id),
   ).map((model) => model.id);
-
-  const [connections, setConnections] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(PROVIDERS.map((provider) => [provider.id, true])),
-  );
-
-  const [tools, setTools] = useState({
-    web: true,
-    files: false,
-    automations: true,
-  });
 
   const sortedSlots = useMemo(
     () => [...slots].sort((a, b) => a.slotId.localeCompare(b.slotId)),
@@ -68,40 +68,8 @@ export function SettingsDrawer({ open, onOpenChange }: SettingsDrawerProps) {
             <div className="space-y-6">
               <section className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <Plug className="h-4 w-4 text-muted-foreground" />
-                  <h4 className="text-sm font-semibold">Connections</h4>
-                </div>
-                <div className="space-y-2">
-                  {PROVIDERS.map((provider) => (
-                    <div
-                      key={provider.id}
-                      className="flex items-center justify-between rounded-lg border bg-muted/30 px-3 py-2"
-                    >
-                      <div>
-                        <p className="text-sm font-medium">{provider.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          API key status:{" "}
-                          {connections[provider.id] ? "connected" : "not set"}
-                        </p>
-                      </div>
-                      <Switch
-                        checked={connections[provider.id]}
-                        onCheckedChange={(checked) =>
-                          setConnections((prev) => ({
-                            ...prev,
-                            [provider.id]: checked,
-                          }))
-                        }
-                      />
-                    </div>
-                  ))}
-                </div>
-              </section>
-
-              <section className="space-y-3">
-                <div className="flex items-center gap-2">
                   <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
-                  <h4 className="text-sm font-semibold">Models</h4>
+                  <h4 className="text-sm font-semibold">AI Team</h4>
                 </div>
                 <div className="space-y-2">
                   {sortedSlots.map((slot) => {
@@ -149,7 +117,7 @@ export function SettingsDrawer({ open, onOpenChange }: SettingsDrawerProps) {
                               ) : null}
                             </div>
                             <p className="text-xs text-muted-foreground">
-                              {provider}
+                              Powered by {provider}
                             </p>
                           </div>
                         </div>
@@ -159,7 +127,7 @@ export function SettingsDrawer({ open, onOpenChange }: SettingsDrawerProps) {
                             variant="ghost"
                             onClick={() => setActiveSlot(slot.slotId)}
                           >
-                            Focus
+                            Set active
                           </Button>
                           <ModelPicker
                             value={slot.modelId}
@@ -187,44 +155,54 @@ export function SettingsDrawer({ open, onOpenChange }: SettingsDrawerProps) {
                   })}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Enabled slots run in parallel for each prompt.
+                  Turn on multiple models to compare answers side by side.
                 </p>
               </section>
 
               <section className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <Wrench className="h-4 w-4 text-muted-foreground" />
-                  <h4 className="text-sm font-semibold">Tools</h4>
+                  <Sparkles className="h-4 w-4 text-muted-foreground" />
+                  <h4 className="text-sm font-semibold">Behavior</h4>
                 </div>
-                <div className="space-y-2">
-                  {(
-                    [
-                      { id: "web", label: "Web browsing" },
-                      { id: "files", label: "File analysis" },
-                      { id: "automations", label: "Automations" },
-                    ] as const
-                  ).map((tool) => (
-                    <div
-                      key={tool.id}
-                      className={cn(
-                        "flex items-center justify-between rounded-lg border px-3 py-2",
-                        tools[tool.id] ? "bg-muted/30" : "bg-background",
-                      )}
+                <p className="text-xs text-muted-foreground">
+                  Choose how your AI team collaborates on each prompt.
+                </p>
+                <RadioGroup
+                  value={mode}
+                  onValueChange={(value) => setMode(value as typeof mode)}
+                  className="grid grid-cols-1 gap-2 sm:grid-cols-2"
+                >
+                  {MODE_OPTIONS.map((option) => (
+                    <label
+                      key={option.value}
+                      className="ui-hover-lift-sm flex cursor-pointer items-start gap-2 rounded-lg border bg-muted/30 px-3 py-2 hover:border-primary"
                     >
+                      <RadioGroupItem value={option.value} id={option.value} />
                       <div>
-                        <p className="text-sm font-medium">{tool.label}</p>
+                        <Label htmlFor={option.value} className="cursor-pointer">
+                          {option.label}
+                        </Label>
                         <p className="text-xs text-muted-foreground">
-                          {tools[tool.id] ? "Enabled" : "Disabled"}
+                          {option.description}
                         </p>
                       </div>
-                      <Switch
-                        checked={tools[tool.id]}
-                        onCheckedChange={(checked) =>
-                          setTools((prev) => ({ ...prev, [tool.id]: checked }))
-                        }
-                      />
-                    </div>
+                    </label>
                   ))}
+                </RadioGroup>
+                <div className="space-y-2">
+                  <Label htmlFor="settings-shared-instructions">
+                    Shared instructions
+                  </Label>
+                  <Textarea
+                    id="settings-shared-instructions"
+                    value={instructions}
+                    onChange={(event) => setInstructions(event.target.value)}
+                    placeholder="Describe policies, tone, constraints, or routing hints."
+                    className="min-h-[120px]"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Applied to each model response for this workspace.
+                  </p>
                 </div>
               </section>
             </div>

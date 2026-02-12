@@ -42,7 +42,7 @@ export function PricingTiers() {
             <button
               type="button"
               onClick={() => setBillingCadence("monthly")}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+              className={`ui-hover-lift-sm rounded-full px-3 py-1 text-xs font-medium transition ${
                 billingCadence === "monthly"
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground"
@@ -53,7 +53,7 @@ export function PricingTiers() {
             <button
               type="button"
               onClick={() => setBillingCadence("annual")}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+              className={`ui-hover-lift-sm rounded-full px-3 py-1 text-xs font-medium transition ${
                 billingCadence === "annual"
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground"
@@ -66,7 +66,7 @@ export function PricingTiers() {
             <button
               type="button"
               onClick={() => setCurrency("USD")}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+              className={`ui-hover-lift-sm rounded-full px-3 py-1 text-xs font-medium transition ${
                 currency === "USD"
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground"
@@ -77,7 +77,7 @@ export function PricingTiers() {
             <button
               type="button"
               onClick={() => setCurrency("MNT")}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+              className={`ui-hover-lift-sm rounded-full px-3 py-1 text-xs font-medium transition ${
                 currency === "MNT"
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground"

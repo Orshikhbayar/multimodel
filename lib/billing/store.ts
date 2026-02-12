@@ -2,21 +2,33 @@ import { nanoid } from "nanoid";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
+import {
+  changePlan,
+  getBillingSummary,
+  getBillingTransactions,
+  purchaseTopUp,
+  setBillingCurrency,
+} from "@/lib/actions/billing";
+
 import type {
   BillingCadence,
   BillingState,
   BillingTransaction,
   Currency,
   PlanId,
+  TopUpPackId,
 } from "./types";
 import { getPlanById } from "./plans";
 import {
   addMonths,
   convertCurrency,
+  getUsdToMntRate,
   getIncludedCredits,
-  getPlanPrice,
+  setUsdToMntRate,
   toISO,
 } from "./utils";
+
+const STORAGE_VERSION = 2;
 
 const buildPeriod = () => {
   const start = new Date();
@@ -41,11 +53,18 @@ interface BillingUIState {
 
 interface BillingStore extends BillingState {
   ui: BillingUIState;
-  setCurrency: (currency: Currency) => void;
+  hydrated: boolean;
+  loading: boolean;
+  fxRateUsdToMnt: number;
+  fxRateUpdatedAtISO?: string;
+  fxRateLive: boolean;
+  error?: string;
+  setCurrency: (currency: Currency) => Promise<void>;
   setBillingCadence: (cadence: BillingCadence) => void;
-  choosePlan: (planId: PlanId) => void;
-  topUp: (amount: number, currency: Currency) => void;
+  choosePlan: (planId: PlanId) => Promise<void>;
+  topUp: (packId: TopUpPackId) => Promise<void>;
   spendCredits: (cost: number, note?: string) => boolean;
+  syncFromServer: () => Promise<void>;
   resetPeriodIfNeeded: () => void;
   resetBilling: () => void;
   openUpgradeModal: (payload: {
@@ -71,6 +90,46 @@ const initialTransactions: BillingTransaction[] = [
   },
 ];
 
+type FxRateResponse = {
+  usdToMnt: number;
+  fetchedAtISO: string;
+  source: string;
+  live: boolean;
+};
+
+function toDisplay(usdAmount: number, currency: Currency) {
+  if (currency === "USD") return Number(usdAmount.toFixed(2));
+  return Math.round(convertCurrency(usdAmount, "USD", "MNT"));
+}
+
+function toStoreTransactions(
+  source: Awaited<ReturnType<typeof getBillingTransactions>>,
+  displayCurrency: Currency,
+): BillingTransaction[] {
+  return source.map((tx) => {
+    const normalizedType: BillingTransaction["type"] =
+      tx.type === "plan_change"
+        ? "subscription"
+        : tx.type === "topup"
+          ? "topup"
+          : "usage";
+
+    const amountUsd =
+      tx.currency === "USD"
+        ? tx.amountPaid
+        : convertCurrency(tx.amountPaid, "MNT", "USD");
+
+    return {
+      id: tx.id,
+      type: normalizedType,
+      amount: toDisplay(amountUsd, displayCurrency),
+      currency: displayCurrency,
+      createdAtISO: tx.createdAtISO,
+      note: tx.note,
+    };
+  });
+}
+
 export const useBillingStore = create<BillingStore>()(
   persist(
     (set, get) => ({
@@ -82,137 +141,131 @@ export const useBillingStore = create<BillingStore>()(
       includedCreditsRemaining: initialCredits,
       topUpCreditsBalance: 0,
       transactions: initialTransactions,
+      hydrated: false,
+      loading: false,
+      fxRateUsdToMnt: getUsdToMntRate(),
+      fxRateUpdatedAtISO: undefined,
+      fxRateLive: false,
       ui: {
         upgradeModalOpen: false,
         outOfCreditsOpen: false,
         topUpModalOpen: false,
       },
 
-      setCurrency: (currency) =>
-        set((state) => {
-          if (state.currency === currency) return {};
-          const includedCreditsRemaining = convertCurrency(
-            state.includedCreditsRemaining,
-            state.currency,
-            currency,
-          );
-          const topUpCreditsBalance = convertCurrency(
-            state.topUpCreditsBalance,
-            state.currency,
-            currency,
-          );
-          return { currency, includedCreditsRemaining, topUpCreditsBalance };
-        }),
+      syncFromServer: async () => {
+        try {
+          set({ loading: true, error: undefined });
+          let fxRateUsdToMnt = getUsdToMntRate();
+          let fxRateUpdatedAtISO: string | undefined;
+          let fxRateLive = false;
+
+          try {
+            const response = await fetch("/api/billing/fx-rate", {
+              method: "GET",
+              cache: "no-store",
+            });
+            if (response.ok) {
+              const fx = (await response.json()) as FxRateResponse;
+              if (Number.isFinite(fx.usdToMnt) && fx.usdToMnt > 0) {
+                setUsdToMntRate(fx.usdToMnt);
+                fxRateUsdToMnt = fx.usdToMnt;
+                fxRateUpdatedAtISO = fx.fetchedAtISO;
+                fxRateLive = fx.live;
+              }
+            }
+          } catch {
+            // Keep cached rate if live FX fetch fails.
+          }
+
+          const [summary, txs] = await Promise.all([
+            getBillingSummary(),
+            getBillingTransactions({ limit: 100, offset: 0 }),
+          ]);
+
+          if (!summary) {
+            set({ loading: false, hydrated: true });
+            return;
+          }
+
+          const displayCurrency = get().currency;
+          const includedUsd = summary.includedCreditsCents / 100;
+          const topUpUsd = summary.topUpCreditsCents / 100;
+
+          set((state) => ({
+            currentPlanId: summary.currentPlanId,
+            billingCadence: summary.billingCadence,
+            periodStartISO: summary.periodStartISO,
+            periodEndISO: summary.periodEndISO,
+            includedCreditsRemaining: toDisplay(includedUsd, displayCurrency),
+            topUpCreditsBalance: toDisplay(topUpUsd, displayCurrency),
+            transactions: toStoreTransactions(txs, displayCurrency),
+            hydrated: true,
+            loading: false,
+            fxRateUsdToMnt,
+            fxRateUpdatedAtISO,
+            fxRateLive,
+            ui: state.ui,
+          }));
+        } catch (error) {
+          set({
+            loading: false,
+            hydrated: true,
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to sync billing state",
+          });
+        }
+      },
+
+      setCurrency: async (currency) => {
+        set({ currency });
+        try {
+          await setBillingCurrency(currency);
+        } catch {
+          // Keep local display currency even if server update fails.
+        }
+        await get().syncFromServer();
+      },
 
       setBillingCadence: (billingCadence) => set({ billingCadence }),
 
-      choosePlan: (planId) =>
-        set((state) => {
-          const plan = getPlanById(planId);
-          const period = buildPeriod();
-          const amount = getPlanPrice(
-            plan,
-            state.currency,
-            state.billingCadence,
-          );
-          const transaction: BillingTransaction = {
-            id: nanoid(),
-            type: "subscription",
-            amount,
-            currency: state.currency,
-            createdAtISO: new Date().toISOString(),
-            note: `${plan.name} ${state.billingCadence}`,
-          };
-          return {
-            currentPlanId: planId,
-            periodStartISO: period.startISO,
-            periodEndISO: period.endISO,
-            includedCreditsRemaining: getIncludedCredits(plan, state.currency),
-            transactions: [transaction, ...state.transactions],
-          };
-        }),
-
-      topUp: (amount, currency) =>
-        set((state) => {
-          const converted =
-            currency === state.currency
-              ? amount
-              : convertCurrency(amount, currency, state.currency);
-          const transaction: BillingTransaction = {
-            id: nanoid(),
-            type: "topup",
-            amount: converted,
-            currency: state.currency,
-            createdAtISO: new Date().toISOString(),
-            note:
-              currency === state.currency
-                ? "Top up"
-                : `Converted from ${currency}`,
-          };
-          return {
-            topUpCreditsBalance: state.topUpCreditsBalance + converted,
-            transactions: [transaction, ...state.transactions],
-          };
-        }),
-
-      spendCredits: (cost, note) => {
-        const state = get();
-        const totalAvailable =
-          state.includedCreditsRemaining + state.topUpCreditsBalance;
-        if (cost <= 0) return true;
-        if (totalAvailable < cost) {
-          set({ ui: { ...state.ui, outOfCreditsOpen: true } });
-          return false;
+      choosePlan: async (planId) => {
+        set({ loading: true, error: undefined });
+        try {
+          const cadence = get().billingCadence;
+          await changePlan({ planId, cadence });
+          await get().syncFromServer();
+        } catch (error) {
+          set({
+            loading: false,
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to change plan",
+          });
         }
-        const usedIncluded = Math.min(state.includedCreditsRemaining, cost);
-        const remainingCost = cost - usedIncluded;
-        const usedTopUp = Math.min(state.topUpCreditsBalance, remainingCost);
-
-        const transaction: BillingTransaction = {
-          id: nanoid(),
-          type: "usage",
-          amount: cost,
-          currency: state.currency,
-          createdAtISO: new Date().toISOString(),
-          note,
-        };
-
-        set({
-          includedCreditsRemaining:
-            state.includedCreditsRemaining - usedIncluded,
-          topUpCreditsBalance: state.topUpCreditsBalance - usedTopUp,
-          transactions: [transaction, ...state.transactions],
-        });
-
-        return true;
       },
 
-      resetPeriodIfNeeded: () =>
-        set((state) => {
-          const now = new Date();
-          const periodEnd = new Date(state.periodEndISO);
-          const plan = getPlanById(state.currentPlanId);
-          if (Number.isNaN(periodEnd.getTime())) {
-            const period = buildPeriod();
-            return {
-              periodStartISO: period.startISO,
-              periodEndISO: period.endISO,
-              includedCreditsRemaining: getIncludedCredits(
-                plan,
-                state.currency,
-              ),
-            };
-          }
-          if (now <= periodEnd) {
-            return {};
-          }
-          const period = buildPeriod();
-          return {
-            periodStartISO: period.startISO,
-            periodEndISO: period.endISO,
-            includedCreditsRemaining: getIncludedCredits(plan, state.currency),
-          };
-        }),
+      topUp: async (packId) => {
+        set({ loading: true, error: undefined });
+        try {
+          await purchaseTopUp({ packId, displayCurrency: get().currency });
+          await get().syncFromServer();
+        } catch (error) {
+          set({
+            loading: false,
+            error: error instanceof Error ? error.message : "Failed to top up",
+          });
+        }
+      },
+
+      // Billing checks are enforced server-side in /api/chat.
+      spendCredits: () => true,
+
+      resetPeriodIfNeeded: () => {
+        void get().syncFromServer();
+      },
 
       resetBilling: () =>
         set(() => {
@@ -226,6 +279,12 @@ export const useBillingStore = create<BillingStore>()(
             includedCreditsRemaining: initialCredits,
             topUpCreditsBalance: 0,
             transactions: initialTransactions,
+            hydrated: false,
+            loading: false,
+            fxRateUsdToMnt: getUsdToMntRate(),
+            fxRateUpdatedAtISO: undefined,
+            fxRateLive: false,
+            error: undefined,
             ui: {
               upgradeModalOpen: false,
               outOfCreditsOpen: false,
@@ -265,16 +324,36 @@ export const useBillingStore = create<BillingStore>()(
     }),
     {
       name: "multi-model-billing",
+      version: STORAGE_VERSION,
       storage: createJSONStorage(() => localStorage),
+      migrate: (persistedState) => {
+        const baseState = (persistedState ?? {}) as Partial<BillingStore>;
+
+        return {
+          currency: baseState.currency ?? initialCurrency,
+          billingCadence: baseState.billingCadence ?? "monthly",
+          currentPlanId: initialPlanId,
+          periodStartISO: initialPeriod.startISO,
+          periodEndISO: initialPeriod.endISO,
+          includedCreditsRemaining: initialCredits,
+          topUpCreditsBalance: 0,
+          transactions: initialTransactions,
+          hydrated: false,
+          loading: false,
+          fxRateUsdToMnt: getUsdToMntRate(),
+          fxRateUpdatedAtISO: undefined,
+          fxRateLive: false,
+          error: undefined,
+          ui: {
+            upgradeModalOpen: false,
+            outOfCreditsOpen: false,
+            topUpModalOpen: false,
+          },
+        } as BillingStore;
+      },
       partialize: (state) => ({
         currency: state.currency,
         billingCadence: state.billingCadence,
-        currentPlanId: state.currentPlanId,
-        periodStartISO: state.periodStartISO,
-        periodEndISO: state.periodEndISO,
-        includedCreditsRemaining: state.includedCreditsRemaining,
-        topUpCreditsBalance: state.topUpCreditsBalance,
-        transactions: state.transactions,
       }),
     },
   ),

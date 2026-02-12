@@ -10,7 +10,7 @@ A Next.js 16 (App Router) multi-model chat application with per-model tabs, SSE 
 - **Real-time streaming**: Server-Sent Events (SSE) via Edge runtime
 - **Authentication**: NextAuth v5 with Google/GitHub OAuth (demo credentials in development)
 - **Collaboration modes**: Smart, Conversation, Ensemble, Expert, Debate, Simulation, Web-Aided
-- **Billing UI**: Plan management, usage tracking, credit system (scaffolding)
+- **Billing**: Server-enforced plans, quotas, and credit ledger (mock checkout)
 - **Dark/Light theme**: System-aware with manual toggle
 - **Responsive design**: Mobile-friendly sidebar and chat interface
 
@@ -214,7 +214,8 @@ The `/api/chat` endpoint enforces the following limits:
 
 | Limit | Value | Description |
 |-------|-------|-------------|
-| Daily Token Quota | 100k tokens | Per-user daily limit (free tier) |
+| Daily Token Quota | 2k tokens | Per-user daily limit (free tier) |
+| Monthly Token Quota | 30k tokens | Per-user monthly limit (free tier) |
 | Rate Limit | 20 req/min | Per-user request limit |
 | Concurrency | 2 streams | Maximum simultaneous streams per user |
 | Connect Timeout | 30s | Max time to establish connection |
@@ -223,20 +224,22 @@ The `/api/chat` endpoint enforces the following limits:
 
 ### Quota Tiers
 
-| Plan | Daily Token Limit |
-|------|-------------------|
-| Free | 100,000 tokens |
-| Plus | 500,000 tokens |
-| Pro | 2,000,000 tokens |
-| Team | 10,000,000 tokens |
+| Plan | Daily Token Limit | Monthly Token Limit |
+|------|-------------------|---------------------|
+| Free | 2,000 tokens | 30,000 tokens |
+| Plus | 10,000 tokens | 250,000 tokens |
+| Pro | 25,000 tokens | 650,000 tokens |
+| Team | 60,000 tokens | 1,800,000 tokens |
 
 ### Error Responses
 
 | Status | Reason | Response |
 |--------|--------|----------|
 | 401 | Not authenticated | `{"error": "Authentication required"}` |
-| 402 | Quota exceeded | `{"error": "Quota exceeded", "used": N, "limit": N, "resetAt": "..."}` |
+| 402 | Quota exceeded | `{"error": "Quota exceeded", "code": "QUOTA_EXCEEDED", "used": N, "limit": N, "resetAt": "..."}` |
+| 402 | Insufficient credits | `{"error": "Insufficient credits", "code": "INSUFFICIENT_CREDITS", "availableCreditsUsd": N}` |
 | 429 | Rate/concurrency limit | `{"error": "Rate limit exceeded"}` or `{"error": "Too many concurrent requests"}` |
+| 503 | Billing unavailable | `{"error": "Billing unavailable", "code": "BILLING_UNAVAILABLE"}` |
 
 ## Usage Tracking
 
@@ -244,8 +247,10 @@ Token usage is tracked in real-time using OpenAI's `stream_options: { include_us
 
 1. **Records actual tokens** - Uses real token counts from OpenAI response (not estimates)
 2. **Calculates cost** - Model-specific pricing applied per request
-3. **Enforces quotas** - Checks daily quota before processing requests
-4. **Persists to DB** - All usage stored in `UsageRecord` table for billing/analytics
+3. **Reserves credit holds** - Debits a preflight hold before upstream model calls
+4. **Settles/refunds precisely** - Settles to real usage or refunds on cancel/error
+5. **Enforces quotas** - Checks daily and monthly limits before processing requests
+6. **Persists to DB** - Usage + billing transactions are stored for analytics/audit
 
 View usage in the billing dashboard at `/account/billing`.
 

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
+import { normalizeLocale } from "@/lib/i18n/locale";
 import { getInitialFromName } from "./utils";
 import type { UserPlanId, UserProfile } from "./types";
 
@@ -58,7 +59,7 @@ export const useUserStore = create<UserStore>()(
         set((state) => ({
           user: {
             ...state.user,
-            locale,
+            locale: normalizeLocale(locale),
           },
         })),
       resetUser: () => set({ user: DEFAULT_USER }),
@@ -77,6 +78,7 @@ export const useUserStore = create<UserStore>()(
           user: {
             ...DEFAULT_USER,
             ...typed.user,
+            locale: normalizeLocale(typed.user.locale),
           },
         } as UserStore;
       },

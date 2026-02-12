@@ -14,13 +14,21 @@ import {
   releaseConcurrencySlot,
   getRateLimitHeaders,
 } from "@/lib/rateLimit";
-import { checkUserQuota, recordUserUsage } from "@/lib/api/usage";
 import { createRequestLogger } from "@/lib/logger";
 import Metrics from "@/lib/metrics";
 import type { ChatMessage } from "@/lib/api/types";
-
-// Note: Using Node.js runtime because auth() uses Prisma adapter
-// which requires Node.js runtime for database connections
+import {
+  BillingUnavailableError,
+  InsufficientCreditsError,
+  checkQuota,
+  ensureBillingUser,
+  estimatePromptTokensFromMessages,
+  refundUsageHold,
+  reserveUsageHold,
+  resetPeriodIfNeeded,
+  settleUsageHold,
+  type UsageHold,
+} from "@/lib/billing/service";
 
 interface ChatRequestBody {
   messages: ChatMessage[];
@@ -34,22 +42,11 @@ interface ChatRequestBody {
  *
  * Streams chat completions from OpenAI.
  * Proxies requests to keep API keys server-side.
- *
- * Features:
- * - Requires authentication
- * - Quota enforcement (daily token limits)
- * - Rate limiting (20 requests/minute per user)
- * - Concurrency limiting (2 concurrent streams per user)
- * - Timeouts (30s connect, 60s inactivity, 5min max)
- * - Abort propagation (client cancel stops upstream)
- * - Real token usage tracking
  */
 export async function POST(request: NextRequest) {
-  // Generate request ID for tracing
   const requestId = nanoid(10);
   const startTime = Date.now();
 
-  // Verify authentication
   const session = await auth();
   if (!session?.user?.id) {
     Metrics.apiRequestCount({ endpoint: "/api/chat", status: 401 });
@@ -59,53 +56,87 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const userId = session.user.id;
-  const log = createRequestLogger(requestId, userId);
-  
-  // Set Sentry context for this request
-  Sentry.setUser({ id: userId });
+  const sessionUserId = session.user.id;
+  const log = createRequestLogger(requestId, sessionUserId);
+
+  Sentry.setUser({ id: sessionUserId });
   Sentry.setTag("requestId", requestId);
 
-  // Check quota before processing
-  const quota = await checkUserQuota(userId);
-  if (!quota.allowed) {
-    log.info("Quota exceeded", { used: quota.used, limit: quota.limit });
-    Metrics.rateLimitHit({ userId, type: "quota" });
-    Metrics.apiRequestCount({ endpoint: "/api/chat", status: 402 });
-    
-    const resetTime = quota.resetAt.toISOString();
-    return new Response(
-      JSON.stringify({
-        error: "Quota exceeded",
-        message: `You've used ${quota.used.toLocaleString()} of ${quota.limit.toLocaleString()} tokens today. Your quota resets at midnight.`,
+  let billingUserId = sessionUserId;
+
+  try {
+    const billingUser = await ensureBillingUser({
+      id: sessionUserId,
+      email: session.user.email,
+      name: session.user.name,
+    });
+
+    const refreshedUser = await resetPeriodIfNeeded(billingUser.id);
+    billingUserId = refreshedUser.id;
+
+    const quota = await checkQuota(refreshedUser.id, refreshedUser.planId);
+    if (!quota.allowed) {
+      log.info("Quota exceeded", {
         used: quota.used,
         limit: quota.limit,
-        resetAt: resetTime,
+        reason: quota.reason,
+      });
+      Metrics.rateLimitHit({ userId: sessionUserId, type: "quota" });
+      Metrics.apiRequestCount({ endpoint: "/api/chat", status: 402 });
+
+      const resetTime = quota.resetAt.toISOString();
+      return new Response(
+        JSON.stringify({
+          error: "Quota exceeded",
+          code: "QUOTA_EXCEEDED",
+          message:
+            quota.reason === "monthly"
+              ? `You've used ${quota.used.toLocaleString()} of ${quota.limit.toLocaleString()} tokens this month.`
+              : `You've used ${quota.used.toLocaleString()} of ${quota.limit.toLocaleString()} tokens today.`,
+          used: quota.used,
+          limit: quota.limit,
+          resetAt: resetTime,
+          requestId,
+        }),
+        {
+          status: 402,
+          headers: {
+            "Content-Type": "application/json",
+            "X-Quota-Limit": quota.limit.toString(),
+            "X-Quota-Remaining": "0",
+            "X-Quota-Reset": resetTime,
+          },
+        },
+      );
+    }
+  } catch (error) {
+    log.error("Billing unavailable during quota check", error);
+    Metrics.apiError({ endpoint: "/api/chat", errorType: "billing_unavailable" });
+    Metrics.apiRequestCount({ endpoint: "/api/chat", status: 503 });
+
+    return new Response(
+      JSON.stringify({
+        error: "Billing unavailable",
+        code: "BILLING_UNAVAILABLE",
         requestId,
       }),
       {
-        status: 402, // Payment Required
-        headers: {
-          "Content-Type": "application/json",
-          "X-Quota-Limit": quota.limit.toString(),
-          "X-Quota-Remaining": "0",
-          "X-Quota-Reset": resetTime,
-        },
+        status: 503,
+        headers: { "Content-Type": "application/json" },
       },
     );
   }
 
-  // Check rate limit and concurrency
-  const permission = checkStreamPermission(userId);
+  const permission = checkStreamPermission(sessionUserId);
 
   if (!permission.allowed) {
     const headers = getRateLimitHeaders(permission.rateLimit);
 
     if (permission.reason === "rate_limit") {
       log.info("Rate limit exceeded", { resetIn: permission.rateLimit.resetIn });
-      Metrics.rateLimitHit({ userId, type: "rate" });
+      Metrics.rateLimitHit({ userId: sessionUserId, type: "rate" });
       Metrics.apiRequestCount({ endpoint: "/api/chat", status: 429 });
-      
+
       return new Response(
         JSON.stringify({
           error: "Rate limit exceeded",
@@ -126,9 +157,9 @@ export async function POST(request: NextRequest) {
 
     if (permission.reason === "concurrency_limit") {
       log.info("Concurrency limit exceeded", { active: permission.concurrency.active });
-      Metrics.rateLimitHit({ userId, type: "concurrency" });
+      Metrics.rateLimitHit({ userId: sessionUserId, type: "concurrency" });
       Metrics.apiRequestCount({ endpoint: "/api/chat", status: 429 });
-      
+
       return new Response(
         JSON.stringify({
           error: "Too many concurrent requests",
@@ -148,15 +179,15 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // Get stream ID for concurrency tracking
   const streamId = permission.concurrency.streamId!;
+  let hold: UsageHold | null = null;
 
   try {
     const body = (await request.json()) as ChatRequestBody;
     const { messages, modelId, temperature, maxTokens } = body;
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
-      releaseConcurrencySlot(userId, streamId);
+      releaseConcurrencySlot(sessionUserId, streamId);
       return new Response(
         JSON.stringify({ error: "messages array is required", requestId }),
         { status: 400, headers: { "Content-Type": "application/json" } },
@@ -164,7 +195,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!process.env.OPENAI_API_KEY) {
-      releaseConcurrencySlot(userId, streamId);
+      releaseConcurrencySlot(sessionUserId, streamId);
       return new Response(
         JSON.stringify({
           error: "OpenAI API key not configured",
@@ -175,18 +206,57 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create a readable stream for SSE with timeout handling
+    try {
+      hold = await reserveUsageHold({
+        userId: billingUserId,
+        referenceId: `chat:${requestId}`,
+        modelId: modelId || "openai/gpt-4o-mini",
+        estimatedPromptTokens: estimatePromptTokensFromMessages(messages),
+        maxOutputTokens: maxTokens ?? 2048,
+      });
+    } catch (error) {
+      releaseConcurrencySlot(sessionUserId, streamId);
+
+      if (error instanceof InsufficientCreditsError) {
+        return new Response(
+          JSON.stringify({
+            error: "Insufficient credits",
+            code: "INSUFFICIENT_CREDITS",
+            availableCreditsUsd: Number((error.availableCreditsCents / 100).toFixed(2)),
+            requestId,
+          }),
+          {
+            status: 402,
+            headers: { "Content-Type": "application/json" },
+          },
+        );
+      }
+
+      return new Response(
+        JSON.stringify({
+          error: "Billing unavailable",
+          code: "BILLING_UNAVAILABLE",
+          requestId,
+        }),
+        {
+          status: 503,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+    }
+
     const encoder = new TextEncoder();
     let streamClosed = false;
+    let holdSettled = false;
+    let fallbackCompletionTokens = 0;
     const resolvedModel = getOpenAIModelName(modelId || "openai/gpt-4o-mini");
-    
-    // Track usage for recording
+    const estimatedPromptTokens = estimatePromptTokensFromMessages(messages);
+
     let tokenUsage: TokenUsage | undefined;
 
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          // Create the base generator
           const baseGenerator = streamOpenAICompletion({
             model: modelId || "openai/gpt-4o-mini",
             messages,
@@ -195,7 +265,6 @@ export async function POST(request: NextRequest) {
             signal: request.signal,
           });
 
-          // Wrap with timeout handling
           const timeoutGenerator = withStreamTimeouts(
             baseGenerator,
             STREAM_TIMEOUT_CONFIG,
@@ -206,52 +275,61 @@ export async function POST(request: NextRequest) {
             if (streamClosed) break;
 
             if (event.type === "token") {
-              // Send token as Server-Sent Events format
+              fallbackCompletionTokens += Math.max(1, Math.ceil(event.content.length / 4));
               const data = JSON.stringify({ token: event.content, requestId });
               controller.enqueue(encoder.encode(`data: ${data}\n\n`));
             } else if (event.type === "usage") {
-              // Capture usage data for recording
               tokenUsage = event.usage;
             }
           }
 
           if (!streamClosed) {
             const elapsed = Date.now() - startTime;
-            
-            // Record usage to database
-            if (tokenUsage) {
-              await recordUserUsage({
-                userId,
-                model: resolvedModel,
-                provider: "openai",
-                promptTokens: tokenUsage.promptTokens,
-                completionTokens: tokenUsage.completionTokens,
-              });
-              
-              // Track metrics
-              Metrics.streamTokens(tokenUsage.promptTokens, { model: resolvedModel, type: "prompt" });
-              Metrics.streamTokens(tokenUsage.completionTokens, { model: resolvedModel, type: "completion" });
-            }
 
-            // Log successful completion
-            log.info("Stream completed", { 
-              model: resolvedModel, 
-              durationMs: elapsed,
-              promptTokens: tokenUsage?.promptTokens,
-              completionTokens: tokenUsage?.completionTokens,
+            const promptTokens = tokenUsage?.promptTokens ?? estimatedPromptTokens;
+            const completionTokens =
+              tokenUsage?.completionTokens ?? Math.max(1, fallbackCompletionTokens);
+
+            await settleUsageHold({
+              userId: billingUserId,
+              hold: hold!,
+              modelId: resolvedModel,
+              provider: "openai",
+              promptTokens,
+              completionTokens,
             });
-            
-            // Track metrics
+            holdSettled = true;
+
+            Metrics.streamTokens(promptTokens, { model: resolvedModel, type: "prompt" });
+            Metrics.streamTokens(completionTokens, {
+              model: resolvedModel,
+              type: "completion",
+            });
+
+            log.info("Stream completed", {
+              model: resolvedModel,
+              durationMs: elapsed,
+              promptTokens,
+              completionTokens,
+            });
+
             Metrics.apiRequestCount({ endpoint: "/api/chat", status: 200 });
-            Metrics.apiRequestDuration(elapsed, { endpoint: "/api/chat", status: 200, model: resolvedModel });
+            Metrics.apiRequestDuration(elapsed, {
+              endpoint: "/api/chat",
+              status: 200,
+              model: resolvedModel,
+            });
             Metrics.streamDuration(elapsed, { model: resolvedModel, status: "done" });
 
-            // Signal completion with usage info
             const doneData = JSON.stringify({
               done: true,
               requestId,
               elapsedMs: elapsed,
-              usage: tokenUsage,
+              usage: {
+                promptTokens,
+                completionTokens,
+                totalTokens: promptTokens + completionTokens,
+              },
             });
             controller.enqueue(encoder.encode(`data: ${doneData}\n\n`));
             controller.enqueue(encoder.encode("data: [DONE]\n\n"));
@@ -264,31 +342,50 @@ export async function POST(request: NextRequest) {
           const elapsed = Date.now() - startTime;
           const { status, message } = getStreamStatusFromError(error);
 
-          // Log error with context
-          log.error(`Stream ${status}`, error, { 
-            model: resolvedModel, 
-            durationMs: elapsed 
+          log.error(`Stream ${status}`, error, {
+            model: resolvedModel,
+            durationMs: elapsed,
           });
-          
-          // Track metrics
+
+          if (hold && !holdSettled) {
+            try {
+              await refundUsageHold({
+                userId: billingUserId,
+                hold,
+                reason: `stream_${status}`,
+              });
+              holdSettled = true;
+            } catch (refundError) {
+              log.error("Failed to refund hold", refundError, {
+                requestId,
+                holdId: hold.id,
+              });
+            }
+          }
+
           Metrics.apiError({ endpoint: "/api/chat", errorType: status });
           Metrics.streamDuration(elapsed, { model: resolvedModel, status });
-          
-          // Report to Sentry (except for cancellations which are user-initiated)
+
           if (status !== "cancelled") {
             Sentry.captureException(error, {
-              tags: { 
-                requestId, 
+              tags: {
+                requestId,
                 model: resolvedModel,
                 streamStatus: status,
               },
-              extra: { elapsed, userId },
+              extra: { elapsed, userId: sessionUserId },
             });
           }
 
-          // Send error to client
           const errorData = JSON.stringify({
-            error: message,
+            error:
+              error instanceof BillingUnavailableError
+                ? "Billing unavailable"
+                : message,
+            code:
+              error instanceof BillingUnavailableError
+                ? "BILLING_UNAVAILABLE"
+                : undefined,
             status,
             requestId,
             elapsedMs: elapsed,
@@ -300,17 +397,33 @@ export async function POST(request: NextRequest) {
           controller.close();
           streamClosed = true;
         } finally {
-          // Always release concurrency slot
-          releaseConcurrencySlot(userId, streamId);
+          releaseConcurrencySlot(sessionUserId, streamId);
         }
       },
 
       cancel() {
-        // Called when client disconnects
         const elapsed = Date.now() - startTime;
         streamClosed = true;
-        releaseConcurrencySlot(userId, streamId);
-        
+        releaseConcurrencySlot(sessionUserId, streamId);
+
+        if (hold && !holdSettled) {
+          const activeHold = hold;
+          void refundUsageHold({
+            userId: billingUserId,
+            hold: activeHold,
+            reason: "client_cancel",
+          })
+            .then(() => {
+              holdSettled = true;
+            })
+            .catch((error) => {
+              log.error("Failed to refund hold after cancel", error, {
+                requestId,
+                holdId: activeHold.id,
+              });
+            });
+        }
+
         log.info("Client disconnected", { durationMs: elapsed, model: resolvedModel });
         Metrics.streamDuration(elapsed, { model: resolvedModel, status: "cancelled" });
       },
@@ -326,30 +439,49 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    // Release concurrency slot on error
-    releaseConcurrencySlot(userId, streamId);
-    
+    releaseConcurrencySlot(sessionUserId, streamId);
+
+    if (hold) {
+      try {
+        await refundUsageHold({
+          userId: billingUserId,
+          hold,
+          reason: "request_failure",
+        });
+      } catch (refundError) {
+        log.error("Failed to refund hold in request catch", refundError, {
+          requestId,
+          holdId: hold.id,
+        });
+      }
+    }
+
     const elapsed = Date.now() - startTime;
     log.error("Request failed", error, { durationMs: elapsed });
-    
-    // Track metrics
+
     Metrics.apiError({ endpoint: "/api/chat", errorType: "server_error" });
     Metrics.apiRequestCount({ endpoint: "/api/chat", status: 500 });
     Metrics.apiRequestDuration(elapsed, { endpoint: "/api/chat", status: 500 });
-    
-    // Report to Sentry
+
     Sentry.captureException(error, {
       tags: { requestId },
-      extra: { elapsed, userId },
+      extra: { elapsed, userId: sessionUserId },
     });
+
+    const isBillingUnavailable = error instanceof BillingUnavailableError;
 
     return new Response(
       JSON.stringify({
-        error: error instanceof Error ? error.message : "Internal server error",
+        error: isBillingUnavailable
+          ? "Billing unavailable"
+          : error instanceof Error
+            ? error.message
+            : "Internal server error",
+        code: isBillingUnavailable ? "BILLING_UNAVAILABLE" : undefined,
         requestId,
       }),
       {
-        status: 500,
+        status: isBillingUnavailable ? 503 : 500,
         headers: {
           "Content-Type": "application/json",
           "X-Request-Id": requestId,

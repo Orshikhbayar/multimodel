@@ -7,36 +7,40 @@ export const MODE_OPTIONS: {
   label: string;
   description: string;
 }[] = [
-  { value: "smart", label: "Smart", description: "Parallel default responses" },
+  {
+    value: "smart",
+    label: "Auto",
+    description: "Picks the best default behavior for most prompts.",
+  },
   {
     value: "conversation",
-    label: "Conversation",
-    description: "Parallel chat with each model",
+    label: "Parallel Answers",
+    description: "Each enabled model replies on its own.",
   },
   {
     value: "ensemble",
-    label: "Ensemble",
-    description: "Parallel then unified synthesis",
+    label: "Combined Answer",
+    description: "Models reply, then a single combined summary is produced.",
   },
   {
     value: "expert",
-    label: "Expert",
-    description: "Answer + critique + revised output",
+    label: "Expert Review",
+    description: "One model answers, critiques itself, then improves the result.",
   },
   {
     value: "debate",
-    label: "Debate",
-    description: "Pro/con runs then a summary",
+    label: "Pros and Cons",
+    description: "Models argue different sides before a final summary.",
   },
   {
     value: "simulation",
-    label: "Simulation",
-    description: "Role-play to stress test answers",
+    label: "Role-play",
+    description: "Runs scenario-style responses to stress test decisions.",
   },
   {
     value: "web",
-    label: "Web-Aided",
-    description: "Grounded with mocked citations",
+    label: "Web-backed",
+    description: "Uses web-grounded behavior when available.",
   },
 ];
 

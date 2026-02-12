@@ -55,12 +55,6 @@ export function MessageItem({
   const editRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    if (!isEditing) {
-      setDraft(message.content);
-    }
-  }, [isEditing, message.content]);
-
-  useEffect(() => {
     const el = editRef.current;
     if (!el) return;
     el.style.height = "0px";
@@ -77,8 +71,6 @@ export function MessageItem({
 
   const displayContent = isUser ? message.content : text;
   const displayLineCount = displayContent.split("\n").length;
-  const displayIsLong =
-    displayContent.length > 600 || displayLineCount > 12;
 
   return (
     <ContentColumn withPadding={false} className="w-full">
@@ -147,7 +139,7 @@ export function MessageItem({
                       setDraft(message.content);
                       setIsEditing(false);
                     }}
-                    className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-muted-foreground transition hover:text-foreground"
+                    className="ui-hover-lift-sm inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-muted-foreground transition hover:text-foreground"
                   >
                     <X className="h-3.5 w-3.5" />
                     Cancel
@@ -168,7 +160,7 @@ export function MessageItem({
                       );
                       setIsEditing(false);
                     }}
-                    className="inline-flex items-center gap-1 rounded-md border border-white/10 px-3 py-1.5 text-foreground transition hover:bg-muted/40"
+                    className="ui-hover-lift-sm inline-flex items-center gap-1 rounded-md border border-white/10 px-3 py-1.5 text-foreground transition hover:bg-muted/40"
                   >
                     <Check className="h-3.5 w-3.5" />
                     Save
@@ -213,23 +205,28 @@ export function MessageItem({
 
           {/* Action buttons for assistant messages */}
           {isUser && !isEditing && (
-            <div className="mt-2 flex items-center justify-end gap-3 text-[11px] text-muted-foreground opacity-0 transition group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto">
+            <div className="mt-2 flex items-center justify-end gap-3 text-[11px] text-muted-foreground">
               {sentAt && (
                 <span className="tabular-nums text-[11px]">{sentAt}</span>
               )}
               <button
                 type="button"
-                className="hover:text-foreground transition-colors"
+                className="ui-hover-lift-sm rounded-sm hover:text-foreground transition-colors"
                 title="Retry"
+                aria-label="Retry"
                 onClick={() => sendMessage(message.content)}
               >
                 <RotateCcw className="h-4 w-4" />
               </button>
               <button
                 type="button"
-                className="hover:text-foreground transition-colors"
+                className="ui-hover-lift-sm rounded-sm hover:text-foreground transition-colors"
                 title="Edit"
-                onClick={() => setIsEditing(true)}
+                aria-label="Edit"
+                onClick={() => {
+                  setDraft(message.content);
+                  setIsEditing(true);
+                }}
               >
                 <Pencil className="h-4 w-4" />
               </button>
@@ -248,7 +245,7 @@ export function MessageItem({
                 <button
                   type="button"
                   onClick={() => sendMessage(retryContent)}
-                  className="rounded-md border border-white/10 px-2 py-1 text-[11px] text-foreground transition hover:bg-muted/40"
+                  className="ui-hover-lift-sm rounded-md border border-white/10 px-2 py-1 text-[11px] text-foreground transition hover:bg-muted/40"
                 >
                   Retry
                 </button>
@@ -261,14 +258,14 @@ export function MessageItem({
                 <CopyButton text={text} />
                 <button
                   type="button"
-                  className="hover:text-foreground transition-colors"
+                  className="ui-hover-lift-sm rounded-sm hover:text-foreground transition-colors"
                   title="Upvote"
                 >
                   <ThumbsUp className="h-4 w-4" />
                 </button>
                 <button
                   type="button"
-                  className="hover:text-foreground transition-colors"
+                  className="ui-hover-lift-sm rounded-sm hover:text-foreground transition-colors"
                   title="Downvote"
                 >
                   <ThumbsDown className="h-4 w-4" />
@@ -276,7 +273,7 @@ export function MessageItem({
                 <div className="relative flex items-center group">
                   <button
                     type="button"
-                    className="hover:text-foreground transition-colors"
+                    className="ui-hover-lift-sm rounded-sm hover:text-foreground transition-colors"
                     title="Try again"
                     onClick={() =>
                       retryContent ? sendMessage(retryContent) : undefined
@@ -348,7 +345,7 @@ function CopyButton({ text }: { text: string }) {
   return (
     <button
       type="button"
-      className="hover:text-foreground transition-colors"
+      className="ui-hover-lift-sm rounded-sm hover:text-foreground transition-colors"
       title="Copy"
       onClick={handleCopy}
     >
@@ -387,7 +384,7 @@ function CodeBlock({ code, language }: { code: string; language?: string }) {
         <button
           type="button"
           onClick={handleCopy}
-          className="code-block__copy"
+          className="code-block__copy ui-hover-lift-sm"
         >
           {copied ? (
             <Check className="h-3 w-3" />

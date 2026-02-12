@@ -95,7 +95,7 @@ export function UserMenu() {
         <PopoverTrigger asChild>
           <button
             type="button"
-            className="flex w-full items-center justify-between rounded-xl border bg-card/60 px-3 py-2 text-left hover:bg-muted/40"
+            className="ui-hover-lift flex w-full items-center justify-between rounded-xl border bg-card/60 px-3 py-2 text-left hover:bg-muted/40"
           >
             <span className="flex items-center gap-3">
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-sm font-semibold">
@@ -142,7 +142,7 @@ export function UserMenu() {
             <MenuItem
               icon={ArrowUpRight}
               label="Upgrade plan"
-              onClick={() => handleNavigate("/account?tab=billing")}
+              onClick={() => handleNavigate("/account/billing")}
             />
             <MenuItem
               icon={Download}
@@ -177,7 +177,7 @@ export function UserMenu() {
             <button
               type="button"
               onClick={handleLogout}
-              className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-sm hover:bg-muted/40"
+              className="ui-hover-lift-sm flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-sm hover:bg-muted/40"
               role="menuitem"
             >
               <span className="flex items-center gap-2">
@@ -203,7 +203,7 @@ export function UserMenu() {
             {LANGUAGE_OPTIONS.map((option) => (
               <label
                 key={option.id}
-                className="flex items-center justify-between rounded-lg border p-3 text-sm hover:bg-muted/40"
+                className="ui-hover-lift-sm flex items-center justify-between rounded-lg border p-3 text-sm hover:bg-muted/40"
               >
                 <span>{option.label}</span>
                 <RadioGroupItem value={option.id} aria-label={option.label} />
@@ -276,7 +276,7 @@ function MenuItem({
       type="button"
       onClick={disabled ? undefined : onClick}
       className={cn(
-        "flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-sm hover:bg-muted/40",
+        "ui-hover-lift-sm flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-sm hover:bg-muted/40",
         disabled && "cursor-not-allowed opacity-60",
       )}
       aria-disabled={disabled}
@@ -305,7 +305,7 @@ function SubMenuItem({
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-sm text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+      className="ui-hover-lift-sm flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-sm text-muted-foreground hover:bg-muted/40 hover:text-foreground"
       role="menuitem"
     >
       {label}

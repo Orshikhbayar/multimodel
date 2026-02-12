@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Settings } from "lucide-react";
 
 import { ChatThread } from "@/components/ChatThread";
-import { VirtualizedChatThread } from "@/components/VirtualizedChatThread";
 import { Composer } from "@/components/Composer";
 import { DisagreementsDialog } from "@/components/DisagreementsDialog";
 import { SourcesDialog } from "@/components/SourcesDialog";
@@ -20,11 +19,9 @@ import { useConversationStore, useModelStore } from "@/lib/stores";
 import type { Run } from "@/lib/types";
 import { useBillingStore } from "@/lib/billing/store";
 import { getPlanById } from "@/lib/billing/plans";
-import { estimateChatCostForSlots } from "@/lib/billing/estimator";
 
 export function ChatWorkspace() {
-  const { conversations, currentConversationId, projects } =
-    useConversationStore();
+  const { conversations, currentConversationId } = useConversationStore();
   const { slots, activeSlotId, setSlotModel } = useModelStore();
   const { sendMessage } = useChatActions();
   const activeTab = activeSlotId ?? slots[0]?.slotId ?? "slot-1";
@@ -35,7 +32,6 @@ export function ChatWorkspace() {
     currency,
     currentPlanId,
     resetPeriodIfNeeded,
-    spendCredits,
     openUpgradeModal,
   } = useBillingStore();
 
@@ -51,9 +47,12 @@ export function ChatWorkspace() {
     resetPeriodIfNeeded();
   }, [resetPeriodIfNeeded]);
 
-  const project = projects.find((p) => p.id === conversation?.projectId);
   const activeSlot =
     slots.find((slot) => slot.slotId === activeSlotId) ?? slots[0];
+  const enabledModelIds = useMemo(
+    () => slots.filter((slot) => slot.enabled).map((slot) => slot.modelId),
+    [slots],
+  );
   const plan = getPlanById(currentPlanId);
   const lockedModelIds = MODELS.filter(
     (model) => !plan.allowedModelIds.includes(model.id),
@@ -62,19 +61,6 @@ export function ChatWorkspace() {
   const handleSend = (value: string) => {
     if (!value.trim()) return;
     resetPeriodIfNeeded();
-    const enabledModelIds = slots
-      .filter((slot) => slot.enabled)
-      .map((slot) => slot.modelId);
-    const estimatedCost = estimateChatCostForSlots({
-      modelIds: enabledModelIds,
-      input: value,
-      currency,
-    });
-    const ok = spendCredits(
-      estimatedCost,
-      `Chat message (${enabledModelIds.length} model(s))`,
-    );
-    if (!ok) return;
     sendMessage(value);
   };
 
@@ -96,6 +82,8 @@ export function ChatWorkspace() {
                 onSend={handleSend}
                 modelId={activeSlot?.modelId ?? "openai/gpt-4.1"}
                 modelLabel={activeSlot?.label ?? "Select model"}
+                enabledModelIds={enabledModelIds}
+                currency={currency}
                 lockedModelIds={lockedModelIds}
                 onSelectModel={(modelId) =>
                   activeSlot && setSlotModel(activeSlot.slotId, modelId)
@@ -127,6 +115,8 @@ export function ChatWorkspace() {
                 onSend={handleSend}
                 modelId={activeSlot?.modelId ?? "openai/gpt-4.1"}
                 modelLabel={activeSlot?.label ?? "Select model"}
+                enabledModelIds={enabledModelIds}
+                currency={currency}
                 lockedModelIds={lockedModelIds}
                 onSelectModel={(modelId) =>
                   activeSlot && setSlotModel(activeSlot.slotId, modelId)

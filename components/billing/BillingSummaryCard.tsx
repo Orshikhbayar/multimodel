@@ -27,6 +27,9 @@ export function BillingSummaryCard() {
     topUpCreditsBalance,
     openTopUpModal,
     resetPeriodIfNeeded,
+    fxRateUsdToMnt,
+    fxRateUpdatedAtISO,
+    fxRateLive,
   } = useBillingStore();
 
   useEffect(() => {
@@ -66,6 +69,13 @@ export function BillingSummaryCard() {
 
         <div className="rounded-lg border border-dashed border-muted/60 bg-background/40 px-4 py-3 text-sm text-muted-foreground">
           Credits reset on {new Date(periodEndISO).toLocaleDateString()}.
+          <br />
+          FX: 1 USD = {fxRateUsdToMnt.toFixed(4)} MNT
+          {fxRateUpdatedAtISO
+            ? ` (${fxRateLive ? "live" : "fallback"} ${new Date(
+                fxRateUpdatedAtISO,
+              ).toLocaleString()})`
+            : ""}
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
