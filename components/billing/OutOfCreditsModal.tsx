@@ -41,7 +41,7 @@ export function OutOfCreditsModal() {
             {t("billing.notNow")}
           </Button>
           <Button asChild variant="outline">
-            <Link href="/pricing">{t("billing.upgradePlan")}</Link>
+            <Link href="/dashboard/plans">{t("billing.upgradePlan")}</Link>
           </Button>
           <Button
             onClick={() => {

@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useEffect } from "react";
 import { useBillingStore } from "@/lib/billing/store";
 import { getPlanById } from "@/lib/billing/plans";
 import {
@@ -28,15 +27,10 @@ export function BillingSummaryCard() {
     includedCreditsRemaining,
     topUpCreditsBalance,
     openTopUpModal,
-    resetPeriodIfNeeded,
     fxRateUsdToMnt,
     fxRateUpdatedAtISO,
     fxRateLive,
   } = useBillingStore();
-
-  useEffect(() => {
-    resetPeriodIfNeeded();
-  }, [resetPeriodIfNeeded]);
 
   const plan = getPlanById(currentPlanId);
   const includedTotal = getIncludedCredits(plan, currency);
@@ -92,7 +86,7 @@ export function BillingSummaryCard() {
 
         <div className="flex flex-wrap items-center gap-2">
           <Button asChild variant="outline">
-            <Link href="/pricing">{t("billing.changePlan")}</Link>
+            <Link href="/dashboard/plans">{t("billing.changePlan")}</Link>
           </Button>
           <Button onClick={openTopUpModal}>{t("billing.topUpCreditsAction")}</Button>
           <Button variant="ghost" className="text-muted-foreground">

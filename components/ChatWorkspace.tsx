@@ -12,6 +12,7 @@ import { UpgradeModal } from "@/components/billing/UpgradeModal";
 import { TopUpModal } from "@/components/billing/TopUpModal";
 import { OutOfCreditsModal } from "@/components/billing/OutOfCreditsModal";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { ChatContentContainer } from "@/components/ChatContentContainer";
 import { MODELS } from "@/lib/modelCatalog";
 import { useChatActions } from "@/lib/hooks/useChatActions";
@@ -26,9 +27,22 @@ import type { Run } from "@/lib/types";
 import { useBillingStore } from "@/lib/billing/store";
 import { getPlanById } from "@/lib/billing/plans";
 
-export function ChatWorkspace() {
+interface ChatWorkspaceProps {
+  projectId?: string | null;
+  conversationId?: string;
+  projectName?: string;
+  projectArchived?: boolean;
+}
+
+export function ChatWorkspace({
+  projectId,
+  conversationId,
+  projectName,
+  projectArchived = false,
+}: ChatWorkspaceProps) {
   const { t } = useI18n();
-  const { conversations, currentConversationId } = useConversationStore();
+  const { conversations, currentConversationId, setCurrentConversation } =
+    useConversationStore();
   const { slots, activeSlotId, setSlotModel } = useModelStore();
   const { sendMessage } = useChatActions();
   const { mode } = useSettingsStore();
@@ -39,21 +53,39 @@ export function ChatWorkspace() {
   const {
     currency,
     currentPlanId,
-    resetPeriodIfNeeded,
     openUpgradeModal,
   } = useBillingStore();
+  const isProjectScope = typeof projectId === "string" && projectId.length > 0;
 
+  const scopedConversations = useMemo(
+    () =>
+      conversations.filter((conversation) =>
+        isProjectScope
+          ? conversation.projectId === projectId
+          : !conversation.projectId,
+      ),
+    [conversations, isProjectScope, projectId],
+  );
   const conversation = useMemo(() => {
-    return (
-      conversations.find((conv) => conv.id === currentConversationId) ??
-      conversations[0]
-    );
-  }, [conversations, currentConversationId]);
+    if (conversationId) {
+      return scopedConversations.find((conv) => conv.id === conversationId);
+    }
+
+    const current =
+      currentConversationId
+        ? scopedConversations.find((conv) => conv.id === currentConversationId)
+        : undefined;
+    return current ?? scopedConversations[0];
+  }, [conversationId, currentConversationId, scopedConversations]);
   const isEmpty = !conversation?.messages?.length;
+  const hasNoChats = scopedConversations.length === 0;
 
   useEffect(() => {
-    resetPeriodIfNeeded();
-  }, [resetPeriodIfNeeded]);
+    const nextId = conversation?.id ?? null;
+    if (nextId !== currentConversationId) {
+      setCurrentConversation(nextId);
+    }
+  }, [conversation?.id, currentConversationId, setCurrentConversation]);
 
   const activeSlot =
     slots.find((slot) => slot.slotId === activeSlotId) ?? slots[0];
@@ -94,16 +126,43 @@ export function ChatWorkspace() {
               : modeOption?.value === "simulation"
                 ? t("settings.modeRoleOutput")
                 : t("settings.modeWebOutput");
+  const contextBadgeLabel = isProjectScope
+    ? (projectName ?? t("projects.title"))
+    : t("navigation.general");
+  const contextBreadcrumb = isProjectScope
+    ? `${t("navigation.projects")} / ${projectName ?? t("projects.title")} / ${t("navigation.chat")}`
+    : `${t("navigation.chat")} / ${t("navigation.general")}`;
+  const emptyScopeMessage =
+    projectArchived
+      ? t("projects.archivedReadOnly", {
+          project: projectName ?? t("projects.title"),
+        })
+      : isProjectScope
+        ? t("projects.noChatsInProject")
+        : null;
 
   const handleSend = (value: string) => {
     if (!value.trim()) return;
-    resetPeriodIfNeeded();
-    sendMessage(value);
+    if (projectArchived) return;
+    sendMessage(value, projectId ?? undefined);
   };
 
   return (
-    <div className="flex flex-1 flex-col min-h-0">
-      <div className="flex flex-1 flex-col gap-3 px-4 py-4 min-h-0">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="surface-enter flex min-h-0 flex-1 flex-col gap-4 px-3 pb-4 pt-3 md:px-6 md:pt-5">
+        <ChatContentContainer maxWidth="var(--chat-max-width)">
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-[hsl(var(--app-panel)/0.72)] px-3 py-2.5 backdrop-blur-sm">
+            <div className="min-w-0">
+              <p className="truncate text-[11px] font-medium text-muted-foreground">
+                {contextBreadcrumb}
+              </p>
+            </div>
+            <Badge variant="secondary" className="shrink-0">
+              {contextBadgeLabel}
+            </Badge>
+          </div>
+        </ChatContentContainer>
+
         {/* Removed mode + instructions strip for a cleaner chat area */}
 
         {/* Tabs removed; active model is controlled via chat controls */}
@@ -111,45 +170,55 @@ export function ChatWorkspace() {
         {isEmpty ? (
           <div className="flex flex-1 items-center justify-center">
             <ChatContentContainer
-              className="space-y-4"
+              className="space-y-4 rounded-[1.25rem] border border-border/70 bg-[hsl(var(--app-panel)/0.72)] p-4 shadow-[0_16px_45px_-32px_hsl(var(--foreground)/0.52)] backdrop-blur-sm sm:p-5"
               maxWidth="var(--chat-max-width)"
             >
+              {hasNoChats ? (
+                emptyScopeMessage ? (
+                  <div className="rounded-xl border border-dashed bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
+                    {emptyScopeMessage}
+                  </div>
+                ) : null
+              ) : null}
               <ChatControls
                 modeLabel={modeLabel}
                 modeOutputStyle={modeOutputStyle}
                 enabledModelCount={enabledModelIds.length}
                 onOpenSettings={() => setSettingsOpen(true)}
               />
-              <Composer
-                onSend={handleSend}
-                modelId={activeSlot?.modelId ?? "openai/gpt-5.2"}
-                modelLabel={activeSlot?.label ?? t("topBar.selectModel")}
-                enabledModelIds={enabledModelIds}
-                currency={currency}
-                lockedModelIds={lockedModelIds}
-                onSelectModel={(modelId) =>
-                  activeSlot && setSlotModel(activeSlot.slotId, modelId)
-                }
-                onSelectLocked={(modelId) =>
-                  openUpgradeModal({
-                    reason: t("billing.unlockMoreModels"),
-                    lockedModelId: modelId,
-                  })
-                }
-              />
+              {!projectArchived ? (
+                <Composer
+                  onSend={handleSend}
+                  modelId={activeSlot?.modelId ?? "openai/gpt-5.2"}
+                  modelLabel={activeSlot?.label ?? t("topBar.selectModel")}
+                  enabledModelIds={enabledModelIds}
+                  currency={currency}
+                  lockedModelIds={lockedModelIds}
+                  onSelectModel={(modelId) =>
+                    activeSlot && setSlotModel(activeSlot.slotId, modelId)
+                  }
+                  onSelectLocked={(modelId) =>
+                    openUpgradeModal({
+                      reason: t("billing.unlockMoreModels"),
+                      lockedModelId: modelId,
+                    })
+                  }
+                />
+              ) : null}
             </ChatContentContainer>
           </div>
         ) : (
-          <div className="flex flex-1 flex-col gap-3 min-h-0">
+          <div className="flex min-h-0 flex-1 flex-col gap-4">
             <ChatThread
               conversation={conversation}
+              projectId={projectId ?? undefined}
               activeTab={activeTab}
               slots={slots}
               onShowSources={(run) => setSourcesRun(run)}
               onShowDisagreements={(run) => setDisagreementsRun(run)}
             />
             <ChatContentContainer
-              className="sticky bottom-4 z-10 space-y-2"
+              className="sticky bottom-3 z-10 space-y-2 pb-1"
               maxWidth="var(--chat-max-width)"
             >
               <ChatControls
@@ -158,23 +227,25 @@ export function ChatWorkspace() {
                 enabledModelCount={enabledModelIds.length}
                 onOpenSettings={() => setSettingsOpen(true)}
               />
-              <Composer
-                onSend={handleSend}
-                modelId={activeSlot?.modelId ?? "openai/gpt-5.2"}
-                modelLabel={activeSlot?.label ?? t("topBar.selectModel")}
-                enabledModelIds={enabledModelIds}
-                currency={currency}
-                lockedModelIds={lockedModelIds}
-                onSelectModel={(modelId) =>
-                  activeSlot && setSlotModel(activeSlot.slotId, modelId)
-                }
-                onSelectLocked={(modelId) =>
-                  openUpgradeModal({
-                    reason: t("billing.unlockMoreModels"),
-                    lockedModelId: modelId,
-                  })
-                }
-              />
+              {!projectArchived ? (
+                <Composer
+                  onSend={handleSend}
+                  modelId={activeSlot?.modelId ?? "openai/gpt-5.2"}
+                  modelLabel={activeSlot?.label ?? t("topBar.selectModel")}
+                  enabledModelIds={enabledModelIds}
+                  currency={currency}
+                  lockedModelIds={lockedModelIds}
+                  onSelectModel={(modelId) =>
+                    activeSlot && setSlotModel(activeSlot.slotId, modelId)
+                  }
+                  onSelectLocked={(modelId) =>
+                    openUpgradeModal({
+                      reason: t("billing.unlockMoreModels"),
+                      lockedModelId: modelId,
+                    })
+                  }
+                />
+              ) : null}
             </ChatContentContainer>
           </div>
         )}
@@ -212,10 +283,10 @@ function ChatControls({
   const { t } = useI18n();
   return (
     <div className="flex items-center justify-between gap-2">
-      <div className="flex min-w-0 items-center gap-2 rounded-lg border bg-muted/30 px-2 py-1.5 text-xs text-muted-foreground">
+      <div className="flex min-w-0 items-center gap-2 rounded-xl border border-border/70 bg-background/75 px-3 py-1.5 text-xs text-muted-foreground backdrop-blur">
         <Sparkles className="h-3.5 w-3.5 shrink-0" />
         <span className="truncate">
-          <span className="font-medium text-foreground">{modeLabel}</span>
+          <span className="font-semibold text-foreground">{modeLabel}</span>
           {` · ${enabledModelCount} ${
             enabledModelCount === 1
               ? t("composer.modelSingular")
@@ -228,6 +299,7 @@ function ChatControls({
         size="icon"
         onClick={onOpenSettings}
         title={t("accessibility.openSettings")}
+        className="h-8 w-8 rounded-lg"
       >
         <Settings className="h-4 w-4" />
       </Button>

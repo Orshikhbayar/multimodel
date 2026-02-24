@@ -5,10 +5,14 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import {
   ArrowUpRight,
+  BarChart3,
+  CreditCard,
   Download,
+  Gauge,
   Globe,
   HelpCircle,
   Info,
+  Layers,
   LogOut,
   Settings,
 } from "lucide-react";
@@ -59,6 +63,10 @@ export function UserMenu() {
       LANGUAGE_OPTIONS[0]?.label
     );
   }, [user.locale]);
+  const avatarStyle = useMemo(() => {
+    if (!user.avatarUrl) return undefined;
+    return { backgroundImage: `url(${JSON.stringify(user.avatarUrl)})` };
+  }, [user.avatarUrl]);
 
   const handleNavigate = (href: string) => {
     setOpen(false);
@@ -102,11 +110,20 @@ export function UserMenu() {
         <PopoverTrigger asChild>
           <button
             type="button"
-            className="flex w-full items-center justify-between rounded-xl border bg-card/60 px-3 py-2 text-left hover:bg-muted/40"
+            className="flex w-full items-center justify-between rounded-xl border border-border/75 bg-background/72 px-3 py-2 text-left transition hover:bg-muted/45"
           >
             <span className="flex items-center gap-3">
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-sm font-semibold">
-                {user.avatarInitial}
+              <span className="relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-muted text-sm font-semibold">
+                {user.avatarUrl ? (
+                  <span
+                    aria-hidden="true"
+                    className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+                    style={avatarStyle}
+                  />
+                ) : null}
+                <span className={cn("relative z-10", user.avatarUrl ? "opacity-0" : "")}>
+                  {user.avatarInitial}
+                </span>
               </span>
               <span>
                 <span className="block text-sm font-semibold">
@@ -123,12 +140,33 @@ export function UserMenu() {
         <PopoverContent
           align="start"
           side="top"
-          className="w-64 rounded-2xl p-2"
+          className="z-[120] w-64 overflow-hidden rounded-2xl border border-border/85 bg-[hsl(var(--card))] p-2 shadow-[0_28px_64px_-34px_hsl(var(--foreground)/0.78)]"
         >
           <div className="space-y-1" role="menu" aria-label={t("userMenu.menuAria")}>
             <p className="px-2 py-1 text-xs text-muted-foreground">
               {user.email || t("common.notSignedIn")}
             </p>
+            <MenuItem
+              icon={BarChart3}
+              label={`${t("navigation.dashboard")} · Overview`}
+              onClick={() => handleNavigate("/dashboard")}
+            />
+            <MenuItem
+              icon={Gauge}
+              label={t("billing.usage")}
+              onClick={() => handleNavigate("/dashboard/usage")}
+            />
+            <MenuItem
+              icon={CreditCard}
+              label={t("billing.pageTitle")}
+              onClick={() => handleNavigate("/dashboard/billing")}
+            />
+            <MenuItem
+              icon={Layers}
+              label={t("billing.pricing")}
+              onClick={() => handleNavigate("/dashboard/plans")}
+            />
+            <Separator className="my-1" />
             <MenuItem
               icon={Settings}
               label={t("userMenu.settings")}
@@ -149,7 +187,7 @@ export function UserMenu() {
             <MenuItem
               icon={ArrowUpRight}
               label={t("userMenu.upgradePlan")}
-              onClick={() => handleNavigate("/account/billing")}
+              onClick={() => handleNavigate("/dashboard/plans")}
             />
             <MenuItem
               icon={Download}

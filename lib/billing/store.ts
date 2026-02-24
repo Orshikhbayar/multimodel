@@ -6,7 +6,6 @@ import {
   changePlan,
   getBillingSummary,
   getBillingTransactions,
-  purchaseTopUp,
   setBillingCurrency,
 } from "@/lib/actions/billing";
 
@@ -29,6 +28,10 @@ import {
 } from "./utils";
 
 const STORAGE_VERSION = 2;
+const SERVER_BILLING_DISABLED =
+  process.env.NEXT_PUBLIC_DISABLE_SERVER_BILLING === "true";
+
+let serverBillingSyncDisabled = SERVER_BILLING_DISABLED;
 
 const buildPeriod = () => {
   const start = new Date();
@@ -97,6 +100,16 @@ type FxRateResponse = {
   live: boolean;
 };
 
+function shouldDisableServerBillingSync(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const message = error.message.toLowerCase();
+  return (
+    message.includes("billing_unavailable") ||
+    message.includes("failed to provision billing user") ||
+    message.includes("econnrefused")
+  );
+}
+
 function toDisplay(usdAmount: number, currency: Currency) {
   if (currency === "USD") return Number(usdAmount.toFixed(2));
   return Math.round(convertCurrency(usdAmount, "USD", "MNT"));
@@ -130,6 +143,14 @@ function toStoreTransactions(
   });
 }
 
+async function redirectToCheckout(url: string) {
+  if (typeof window === "undefined") {
+    throw new Error("Checkout redirect is only available in the browser");
+  }
+
+  window.location.assign(url);
+}
+
 export const useBillingStore = create<BillingStore>()(
   persist(
     (set, get) => ({
@@ -153,6 +174,11 @@ export const useBillingStore = create<BillingStore>()(
       },
 
       syncFromServer: async () => {
+        if (serverBillingSyncDisabled) {
+          set({ loading: false, hydrated: true });
+          return;
+        }
+
         try {
           set({ loading: true, error: undefined });
           let fxRateUsdToMnt = getUsdToMntRate();
@@ -207,6 +233,16 @@ export const useBillingStore = create<BillingStore>()(
             ui: state.ui,
           }));
         } catch (error) {
+          if (shouldDisableServerBillingSync(error)) {
+            serverBillingSyncDisabled = true;
+            set({
+              loading: false,
+              hydrated: true,
+              error: "Server billing sync disabled (Supabase mode)",
+            });
+            return;
+          }
+
           set({
             loading: false,
             hydrated: true,
@@ -234,8 +270,28 @@ export const useBillingStore = create<BillingStore>()(
         set({ loading: true, error: undefined });
         try {
           const cadence = get().billingCadence;
-          await changePlan({ planId, cadence });
-          await get().syncFromServer();
+
+          if (planId === "free") {
+            await changePlan({ planId, cadence });
+            await get().syncFromServer();
+            return;
+          }
+
+          const response = await fetch("/api/stripe/checkout/subscription", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ planId, cadence }),
+          });
+
+          const payload = (await response.json().catch(() => null)) as
+            | { url?: string; error?: string }
+            | null;
+
+          if (!response.ok || !payload?.url) {
+            throw new Error(payload?.error || "Failed to create subscription checkout");
+          }
+
+          await redirectToCheckout(payload.url);
         } catch (error) {
           set({
             loading: false,
@@ -250,8 +306,21 @@ export const useBillingStore = create<BillingStore>()(
       topUp: async (packId) => {
         set({ loading: true, error: undefined });
         try {
-          await purchaseTopUp({ packId, displayCurrency: get().currency });
-          await get().syncFromServer();
+          const response = await fetch("/api/stripe/checkout/topup", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ packId }),
+          });
+
+          const payload = (await response.json().catch(() => null)) as
+            | { url?: string; error?: string }
+            | null;
+
+          if (!response.ok || !payload?.url) {
+            throw new Error(payload?.error || "Failed to create top-up checkout");
+          }
+
+          await redirectToCheckout(payload.url);
         } catch (error) {
           set({
             loading: false,

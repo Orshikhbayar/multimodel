@@ -4,9 +4,56 @@ import { cookies } from "next/headers";
 import type { Database } from "@/lib/supabase/database.types";
 import { getSupabaseConfig } from "@/lib/supabase/env";
 
+function getBypassIdentity() {
+  const bypass = process.env.E2E_AUTH_BYPASS;
+  if (!bypass || bypass === "false") return null;
+
+  const id = bypass === "true" ? "e2e-user" : bypass;
+  return {
+    id,
+    email: process.env.E2E_AUTH_EMAIL || "e2e@example.com",
+  };
+}
+
 export async function createSupabaseServerClient(): Promise<
   SupabaseClient<Database>
 > {
+  const bypassIdentity = getBypassIdentity();
+  if (bypassIdentity) {
+    return {
+      auth: {
+        getClaims: async () => ({
+          data: {
+            claims: {
+              sub: bypassIdentity.id,
+              email: bypassIdentity.email,
+            },
+          },
+          error: null,
+        }),
+        getUser: async () => ({
+          data: {
+            user: {
+              id: bypassIdentity.id,
+              email: bypassIdentity.email,
+            },
+          },
+          error: null,
+        }),
+        signOut: async () => ({ error: null }),
+        exchangeCodeForSession: async () => ({ data: {}, error: null }),
+      },
+      from: () => ({
+        upsert: async () => ({ data: null, error: null }),
+        update: () => ({
+          eq: () => ({
+            eq: async () => ({ data: null, error: null }),
+          }),
+        }),
+      }),
+    } as unknown as SupabaseClient<Database>;
+  }
+
   const cookieStore = await cookies();
   const { url, publishableKey } = getSupabaseConfig();
 
@@ -39,6 +86,11 @@ export type AuthenticatedUser = {
 };
 
 export async function getAuthenticatedUser(): Promise<AuthenticatedUser | null> {
+  const bypassIdentity = getBypassIdentity();
+  if (bypassIdentity) {
+    return bypassIdentity;
+  }
+
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase.auth.getClaims();
   const claims = data?.claims;

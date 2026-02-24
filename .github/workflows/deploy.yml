@@ -101,6 +101,6 @@ jobs:
         run: npm ci
 
       - name: Run migrations
-        run: npx prisma migrate deploy
+        run: npx supabase@latest db push --db-url "$DATABASE_URL"
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}

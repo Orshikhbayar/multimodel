@@ -10,6 +10,7 @@ import type { Conversation, ModelSlot, Run } from "@/lib/types";
 
 interface MessageListProps {
   conversation?: Conversation;
+  projectId?: string;
   activeTab: string;
   slots: ModelSlot[];
   onShowSources: (run: Run) => void;
@@ -18,6 +19,7 @@ interface MessageListProps {
 
 export function MessageList({
   conversation,
+  projectId,
   activeTab,
   slots,
   onShowSources,
@@ -112,6 +114,7 @@ export function MessageList({
             <MessageItem
               key={message.id}
               message={message}
+              projectId={projectId}
               conversationId={conversation?.id}
               run={message.role === "assistant" ? run : undefined}
               prompt={prompt}

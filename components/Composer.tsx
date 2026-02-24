@@ -122,8 +122,8 @@ export function Composer({
   };
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-[hsl(var(--app-panel-2))] px-3 py-2 shadow-lg backdrop-blur">
-      <div className="flex flex-col gap-2">
+    <div className="rounded-[1.2rem] border border-border/75 bg-[hsl(var(--app-panel-2)/0.88)] px-3.5 py-3 shadow-[0_18px_42px_-30px_hsl(var(--foreground)/0.55)] backdrop-blur-xl">
+      <div className="flex flex-col gap-2.5">
         {value.length === 0 && (
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="text-[11px] text-muted-foreground">
@@ -133,7 +133,7 @@ export function Composer({
               <button
                 key={item.label}
                 type="button"
-                className="rounded-full border px-2 py-1 text-[11px] text-muted-foreground transition hover:bg-muted/50 hover:text-foreground"
+                className="rounded-full border border-border/80 bg-background/70 px-2.5 py-1 text-[11px] text-muted-foreground transition hover:bg-muted/50 hover:text-foreground"
                 onClick={() => {
                   setValue(item.prompt);
                   textareaRef.current?.focus();
@@ -149,7 +149,7 @@ export function Composer({
           value={value}
           onChange={(event) => setValue(event.target.value)}
           placeholder={t("composer.placeholder")}
-          className="min-h-[44px] max-h-[160px] w-full resize-none border-0 bg-transparent text-sm shadow-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 focus:ring-offset-0 focus-visible:ring-offset-0"
+          className="min-h-[46px] max-h-[160px] w-full resize-none border-0 bg-transparent px-0 text-sm leading-relaxed shadow-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 focus:ring-offset-0 focus-visible:ring-offset-0"
           onKeyDown={(event) => {
             if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
               event.preventDefault();
@@ -168,7 +168,7 @@ export function Composer({
             trigger={
               <button
                 type="button"
-                className="relative flex items-center gap-2 rounded-full border bg-[hsl(var(--app-panel))] px-3 py-1.5 text-xs font-medium shadow-sm transition-all duration-150 hover:bg-muted/40"
+                className="relative flex items-center gap-2 rounded-full border border-border/80 bg-background/80 px-3 py-1.5 text-xs font-medium shadow-sm transition-all duration-150 hover:bg-muted/40"
               >
                 <ModelGlyph modelId={modelId} size="sm" />
                 <span className="max-w-[120px] truncate">{modelLabel}</span>
@@ -179,7 +179,7 @@ export function Composer({
           <Button
             onClick={isStreaming ? stopAllStreams : handleSend}
             size="icon"
-            className="rounded-xl"
+            className="h-9 w-9 rounded-xl"
             variant={isStreaming ? "secondary" : "default"}
           >
             {isStreaming ? (
@@ -195,7 +195,7 @@ export function Composer({
           </Button>
         </div>
       </div>
-      <div className="mt-1 flex flex-wrap items-center justify-between gap-2 pb-1 text-[11px] text-muted-foreground">
+      <div className="mt-1 flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-2 text-[11px] text-muted-foreground">
         <span>{t("composer.shortcutsHint")}</span>
         <span>
           {trimmedValue

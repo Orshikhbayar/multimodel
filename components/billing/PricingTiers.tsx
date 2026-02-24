@@ -21,6 +21,7 @@ export function PricingTiers() {
     currency,
     billingCadence,
     currentPlanId,
+    loading,
     setCurrency,
     setBillingCadence,
     choosePlan,
@@ -139,9 +140,12 @@ export function PricingTiers() {
                   />
                 </div>
                 <Button
-                  className="w-full"
+                  className="w-full whitespace-nowrap px-3 text-sm"
                   variant={isCurrent ? "secondary" : "default"}
-                  onClick={() => choosePlan(plan.id)}
+                  disabled={loading}
+                  onClick={async () => {
+                    await choosePlan(plan.id);
+                  }}
                 >
                   {isCurrent
                     ? t("billing.currentPlan")

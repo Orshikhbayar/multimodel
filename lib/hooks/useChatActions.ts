@@ -11,7 +11,9 @@ import type { Message, Run, ModelSlot } from "@/lib/types";
 import { analytics } from "@/lib/analytics";
 import { useUsageStore } from "@/lib/analytics/usage";
 import { estimateTokenCostUsd } from "@/lib/billing/estimator";
+import { useBillingStore } from "@/lib/billing/store";
 import { useAppSettingsStore } from "@/lib/state/settingsStore";
+import { useSessionStore } from "@/lib/state/sessionStore";
 import { getLocaleResponseInstruction } from "@/lib/i18n/locale";
 import { t } from "@/lib/i18n/translate";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -29,6 +31,7 @@ import {
 } from "@/lib/hooks/runGeneration";
 const MAX_PARALLEL_STREAMS = 2;
 const CONCURRENCY_RETRY_DELAYS_MS = [800, 1600] as const;
+const DEFAULT_UNIFIED_SYNTHESIS_MODEL_ID = "openai/gpt-5.2";
 const activeRunSchedulerCancels = new Map<string, Set<() => void>>();
 
 /**
@@ -54,6 +57,9 @@ interface StreamResult {
     totalTokens: number;
   };
   costUsd?: number;
+  code?: string;
+  suggestedAction?: "topup" | "upgrade";
+  requiredPlanId?: string;
 }
 
 /**
@@ -63,6 +69,8 @@ interface StreamResult {
 async function fetchStreamingChat(
   messages: { role: "user" | "assistant" | "system"; content: string }[],
   modelId: string,
+  mode: string,
+  projectId: string | null,
   metadata: {
     conversationId: string;
     messageId: string;
@@ -82,6 +90,8 @@ async function fetchStreamingChat(
       body: JSON.stringify({
         messages,
         modelId,
+        mode,
+        projectId,
         conversationId: metadata.conversationId,
         messageId: metadata.messageId,
         runId: metadata.runId,
@@ -118,6 +128,34 @@ async function fetchStreamingChat(
           typeof errorData.maxStreams === "number"
             ? errorData.maxStreams
             : undefined,
+      });
+      return;
+    }
+
+    if (response.status === 402 || response.status === 403) {
+      const errorData = await response.json().catch(() => ({}));
+      onError(errorData.error || "Billing error", {
+        status: "error",
+        requestId,
+        error: errorData.error,
+        code: typeof errorData.code === "string" ? errorData.code : undefined,
+        suggestedAction:
+          errorData.suggestedAction === "upgrade" ? "upgrade" : "topup",
+        requiredPlanId:
+          typeof errorData.requiredPlanId === "string"
+            ? errorData.requiredPlanId
+            : undefined,
+      });
+      return;
+    }
+
+    if (response.status === 423) {
+      const errorData = await response.json().catch(() => ({}));
+      onError(errorData.error || "Billing is locked", {
+        status: "error",
+        requestId,
+        error: errorData.error,
+        code: typeof errorData.code === "string" ? errorData.code : "BILLING_LOCKED",
       });
       return;
     }
@@ -290,6 +328,106 @@ function buildUnifiedAnswerText(
   return `${lead}\n\n${bullets.join("\n")}`;
 }
 
+function pickUnifiedSynthesisModelId(slots: ModelSlot[]): string {
+  const enabledSlots = slots.filter((slot) => slot.enabled);
+  const openAISlot = enabledSlots.find((slot) =>
+    slot.modelId.startsWith("openai/"),
+  );
+  return openAISlot?.modelId ?? DEFAULT_UNIFIED_SYNTHESIS_MODEL_ID;
+}
+
+function buildUnifiedSynthesisPrompt(
+  locale: string,
+  userPrompt: string,
+  perspectiveRuns: Run[],
+) {
+  const localeInstruction = getLocaleResponseInstruction(locale);
+  const perspectives = perspectiveRuns
+    .map(
+      (run, index) =>
+        `### Perspective ${index + 1} (${run.model})\n${run.text.trim()}`,
+    )
+    .join("\n\n");
+
+  const messages: Array<{
+    role: "system" | "user";
+    content: string;
+  }> = [
+    {
+      role: "system",
+      content:
+        "Synthesize multiple model drafts into one final answer. Keep concrete implementation details. When code is needed, include complete runnable code blocks and do not summarize code away. Always use fenced code blocks with explicit language tags (for example: ```html, ```javascript, ```python).",
+    },
+  ];
+
+  if (localeInstruction) {
+    messages.push({ role: "system", content: localeInstruction });
+  }
+
+  messages.push({
+    role: "user",
+    content: [
+      `Original user request:\n${userPrompt.trim()}`,
+      "Model drafts:",
+      perspectives,
+      "Return one unified final answer that resolves conflicts and picks the strongest technical approach.",
+    ].join("\n\n"),
+  });
+
+  return messages;
+}
+
+function buildUnifiedFallbackText(locale: string, successfulRuns: Run[]): string {
+  if (successfulRuns.length === 0) {
+    return t(locale, "chat.unifiedNoAnswer");
+  }
+
+  const bestRun = successfulRuns.reduce((best, current) => {
+    return current.text.length > best.text.length ? current : best;
+  }, successfulRuns[0]);
+
+  return `${t(locale, "chat.unifiedLeadFinal", { models: bestRun.model })}\n\n${bestRun.text}`;
+}
+
+function toLoggableError(error: unknown) {
+  if (error instanceof Error) {
+    return {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+    };
+  }
+
+  if (error && typeof error === "object") {
+    const candidate = error as {
+      code?: unknown;
+      details?: unknown;
+      hint?: unknown;
+      message?: unknown;
+      status?: unknown;
+    };
+
+    return {
+      message:
+        typeof candidate.message === "string"
+          ? candidate.message
+          : "Unknown error",
+      code: typeof candidate.code === "string" ? candidate.code : undefined,
+      details:
+        typeof candidate.details === "string" ? candidate.details : undefined,
+      hint: typeof candidate.hint === "string" ? candidate.hint : undefined,
+      status:
+        typeof candidate.status === "number"
+          ? candidate.status
+          : typeof candidate.status === "string"
+            ? candidate.status
+            : undefined,
+    };
+  }
+
+  return { message: String(error) };
+}
+
 /**
  * Hook for chat actions - bridges all stores together
  */
@@ -299,13 +437,19 @@ export function useChatActions() {
   const settingsStore = useSettingsStore();
   const streamStore = useStreamStore();
   const workspaceId = useWorkspaceStore((state) => state.workspaceId);
+  const isAuthenticated = useSessionStore((state) => state.isAuthenticated);
   const usageStore = useUsageStore();
   const locale = useAppSettingsStore((state) => state.locale);
-  const supabase = createSupabaseBrowserClient();
+  const isE2eBypass =
+    process.env.NEXT_PUBLIC_E2E_BYPASS === "true" ||
+    process.env.NEXT_PUBLIC_E2E_BYPASS === "1";
+  const supabase = isE2eBypass ? null : createSupabaseBrowserClient();
 
   const resolveWorkspaceId = async () => {
+    if (isE2eBypass) return "e2e-workspace";
     if (workspaceId) return workspaceId;
 
+    if (!supabase) return "e2e-workspace";
     const nextWorkspaceId = await ensureWorkspaceId(supabase);
     useWorkspaceStore.getState().setWorkspaceId(nextWorkspaceId);
     return nextWorkspaceId;
@@ -314,6 +458,8 @@ export function useChatActions() {
   const startRuns = async (
     conversationId: string,
     content: string,
+    mode: string,
+    projectId: string | null,
     slots: ModelSlot[],
     runs: Run[],
     assistantMessageId: string,
@@ -339,6 +485,20 @@ export function useChatActions() {
     conversationCancels.add(cancelScheduler);
     activeRunSchedulerCancels.set(conversationId, conversationCancels);
 
+    const getCurrentPerspectiveRuns = () => {
+      const conversation = useConversationStore
+        .getState()
+        .conversations.find((entry) => entry.id === conversationId);
+      const assistantMessage = conversation?.messages.find(
+        (entry) => entry.id === assistantMessageId,
+      );
+      if (!assistantMessage?.runs) return [] as Run[];
+
+      return assistantMessage.runs.filter((entry) =>
+        perspectiveRunIds.includes(entry.id),
+      );
+    };
+
     const syncUnifiedRun = () => {
       if (!unifiedRun) return;
 
@@ -349,10 +509,14 @@ export function useChatActions() {
         (entry) => entry.id === assistantMessageId,
       );
       if (!assistantMessage?.runs) return;
-
-      const currentPerspectiveRuns = assistantMessage.runs.filter((entry) =>
-        perspectiveRunIds.includes(entry.id),
+      const currentUnifiedRun = assistantMessage.runs.find(
+        (entry) => entry.id === unifiedRun.id,
       );
+      if (currentUnifiedRun?.status === "done" && currentUnifiedRun.text.trim()) {
+        return;
+      }
+
+      const currentPerspectiveRuns = getCurrentPerspectiveRuns();
       const anyPending = currentPerspectiveRuns.some(
         (entry) => entry.status === "streaming" || entry.status === "queued",
       );
@@ -420,6 +584,8 @@ export function useChatActions() {
         fetchStreamingChat(
           apiMessages,
           slot.modelId,
+          mode,
+          projectId,
           {
             conversationId,
             messageId: assistantMessageId,
@@ -553,8 +719,27 @@ export function useChatActions() {
           conversationId,
           assistantMessageId,
           run.id,
-          t(locale, "errors.somethingWentWrong"),
+          result.error ?? t(locale, "errors.somethingWentWrong"),
         );
+
+        if (result.code === "INSUFFICIENT_CREDITS") {
+          if (result.suggestedAction === "upgrade") {
+            const requiredPlanId =
+              result.requiredPlanId === "plus" ||
+              result.requiredPlanId === "pro" ||
+              result.requiredPlanId === "team" ||
+              result.requiredPlanId === "free"
+                ? result.requiredPlanId
+                : undefined;
+
+            useBillingStore.getState().openUpgradeModal({
+              reason: t(locale, "billing.upgradeNeededAction"),
+              requiredPlanId,
+            });
+          } else {
+            useBillingStore.getState().openOutOfCreditsModal();
+          }
+        }
       }
 
       if (run.slotId) {
@@ -598,6 +783,166 @@ export function useChatActions() {
       }
     };
 
+    const runUnifiedSynthesis = async () => {
+      if (!unifiedRun || schedulerState.cancelled) return;
+
+      const currentPerspectiveRuns = getCurrentPerspectiveRuns();
+      const successfulRuns = currentPerspectiveRuns.filter(
+        (run) => run.status !== "error" && run.text.trim().length > 0,
+      );
+
+      if (successfulRuns.length === 0) {
+        conversationStore.completeRun(
+          conversationId,
+          assistantMessageId,
+          unifiedRun.id,
+          {
+            status: "done",
+            text: t(locale, "chat.unifiedNoAnswer"),
+          },
+        );
+        return;
+      }
+
+      const synthesisModelId = pickUnifiedSynthesisModelId(slots);
+      const synthesisMessages = buildUnifiedSynthesisPrompt(
+        locale,
+        content,
+        successfulRuns,
+      );
+      const controller = new AbortController();
+      const synthesisStart = Date.now();
+      let synthesizedText = "";
+
+      streamStore.registerStream(unifiedRun.id, controller);
+      conversationStore.completeRun(
+        conversationId,
+        assistantMessageId,
+        unifiedRun.id,
+        { status: "streaming", text: "" },
+      );
+
+      const result = await new Promise<StreamResult>((resolve) => {
+        fetchStreamingChat(
+          synthesisMessages,
+          synthesisModelId,
+          mode,
+          projectId,
+          {
+            conversationId,
+            messageId: assistantMessageId,
+            runId: unifiedRun.id,
+          },
+          controller,
+          (token) => {
+            synthesizedText += token;
+            conversationStore.appendRunChunk(
+              conversationId,
+              assistantMessageId,
+              unifiedRun.id,
+              token,
+            );
+          },
+          (doneResult) => resolve(doneResult),
+          (_error, errorResult) => resolve(errorResult),
+        );
+      });
+
+      streamStore.removeStream(unifiedRun.id);
+      const latencyMs = result.elapsedMs ?? Date.now() - synthesisStart;
+
+      if (result.status === "cancelled") {
+        conversationStore.completeRun(
+          conversationId,
+          assistantMessageId,
+          unifiedRun.id,
+          {
+            status: "done",
+            interrupted: true,
+            latencyMs,
+            text:
+              synthesizedText.trim().length > 0
+                ? synthesizedText
+                : buildUnifiedFallbackText(locale, successfulRuns),
+          },
+        );
+        return;
+      }
+
+      if (result.status === "done") {
+        const finalText =
+          synthesizedText.trim().length > 0
+            ? synthesizedText
+            : buildUnifiedFallbackText(locale, successfulRuns);
+
+        conversationStore.completeRun(
+          conversationId,
+          assistantMessageId,
+          unifiedRun.id,
+          {
+            status: "done",
+            text: finalText,
+            latencyMs,
+            costUsd: result.costUsd,
+            tokens: result.usage
+              ? {
+                  prompt: result.usage.promptTokens,
+                  completion: result.usage.completionTokens,
+                  total: result.usage.totalTokens,
+                }
+              : undefined,
+          },
+        );
+
+        const inputTokens =
+          result.usage?.promptTokens ??
+          Math.ceil(synthesisMessages.map((message) => message.content).join("\n").length / 4);
+        const outputTokens =
+          result.usage?.completionTokens ?? Math.ceil(finalText.length / 4);
+        const estimatedCostUsd =
+          result.costUsd ??
+          estimateTokenCostUsd({
+            modelId: synthesisModelId,
+            inputTokens,
+            outputTokens,
+          });
+
+        usageStore.addRecord({
+          timestamp: Date.now(),
+          model: synthesisModelId,
+          inputTokens,
+          outputTokens,
+          latencyMs,
+          estimatedCostUsd,
+        });
+
+        analytics.trackApiUsage({
+          model: synthesisModelId,
+          latencyMs,
+          inputTokens,
+          outputTokens,
+          success: true,
+        });
+        return;
+      }
+
+      conversationStore.completeRun(
+        conversationId,
+        assistantMessageId,
+        unifiedRun.id,
+        {
+          status: "done",
+          text: buildUnifiedFallbackText(locale, successfulRuns),
+        },
+      );
+
+      analytics.trackApiUsage({
+        model: synthesisModelId,
+        latencyMs,
+        success: false,
+      });
+    };
+
     let cursor = 0;
     const workerCount = Math.min(MAX_PARALLEL_STREAMS, perspectiveRuns.length);
     const workers = Array.from({ length: workerCount }, async () => {
@@ -624,6 +969,7 @@ export function useChatActions() {
 
     try {
       await Promise.all(workers);
+      await runUnifiedSynthesis();
     } finally {
       const cancelSet = activeRunSchedulerCancels.get(conversationId);
       if (cancelSet) {
@@ -636,7 +982,7 @@ export function useChatActions() {
     }
   };
 
-  const sendMessage = async (content: string) => {
+  const sendMessage = async (content: string, projectId?: string) => {
     if (!content.trim()) return;
 
     // Track message sent
@@ -650,10 +996,23 @@ export function useChatActions() {
 
     // Get or create conversation
     let conversationId = conversationStore.currentConversationId;
+    const targetProjectId = projectId ?? null;
+    if (conversationId) {
+      const currentConversation = conversationStore.conversations.find(
+        (conversation) => conversation.id === conversationId,
+      );
+      const currentProjectId = currentConversation?.projectId ?? null;
+      if (currentProjectId !== targetProjectId) {
+        conversationId = null;
+      }
+    }
+
     if (!conversationId) {
       conversationId = conversationStore.createConversation(
         t(locale, "navigation.newChat"),
+        projectId,
       );
+      conversationStore.setCurrentConversation(conversationId);
     }
 
     const { slots } = modelStore;
@@ -686,43 +1045,51 @@ export function useChatActions() {
     ]);
 
     // Persist turn metadata in Supabase before streaming starts.
-    try {
-      const resolvedWorkspaceId = await resolveWorkspaceId();
-      const currentConversation = useConversationStore
-        .getState()
-        .conversations.find((conversation) => conversation.id === conversationId);
+    if (!isE2eBypass && supabase && isAuthenticated) {
+      try {
+        const resolvedWorkspaceId = await resolveWorkspaceId();
+        const currentConversation = useConversationStore
+          .getState()
+          .conversations.find((conversation) => conversation.id === conversationId);
 
-      await upsertConversation(supabase, {
-        id: conversationId,
-        workspaceId: resolvedWorkspaceId,
-        title: currentConversation?.title ?? t(locale, "navigation.newChat"),
-      });
+        await upsertConversation(supabase, {
+          id: conversationId,
+          workspaceId: resolvedWorkspaceId,
+          title: currentConversation?.title ?? t(locale, "navigation.newChat"),
+          projectId: currentConversation?.projectId,
+        });
 
-      const runRows = runs
-        .filter((run) => run.model !== UNIFIED_MODEL_NAME)
-        .map((run) => {
-          const slot = slots.find((entry) => entry.slotId === run.slotId);
-          if (!slot) return null;
+        const runRows = runs
+          .filter((run) => run.model !== UNIFIED_MODEL_NAME)
+          .map((run) => {
+            const slot = slots.find((entry) => entry.slotId === run.slotId);
+            if (!slot) return null;
 
-          return {
-            id: run.id,
-            modelId: slot.modelId,
-            provider: getProviderFromModelId(slot.modelId),
-          };
-        })
-        .filter((value): value is { id: string; modelId: string; provider: string } =>
-          Boolean(value),
-        );
+            return {
+              id: run.id,
+              modelId: slot.modelId,
+              provider: getProviderFromModelId(slot.modelId),
+            };
+          })
+          .filter((value): value is { id: string; modelId: string; provider: string } =>
+            Boolean(value),
+          );
 
-      await createTurnRecords(supabase, {
-        conversationId,
-        userMessageId: userMessage.id,
-        assistantMessageId: assistantMessage.id,
-        userContent: content,
-        runs: runRows,
-      });
-    } catch (error) {
-      console.error("[useChatActions] Failed to persist turn pre-stream", error);
+        await createTurnRecords(supabase, {
+          conversationId,
+          userMessageId: userMessage.id,
+          assistantMessageId: assistantMessage.id,
+          userContent: content,
+          runs: runRows,
+        });
+      } catch (error) {
+        console.error("[useChatActions] Failed to persist turn pre-stream", {
+          conversationId,
+          assistantMessageId: assistantMessage.id,
+          userMessageId: userMessage.id,
+          error: toLoggableError(error),
+        });
+      }
     }
 
     // Build message history for API
@@ -759,6 +1126,8 @@ export function useChatActions() {
     await startRuns(
       conversationId!,
       content,
+      mode,
+      targetProjectId,
       slots,
       runs,
       assistantMessage.id,
@@ -801,45 +1170,53 @@ export function useChatActions() {
       assistantMessage,
     ]);
 
-    try {
-      const resolvedWorkspaceId = await resolveWorkspaceId();
-      const currentConversation = useConversationStore
-        .getState()
-        .conversations.find((conversation) => conversation.id === conversationId);
+    if (!isE2eBypass && supabase && isAuthenticated) {
+      try {
+        const resolvedWorkspaceId = await resolveWorkspaceId();
+        const currentConversation = useConversationStore
+          .getState()
+          .conversations.find((conversation) => conversation.id === conversationId);
 
-      await upsertConversation(supabase, {
-        id: conversationId,
-        workspaceId: resolvedWorkspaceId,
-        title: currentConversation?.title ?? t(locale, "navigation.newChat"),
-      });
+        await upsertConversation(supabase, {
+          id: conversationId,
+          workspaceId: resolvedWorkspaceId,
+          title: currentConversation?.title ?? t(locale, "navigation.newChat"),
+          projectId: currentConversation?.projectId,
+        });
 
-      await updateUserMessageContent(supabase, {
-        messageId: userMessageId,
-        content,
-      });
+        await updateUserMessageContent(supabase, {
+          messageId: userMessageId,
+          content,
+        });
 
-      const runRows = runs
-        .filter((run) => run.model !== UNIFIED_MODEL_NAME)
-        .map((run) => {
-          const slot = slots.find((entry) => entry.slotId === run.slotId);
-          if (!slot) return null;
-          return {
-            id: run.id,
-            modelId: slot.modelId,
-            provider: getProviderFromModelId(slot.modelId),
-          };
-        })
-        .filter((value): value is { id: string; modelId: string; provider: string } =>
-          Boolean(value),
-        );
+        const runRows = runs
+          .filter((run) => run.model !== UNIFIED_MODEL_NAME)
+          .map((run) => {
+            const slot = slots.find((entry) => entry.slotId === run.slotId);
+            if (!slot) return null;
+            return {
+              id: run.id,
+              modelId: slot.modelId,
+              provider: getProviderFromModelId(slot.modelId),
+            };
+          })
+          .filter((value): value is { id: string; modelId: string; provider: string } =>
+            Boolean(value),
+          );
 
-      await createAssistantMessageWithRuns(supabase, {
-        conversationId,
-        assistantMessageId: assistantMessage.id,
-        runs: runRows,
-      });
-    } catch (error) {
-      console.error("[useChatActions] Failed to persist edited turn", error);
+        await createAssistantMessageWithRuns(supabase, {
+          conversationId,
+          assistantMessageId: assistantMessage.id,
+          runs: runRows,
+        });
+      } catch (error) {
+        console.error("[useChatActions] Failed to persist edited turn", {
+          conversationId,
+          assistantMessageId: assistantMessage.id,
+          userMessageId,
+          error: toLoggableError(error),
+        });
+      }
     }
 
     const conversation = useConversationStore
@@ -874,6 +1251,8 @@ export function useChatActions() {
     await startRuns(
       conversationId,
       content,
+      mode,
+      conversation?.projectId ?? null,
       slots,
       runs,
       assistantMessage.id,

@@ -23,10 +23,21 @@ import type { ChatMessage } from "@/lib/api/types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getProviderFromModelId } from "@/lib/supabase/chatPersistence";
 import { estimateTokenCostUsd } from "@/lib/billing/estimator";
+import {
+  finalizeUsageRunMetering,
+  startUsageRunMetering,
+  SupabaseBillingInsufficientCreditsError,
+  SupabaseBillingLockedError,
+  SupabaseBillingQuotaExceededError,
+  SupabaseBillingUnavailableError,
+  SupabaseBillingUpgradeRequiredError,
+} from "@/lib/billing/supabaseService";
 
 interface ChatRequestBody {
   messages: ChatMessage[];
   modelId: string;
+  mode?: string;
+  projectId?: string | null;
   temperature?: number;
   maxTokens?: number;
   conversationId?: string;
@@ -58,12 +69,20 @@ export async function POST(request: NextRequest) {
   }
 
   const sessionUserId = claims.sub;
+  const sessionEmail =
+    typeof claims.email === "string"
+      ? claims.email
+      : typeof claims["email"] === "string"
+        ? claims["email"]
+        : null;
   const log = createRequestLogger(requestId, sessionUserId);
 
   Sentry.setUser({ id: sessionUserId });
   Sentry.setTag("requestId", requestId);
 
-  const permission = checkStreamPermission(sessionUserId);
+  const permission = checkStreamPermission(sessionUserId, undefined, {
+    email: sessionEmail,
+  });
 
   if (!permission.allowed) {
     const headers = getRateLimitHeaders(permission.rateLimit);
@@ -122,6 +141,8 @@ export async function POST(request: NextRequest) {
     const {
       messages,
       modelId,
+      mode,
+      projectId,
       temperature,
       maxTokens,
       conversationId,
@@ -137,6 +158,62 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const hasProjectScope = Object.prototype.hasOwnProperty.call(body, "projectId");
+    if (
+      hasProjectScope &&
+      projectId !== null &&
+      projectId !== undefined &&
+      typeof projectId !== "string"
+    ) {
+      releaseConcurrencySlot(sessionUserId, streamId);
+      return new Response(
+        JSON.stringify({ error: "projectId must be a string or null", requestId }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    if (hasProjectScope && conversationId) {
+      const { data: conversation, error: conversationError } = await supabase
+        .from("conversations")
+        .select("id,project_id")
+        .eq("id", conversationId)
+        .maybeSingle();
+
+      if (conversationError) {
+        releaseConcurrencySlot(sessionUserId, streamId);
+        return new Response(
+          JSON.stringify({ error: "Failed to validate conversation scope", requestId }),
+          { status: 500, headers: { "Content-Type": "application/json" } },
+        );
+      }
+
+      if (!conversation) {
+        releaseConcurrencySlot(sessionUserId, streamId);
+        return new Response(
+          JSON.stringify({ error: "Conversation not found", requestId }),
+          { status: 404, headers: { "Content-Type": "application/json" } },
+        );
+      }
+
+      const isScopeMismatch =
+        projectId === null
+          ? conversation.project_id !== null
+          : projectId !== undefined
+            ? conversation.project_id !== projectId
+            : false;
+
+      if (isScopeMismatch) {
+        releaseConcurrencySlot(sessionUserId, streamId);
+        return new Response(
+          JSON.stringify({
+            error: "Conversation scope mismatch",
+            requestId,
+          }),
+          { status: 409, headers: { "Content-Type": "application/json" } },
+        );
+      }
+    }
+
     if (!process.env.OPENAI_API_KEY) {
       releaseConcurrencySlot(sessionUserId, streamId);
       return new Response(
@@ -149,8 +226,130 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const resolvedModelId = modelId || "openai/gpt-4o-mini";
+    let resolvedModelId = modelId || "openai/gpt-4o-mini";
+    const meteringRunReferenceId = runId ?? requestId;
+    const estimatedPromptTokens = estimatePromptTokensFromMessages(messages);
+    let meteringClosed = false;
+
+    try {
+      const metered = await startUsageRunMetering({
+        sessionUser: {
+          id: sessionUserId,
+          email: sessionEmail,
+        },
+        runReferenceId: meteringRunReferenceId,
+        requestedModelId: resolvedModelId,
+        mode,
+        estimatedPromptTokens,
+        maxOutputTokens: maxTokens ?? 2048,
+      });
+
+      if (metered) {
+        resolvedModelId = metered.modelId;
+      }
+    } catch (error) {
+      releaseConcurrencySlot(sessionUserId, streamId);
+
+      if (error instanceof SupabaseBillingUpgradeRequiredError) {
+        return new Response(
+          JSON.stringify({
+            error: "Upgrade required for this model",
+            code: error.code,
+            requiredPlanId: error.requiredPlanId,
+            suggestedAction: "upgrade",
+            requestId,
+          }),
+          { status: 403, headers: { "Content-Type": "application/json" } },
+        );
+      }
+
+      if (error instanceof SupabaseBillingQuotaExceededError) {
+        return new Response(
+          JSON.stringify({
+            error: "Usage quota exceeded",
+            code: error.code,
+            reason: error.reason,
+            resetAt: error.resetAt.toISOString(),
+            requestId,
+          }),
+          {
+            status: 429,
+            headers: { "Content-Type": "application/json" },
+          },
+        );
+      }
+
+      if (error instanceof SupabaseBillingInsufficientCreditsError) {
+        return new Response(
+          JSON.stringify({
+            error: "Insufficient credits",
+            code: error.code,
+            availableCreditsUsd: Number(
+              (error.availableCreditsInt / 100).toFixed(2),
+            ),
+            neededCreditsUsd: Number((error.neededCreditsInt / 100).toFixed(2)),
+            suggestedAction: error.suggestedAction,
+            requestId,
+          }),
+          { status: 402, headers: { "Content-Type": "application/json" } },
+        );
+      }
+
+      if (error instanceof SupabaseBillingLockedError) {
+        return new Response(
+          JSON.stringify({
+            error: "Billing is locked",
+            code: error.code,
+            reason: error.lockReason ?? null,
+            requestId,
+          }),
+          { status: 423, headers: { "Content-Type": "application/json" } },
+        );
+      }
+
+      if (error instanceof SupabaseBillingUnavailableError) {
+        return new Response(
+          JSON.stringify({
+            error: "Billing unavailable",
+            code: error.code,
+            requestId,
+          }),
+          { status: 503, headers: { "Content-Type": "application/json" } },
+        );
+      }
+
+      throw error;
+    }
+
     const resolvedProvider = getProviderFromModelId(resolvedModelId);
+
+    const finalizeMetering = async (
+      status: "completed" | "cancelled" | "failed",
+      promptTokens: number,
+      completionTokens: number,
+      failureReason?: string,
+    ) => {
+      if (meteringClosed) return;
+      meteringClosed = true;
+
+      try {
+        await finalizeUsageRunMetering({
+          userId: sessionUserId,
+          userEmail: sessionEmail,
+          runReferenceId: meteringRunReferenceId,
+          modelId: resolvedModelId,
+          promptTokens,
+          completionTokens,
+          status,
+          failureReason,
+        });
+      } catch (finalizeError) {
+        log.error("Metering finalization failed", finalizeError, {
+          model: resolvedModelId,
+          status,
+        });
+      }
+    };
 
     if (conversationId && runId) {
       await supabase.from("model_runs").upsert(
@@ -171,7 +370,6 @@ export async function POST(request: NextRequest) {
     let fallbackCompletionTokens = 0;
     let accumulatedText = "";
     const resolvedModel = getOpenAIModelName(resolvedModelId);
-    const estimatedPromptTokens = estimatePromptTokensFromMessages(messages);
 
     let tokenUsage: TokenUsage | undefined;
 
@@ -215,6 +413,12 @@ export async function POST(request: NextRequest) {
               inputTokens: promptTokens,
               outputTokens: completionTokens,
             });
+
+            await finalizeMetering(
+              "completed",
+              promptTokens,
+              completionTokens,
+            );
 
             if (conversationId && runId) {
               await supabase
@@ -284,6 +488,13 @@ export async function POST(request: NextRequest) {
           Metrics.apiError({ endpoint: "/api/chat", errorType: status });
           Metrics.streamDuration(elapsed, { model: resolvedModel, status });
 
+          await finalizeMetering(
+            status === "cancelled" ? "cancelled" : "failed",
+            0,
+            0,
+            message,
+          );
+
           if (conversationId && runId) {
             const failedStatus = status === "cancelled" ? "completed" : "failed";
             await supabase
@@ -331,6 +542,8 @@ export async function POST(request: NextRequest) {
         const elapsed = Date.now() - startTime;
         streamClosed = true;
         releaseConcurrencySlot(sessionUserId, streamId);
+
+        void finalizeMetering("cancelled", 0, 0, "client_cancelled");
 
         if (conversationId && runId) {
           void supabase

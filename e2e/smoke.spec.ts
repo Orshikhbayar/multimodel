@@ -8,7 +8,7 @@ test("app loads and user menu opens", async ({ page }) => {
   if (await emailField.isVisible()) {
     await emailField.fill("demo@example.com");
     await page.getByLabel("Password").fill("demo123");
-    await page.getByRole("button", { name: /sign in/i }).click();
+    await page.getByRole("button", { name: /sign in with email/i }).click();
   }
 
   await expect(page.getByText("Chat", { exact: true })).toBeVisible();

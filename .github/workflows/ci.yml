@@ -36,8 +36,8 @@ jobs:
       - name: Format check
         run: npm run format:check
 
-  test:
-    name: Unit Tests
+  test-coverage:
+    name: Unit Tests + Coverage
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -52,8 +52,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run tests
-        run: npm test -- --coverage
+      - name: Run coverage tests
+        run: npm run test:coverage
+
+      - name: Upload raw coverage artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
+          retention-days: 7
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
@@ -61,6 +68,50 @@ jobs:
         with:
           fail_ci_if_error: false
         continue-on-error: true
+
+  test-integration:
+    name: Integration Tests (Supabase)
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run integration tests
+        run: npm run test:integration
+
+  critical-coverage:
+    name: Critical Coverage Gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate coverage report
+        run: npm run test:coverage
+
+      - name: Enforce critical coverage
+        run: npm run coverage:critical
 
   build:
     name: Build
@@ -77,9 +128,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Generate Prisma Client
-        run: npx prisma generate
 
       - name: Build
         run: npm run build

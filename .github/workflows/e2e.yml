@@ -11,6 +11,11 @@ env:
   AUTH_SECRET: e2e-test-secret-not-for-production
   OPENAI_API_KEY: sk-test-key-for-e2e-only
   NEXT_PUBLIC_APP_URL: http://localhost:3000
+  E2E_AUTH_BYPASS: "true"
+  NEXT_PUBLIC_E2E_BYPASS: "true"
+  NEXT_PUBLIC_DISABLE_SERVER_BILLING: "true"
+  NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_test
 
 jobs:
   e2e:
@@ -31,9 +36,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Generate Prisma Client
-        run: npx prisma generate
-
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
@@ -41,7 +43,7 @@ jobs:
         run: npm run build
 
       - name: Run E2E tests
-        run: npm run e2e
+        run: npm run test:e2e
         env:
           CI: true
 

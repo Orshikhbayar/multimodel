@@ -35,6 +35,27 @@ interface UsageState {
   >;
 }
 
+const STORAGE_VERSION = 1;
+
+type PersistedUsageState = Pick<
+  UsageState,
+  | "records"
+  | "totalMessages"
+  | "totalInputTokens"
+  | "totalOutputTokens"
+  | "totalCostUsd"
+  | "periodStart"
+>;
+
+const createInitialPersistedUsageState = (): PersistedUsageState => ({
+  records: [],
+  totalMessages: 0,
+  totalInputTokens: 0,
+  totalOutputTokens: 0,
+  totalCostUsd: 0,
+  periodStart: Date.now(),
+});
+
 export const useUsageStore = create<UsageState>()(
   persist(
     (set, get) => ({
@@ -91,7 +112,39 @@ export const useUsageStore = create<UsageState>()(
     }),
     {
       name: "multi-model-usage",
+      version: STORAGE_VERSION,
       storage: createJSONStorage(() => localStorage),
+      migrate: (persistedState) => {
+        const fallback = createInitialPersistedUsageState();
+        const state = persistedState as Partial<PersistedUsageState> | undefined;
+        const records = Array.isArray(state?.records)
+          ? state.records.slice(-100)
+          : fallback.records;
+
+        return {
+          records,
+          totalMessages:
+            typeof state?.totalMessages === "number"
+              ? state.totalMessages
+              : fallback.totalMessages,
+          totalInputTokens:
+            typeof state?.totalInputTokens === "number"
+              ? state.totalInputTokens
+              : fallback.totalInputTokens,
+          totalOutputTokens:
+            typeof state?.totalOutputTokens === "number"
+              ? state.totalOutputTokens
+              : fallback.totalOutputTokens,
+          totalCostUsd:
+            typeof state?.totalCostUsd === "number"
+              ? state.totalCostUsd
+              : fallback.totalCostUsd,
+          periodStart:
+            typeof state?.periodStart === "number"
+              ? state.periodStart
+              : fallback.periodStart,
+        };
+      },
       partialize: (state) => ({
         records: state.records.slice(-100), // Keep last 100 records
         totalMessages: state.totalMessages,

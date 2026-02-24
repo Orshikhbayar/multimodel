@@ -25,7 +25,7 @@ export function MobileSidebar() {
           size="icon"
           onClick={() => setOpen(true)}
           aria-label={t("accessibility.openNavigationMenu")}
-          className="bg-background/80 backdrop-blur"
+          className="h-10 w-10 rounded-xl border-border/75 bg-background/85 shadow-sm backdrop-blur"
         >
           <Menu className="h-5 w-5" />
         </Button>
@@ -33,7 +33,7 @@ export function MobileSidebar() {
 
       {/* Mobile drawer */}
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="left" className="w-72 p-0">
+        <SheetContent side="left" className="w-[19rem] border-0 bg-transparent p-2">
           <SheetTitle className="sr-only">{t("accessibility.navigation")}</SheetTitle>
           <Sidebar onNavigate={() => setOpen(false)} />
         </SheetContent>

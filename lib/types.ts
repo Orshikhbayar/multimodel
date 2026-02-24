@@ -68,6 +68,7 @@ export interface Project {
   name: string;
   description?: string;
   createdAt: number;
+  archivedAt?: number;
 }
 
 // Interaction modes for multi-model orchestration

@@ -6,9 +6,20 @@ import type { Database, Tables } from "@/lib/supabase/database.types";
 export type SupabaseBrowserClient = SupabaseClient<Database>;
 
 function toRunStatus(status: Tables<"model_runs">["status"]): Run["status"] {
-  if (status === "running") return "streaming";
-  if (status === "completed") return "done";
-  return "error";
+  switch (status) {
+    case "queued":
+      return "queued";
+    case "streaming":
+    case "running":
+      return "streaming";
+    case "done":
+    case "completed":
+      return "done";
+    case "error":
+    case "failed":
+    default:
+      return "error";
+  }
 }
 
 function toMessageRole(role: Tables<"messages">["role"]): Message["role"] {
@@ -23,6 +34,15 @@ function toMessage(messages: Tables<"messages">, runs: Run[]): Message {
     role: toMessageRole(messages.role),
     content: messages.content,
     createdAt: new Date(messages.created_at).getTime(),
+    editedAt: messages.edited_at
+      ? new Date(messages.edited_at).getTime()
+      : undefined,
+    attachments: Array.isArray(messages.attachments)
+      ? (messages.attachments as unknown as Message["attachments"])
+      : undefined,
+    toolCalls: Array.isArray(messages.tool_calls)
+      ? (messages.tool_calls as unknown as Message["toolCalls"])
+      : undefined,
     runs: runs.length > 0 ? runs : undefined,
   };
 }
@@ -96,7 +116,7 @@ export async function hydrateWorkspaceConversations(
 ): Promise<Conversation[]> {
   const { data: conversations, error: conversationsError } = await client
     .from("conversations")
-    .select("id, workspace_id, title, created_at, updated_at")
+    .select("id, workspace_id, title, project_id, created_at, updated_at")
     .eq("workspace_id", workspaceId)
     .order("updated_at", { ascending: false });
 
@@ -114,7 +134,9 @@ export async function hydrateWorkspaceConversations(
     await Promise.all([
       client
         .from("messages")
-        .select("id, conversation_id, role, content, created_at")
+        .select(
+          "id, conversation_id, role, content, created_at, edited_at, attachments, tool_calls",
+        )
         .in("conversation_id", conversationIds)
         .order("created_at", { ascending: true }),
       client
@@ -182,6 +204,7 @@ export async function hydrateWorkspaceConversations(
   return conversations.map((conversation) => ({
     id: conversation.id,
     title: conversation.title,
+    projectId: conversation.project_id ?? undefined,
     createdAt: new Date(conversation.created_at).getTime(),
     messages: messagesByConversationId.get(conversation.id) ?? [],
   }));
@@ -193,14 +216,21 @@ export async function upsertConversation(
     id: string;
     workspaceId: string;
     title: string;
+    projectId?: string | null;
   },
 ) {
+  const row: Database["public"]["Tables"]["conversations"]["Insert"] = {
+    id: payload.id,
+    workspace_id: payload.workspaceId,
+    title: payload.title,
+  };
+
+  if (payload.projectId !== undefined) {
+    row.project_id = payload.projectId;
+  }
+
   const { error } = await client.from("conversations").upsert(
-    {
-      id: payload.id,
-      workspace_id: payload.workspaceId,
-      title: payload.title,
-    },
+    row,
     { onConflict: "id" },
   );
 

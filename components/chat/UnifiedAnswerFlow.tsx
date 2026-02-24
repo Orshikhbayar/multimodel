@@ -1,11 +1,19 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { Check, Copy } from "lucide-react";
 import { Brain, Cloud, Cpu, Flame, Layers, Sparkles } from "lucide-react";
 
 import { useI18n } from "@/lib/i18n";
 import type { Run } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import {
+  PrismLight,
+  SUPPORTED_LANGUAGES,
+  normalizeLanguage,
+} from "./codeHighlight";
 
 interface UnifiedAnswerFlowProps {
   prompt?: string;
@@ -130,10 +138,47 @@ export function UnifiedAnswerFlow({
           unifiedRun.status === "streaming" && "border-emerald-400/45",
         )}
       >
-        <p className="text-sm leading-relaxed">
-          <span className="font-semibold">{t("chat.unifiedAnswer")}:</span>{" "}
-          {unifiedRun.text || t("chat.unifiedCollecting")}
-        </p>
+        <div className="text-sm leading-relaxed">
+          <p className="mb-2 font-semibold">{t("chat.unifiedAnswer")}:</p>
+          <div className="chat-markdown prose prose-sm dark:prose-invert max-w-none">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              skipHtml
+              components={{
+                p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                code: ({ className, children, ...props }) => {
+                  const isInline = !className;
+                  if (isInline) {
+                    return (
+                      <code
+                        className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono"
+                        {...props}
+                      >
+                        {children}
+                      </code>
+                    );
+                  }
+
+                  const language = className?.replace("language-", "") ?? "text";
+                  const code = String(children).replace(/\n$/, "");
+                  return (
+                    <UnifiedCodeBlock
+                      language={language}
+                      code={code}
+                      textLabel={t("common.text")}
+                      copyLabel={t("common.copy")}
+                      copiedLabel={t("common.copied")}
+                      {...props}
+                    />
+                  );
+                },
+                pre: ({ children }) => <pre className="my-2">{children}</pre>,
+              }}
+            >
+              {unifiedRun.text || t("chat.unifiedCollecting")}
+            </ReactMarkdown>
+          </div>
+        </div>
         <p className="mt-2 text-xs text-muted-foreground">
           {t("chat.verified")} ·{" "}
           {t("chat.aiPerspectives", { count: perspectiveRuns.length })} ·{" "}
@@ -142,5 +187,58 @@ export function UnifiedAnswerFlow({
         </p>
       </article>
     </section>
+  );
+}
+
+function UnifiedCodeBlock({
+  code,
+  language,
+  textLabel,
+  copyLabel,
+  copiedLabel,
+}: {
+  code: string;
+  language?: string;
+  textLabel: string;
+  copyLabel: string;
+  copiedLabel: string;
+}) {
+  const [copied, setCopied] = useState(false);
+  const normalizedLanguage = normalizeLanguage(language);
+  const isSupported = SUPPORTED_LANGUAGES.has(normalizedLanguage);
+  const label = isSupported ? normalizedLanguage.toUpperCase() : textLabel;
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      setCopied(false);
+    }
+  };
+
+  return (
+    <div className="code-block my-3 overflow-hidden">
+      <div className="code-block__header">
+        <span className="code-block__label">{label}</span>
+        <button
+          type="button"
+          onClick={handleCopy}
+          className="code-block__copy"
+        >
+          {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+          {copied ? copiedLabel : copyLabel}
+        </button>
+      </div>
+      <PrismLight
+        language={isSupported ? normalizedLanguage : undefined}
+        useInlineStyles={false}
+        className="code-block__pre"
+        codeTagProps={{ className: "code-block__code" }}
+      >
+        {code}
+      </PrismLight>
+    </div>
   );
 }

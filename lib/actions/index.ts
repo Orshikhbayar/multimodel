@@ -37,6 +37,8 @@ export {
   purchaseTopUp,
   getBillingTransactions,
   setBillingCurrency,
+  getIncludedUsage,
   type BillingSummary,
   type BillingTransactionView,
+  type IncludedUsageReportView,
 } from "./billing";

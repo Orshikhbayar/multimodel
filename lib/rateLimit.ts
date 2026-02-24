@@ -3,6 +3,7 @@
  * Uses in-memory storage (for single-instance deployments)
  * For production with multiple instances, use Redis or similar
  */
+import { isUnlimitedTesterEmail } from "@/lib/testerAccess";
 
 // ============================================
 // Types
@@ -259,7 +260,28 @@ export interface StreamPermissionResult {
 export function checkStreamPermission(
   userId: string,
   config = RATE_LIMIT_CONFIG,
+  context?: {
+    email?: string | null;
+  },
 ): StreamPermissionResult {
+  if (isUnlimitedTesterEmail(context?.email)) {
+    return {
+      allowed: true,
+      rateLimit: {
+        allowed: true,
+        remaining: Number.MAX_SAFE_INTEGER,
+        resetIn: 0,
+        limit: Number.MAX_SAFE_INTEGER,
+      },
+      concurrency: {
+        allowed: true,
+        active: 0,
+        limit: Number.MAX_SAFE_INTEGER,
+        streamId: `${userId}-tester-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      },
+    };
+  }
+
   // Check rate limit first (does NOT consume yet)
   const rateResult = checkRateLimit(userId, config);
 

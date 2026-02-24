@@ -47,9 +47,16 @@ export function useChatStore() {
   const locale = useAppSettingsStore((state) => state.locale);
   const workspaceId = useWorkspaceStore((state) => state.workspaceId);
   const { sendMessage, stopAllStreams } = useChatActions();
+  const isE2eBypass =
+    process.env.NEXT_PUBLIC_E2E_BYPASS === "true" ||
+    process.env.NEXT_PUBLIC_E2E_BYPASS === "1";
 
   const createConversation = (title?: string, projectId?: string) => {
     const id = conversationStore.createConversation(title, projectId);
+
+    if (isE2eBypass) {
+      return id;
+    }
 
     void (async () => {
       try {
@@ -62,6 +69,7 @@ export function useChatStore() {
           id,
           workspaceId: resolvedWorkspaceId,
           title: title ?? (locale === "mn" ? "Шинэ чат" : "New chat"),
+          projectId,
         });
       } catch (error) {
         console.error("[useChatStore] Failed to persist conversation create", error);
@@ -73,6 +81,10 @@ export function useChatStore() {
 
   const updateConversationTitle = (id: string, title: string) => {
     conversationStore.updateConversationTitle(id, title);
+
+    if (isE2eBypass) {
+      return;
+    }
 
     void (async () => {
       try {
@@ -86,6 +98,10 @@ export function useChatStore() {
 
   const removeConversation = (id: string) => {
     conversationStore.removeConversation(id);
+
+    if (isE2eBypass) {
+      return;
+    }
 
     void (async () => {
       try {

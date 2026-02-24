@@ -17,7 +17,16 @@ function isPublicRoute(pathname: string) {
   return false;
 }
 
+function isE2EAuthBypassed() {
+  const bypass = process.env.E2E_AUTH_BYPASS;
+  return Boolean(bypass && bypass !== "false" && bypass !== "0");
+}
+
 export async function updateSession(request: NextRequest) {
+  if (isE2EAuthBypassed()) {
+    return NextResponse.next({ request });
+  }
+
   let response = NextResponse.next({ request });
   const { url, publishableKey } = getSupabaseConfig();
 

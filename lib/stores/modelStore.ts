@@ -41,6 +41,43 @@ interface ModelStoreActions {
 export type ModelStore = ModelStoreState & ModelStoreActions;
 
 const initialSlots = createDefaultSlots();
+const STORAGE_VERSION = 1;
+
+type PersistedModelStoreState = Pick<ModelStoreState, "slots" | "activeSlotId">;
+
+const migrateSlots = (value: unknown): ModelSlot[] => {
+  if (!Array.isArray(value)) return createDefaultSlots();
+
+  const migrated = value
+    .map((slot, index) => {
+      if (!slot || typeof slot !== "object") return null;
+      const candidate = slot as Partial<ModelSlot>;
+      const fallbackModelId =
+        initialSlots[index]?.modelId ??
+        DEFAULT_SLOT_MODEL_IDS[index] ??
+        initialSlots[0]?.modelId ??
+        "gpt-4o-mini";
+      const slotId =
+        typeof candidate.slotId === "string"
+          ? candidate.slotId
+          : `slot-${index + 1}`;
+      const modelId =
+        typeof candidate.modelId === "string"
+          ? candidate.modelId
+          : fallbackModelId;
+      const enabled =
+        typeof candidate.enabled === "boolean" ? candidate.enabled : true;
+
+      return buildSlot(slotId, modelId, enabled);
+    })
+    .filter((slot): slot is ModelSlot => slot !== null);
+
+  if (migrated.length === 0) return createDefaultSlots();
+  if (!migrated.some((slot) => slot.enabled)) {
+    migrated[0] = { ...migrated[0], enabled: true };
+  }
+  return migrated;
+};
 
 export const useModelStore = create<ModelStore>()(
   persist(
@@ -113,7 +150,24 @@ export const useModelStore = create<ModelStore>()(
     }),
     {
       name: "multi-model-slots",
+      version: STORAGE_VERSION,
       storage: createJSONStorage(() => localStorage),
+      migrate: (persistedState) => {
+        const state = persistedState as Partial<PersistedModelStoreState> | undefined;
+        const slots = migrateSlots(state?.slots);
+        const activeSlotId =
+          typeof state?.activeSlotId === "string" &&
+          slots.some((slot) => slot.slotId === state.activeSlotId)
+            ? state.activeSlotId
+            : (slots.find((slot) => slot.enabled)?.slotId ??
+              slots[0]?.slotId ??
+              "slot-1");
+
+        return {
+          slots,
+          activeSlotId,
+        };
+      },
       partialize: (state) => ({
         slots: state.slots,
         activeSlotId: state.activeSlotId,

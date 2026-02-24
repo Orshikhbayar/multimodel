@@ -55,10 +55,19 @@ export function getOpenAIModelName(modelId: string): string {
   return MODEL_MAP[modelId] || "gpt-4o-mini";
 }
 
+function getTokenLimitParam(modelName: string, maxTokens?: number) {
+  // GPT-5 chat-completions expects max_completion_tokens instead of max_tokens.
+  if (modelName.startsWith("gpt-5")) {
+    return { max_completion_tokens: maxTokens ?? 2048 };
+  }
+
+  return { max_tokens: maxTokens ?? 2048 };
+}
+
 /**
  * Token event - either a text token or usage data
  */
-export type StreamEvent = 
+export type StreamEvent =
   | { type: "token"; content: string }
   | { type: "usage"; usage: TokenUsage };
 
@@ -73,6 +82,7 @@ export async function* streamOpenAICompletion(
   options: StreamOptions,
 ): AsyncGenerator<StreamEvent, void, unknown> {
   const apiKey = process.env.OPENAI_API_KEY;
+  const modelName = getOpenAIModelName(options.model);
 
   if (!apiKey) {
     throw new Error("OPENAI_API_KEY is not configured");
@@ -85,10 +95,10 @@ export async function* streamOpenAICompletion(
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: getOpenAIModelName(options.model),
+      model: modelName,
       messages: options.messages,
       temperature: options.temperature ?? 0.7,
-      max_tokens: options.maxTokens ?? 2048,
+      ...getTokenLimitParam(modelName, options.maxTokens),
       stream: true,
       // Request usage data in streaming response
       stream_options: { include_usage: true },
@@ -128,13 +138,13 @@ export async function* streamOpenAICompletion(
 
         try {
           const json = JSON.parse(trimmed.slice(6));
-          
+
           // Check for token content
           const content = json.choices?.[0]?.delta?.content;
           if (content) {
             yield { type: "token", content };
           }
-          
+
           // Check for usage data (sent at the end of stream)
           if (json.usage) {
             yield {

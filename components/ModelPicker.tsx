@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Check, ChevronDown, Lock, Plus, Search, Settings } from "lucide-react";
@@ -177,8 +176,8 @@ export function ModelPicker({
           </div>
         </div>
 
-        <ScrollArea
-          className="min-h-0 flex-1"
+        <div
+          className="min-h-0 flex-1 overflow-y-auto"
           style={{ maxHeight: "min(360px, 50vh)" }}
         >
           <div className="space-y-3 px-2 pb-2">
@@ -242,7 +241,7 @@ export function ModelPicker({
               </>
             )}
           </div>
-        </ScrollArea>
+        </div>
 
         {onOpenProviderSettings ? (
           <>

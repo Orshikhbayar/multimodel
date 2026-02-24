@@ -2,30 +2,56 @@
 
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
-import prisma from "@/lib/db";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Project } from "@/lib/types";
 
-// ============================================
-// Type Conversions
-// ============================================
-
-function dbProjectToAppProject(dbProject: {
+function mapProject(row: {
   id: string;
   name: string;
   description: string | null;
-  createdAt: Date;
+  created_at: string;
 }): Project {
   return {
-    id: dbProject.id,
-    name: dbProject.name,
-    description: dbProject.description ?? undefined,
-    createdAt: dbProject.createdAt.getTime(),
+    id: row.id,
+    name: row.name,
+    description: row.description ?? undefined,
+    createdAt: new Date(row.created_at).getTime(),
   };
 }
 
-// ============================================
-// Project Actions
-// ============================================
+async function getPrimaryWorkspaceId(userId: string): Promise<string | null> {
+  const supabase = await createSupabaseServerClient();
+
+  const { data: ownerWorkspace, error: ownerError } = await supabase
+    .from("workspaces")
+    .select("id")
+    .eq("owner_id", userId)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (ownerError) {
+    throw ownerError;
+  }
+
+  if (ownerWorkspace?.id) {
+    return ownerWorkspace.id;
+  }
+
+  const { data: memberWorkspace, error: memberError } = await supabase
+    .from("workspace_members")
+    .select("workspace_id")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (memberError) {
+    throw memberError;
+  }
+
+  return memberWorkspace?.workspace_id ?? null;
+}
 
 export async function getProjects(): Promise<Project[]> {
   const session = await auth();
@@ -33,12 +59,17 @@ export async function getProjects(): Promise<Project[]> {
     return [];
   }
 
-  const projects = await prisma.project.findMany({
-    where: { userId: session.user.id },
-    orderBy: { createdAt: "desc" },
-  });
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("projects")
+    .select("id,name,description,created_at")
+    .order("created_at", { ascending: false });
 
-  return projects.map(dbProjectToAppProject);
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []).map(mapProject);
 }
 
 export async function getProject(projectId: string): Promise<Project | null> {
@@ -47,18 +78,22 @@ export async function getProject(projectId: string): Promise<Project | null> {
     return null;
   }
 
-  const project = await prisma.project.findFirst({
-    where: {
-      id: projectId,
-      userId: session.user.id,
-    },
-  });
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("projects")
+    .select("id,name,description,created_at")
+    .eq("id", projectId)
+    .maybeSingle();
 
-  if (!project) {
+  if (error) {
+    throw error;
+  }
+
+  if (!data) {
     return null;
   }
 
-  return dbProjectToAppProject(project);
+  return mapProject(data);
 }
 
 export async function createProject(
@@ -70,16 +105,28 @@ export async function createProject(
     return null;
   }
 
-  const project = await prisma.project.create({
-    data: {
-      userId: session.user.id,
+  const workspaceId = await getPrimaryWorkspaceId(session.user.id);
+  if (!workspaceId) {
+    return null;
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("projects")
+    .insert({
+      workspace_id: workspaceId,
       name,
       description: description ?? null,
-    },
-  });
+    })
+    .select("id")
+    .single();
+
+  if (error || !data) {
+    throw error ?? new Error("Failed to create project");
+  }
 
   revalidatePath("/projects");
-  return project.id;
+  return data.id;
 }
 
 export async function updateProject(
@@ -91,19 +138,27 @@ export async function updateProject(
     return false;
   }
 
-  const result = await prisma.project.updateMany({
-    where: {
-      id: projectId,
-      userId: session.user.id,
-    },
-    data: {
+  const supabase = await createSupabaseServerClient();
+  const { data: updated, error } = await supabase
+    .from("projects")
+    .update({
       name: data.name,
       description: data.description,
-    },
-  });
+    })
+    .eq("id", projectId)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!updated?.id) {
+    return false;
+  }
 
   revalidatePath("/projects");
-  return result.count > 0;
+  return true;
 }
 
 export async function deleteProject(projectId: string): Promise<boolean> {
@@ -112,13 +167,18 @@ export async function deleteProject(projectId: string): Promise<boolean> {
     return false;
   }
 
-  const result = await prisma.project.deleteMany({
-    where: {
-      id: projectId,
-      userId: session.user.id,
-    },
-  });
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("projects")
+    .delete()
+    .eq("id", projectId)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
 
   revalidatePath("/projects");
-  return result.count > 0;
+  return Boolean(data?.id);
 }

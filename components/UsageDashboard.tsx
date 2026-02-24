@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import { useUsageStore } from "@/lib/analytics/usage";
 import { useDbUsage, getQuotaStatus } from "@/lib/hooks/useDbUsage";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,19 +17,36 @@ import { useI18n } from "@/lib/i18n";
  */
 export function UsageDashboard() {
   const { t, formatDate, formatNumber: formatLocalizedNumber } = useI18n();
+  const hydrated = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
+
   // Local usage store (client-side estimates)
   const localUsage = useUsageStore();
-  
+
   // Real usage from database
   const { summary: dbSummary, quota, loading, refresh } = useDbUsage();
-  
+
   // Prefer DB data when available
   const hasDbData = !!dbSummary;
-  const totalTokens = hasDbData ? dbSummary.totalTokens : (localUsage.totalInputTokens + localUsage.totalOutputTokens);
-  const totalCostUsd = hasDbData ? dbSummary.totalCostUsd : localUsage.totalCostUsd;
-  const periodStart = hasDbData 
+  const localTotals = hydrated
+    ? {
+        totalTokens: localUsage.totalInputTokens + localUsage.totalOutputTokens,
+        totalCostUsd: localUsage.totalCostUsd,
+        periodStart: formatDate(new Date(localUsage.periodStart)),
+      }
+    : {
+        totalTokens: 0,
+        totalCostUsd: 0,
+        periodStart: "",
+      };
+  const totalTokens = hasDbData ? dbSummary.totalTokens : localTotals.totalTokens;
+  const totalCostUsd = hasDbData ? dbSummary.totalCostUsd : localTotals.totalCostUsd;
+  const periodStart = hasDbData
     ? formatDate(dbSummary.periodStart)
-    : formatDate(new Date(localUsage.periodStart));
+    : localTotals.periodStart;
 
   const modelBreakdown = useMemo(() => {
     if (hasDbData && dbSummary.byModel) {
@@ -40,7 +57,11 @@ export function UsageDashboard() {
         cost: data.costUsd,
       }));
     }
-    
+
+    if (!hydrated) {
+      return [];
+    }
+
     const localBreakdown = localUsage.getModelBreakdown();
     return Object.entries(localBreakdown).map(([model, data]) => ({
       model,
@@ -48,9 +69,10 @@ export function UsageDashboard() {
       tokens: data.tokens,
       cost: data.cost,
     }));
-  }, [hasDbData, dbSummary, localUsage]);
+  }, [hasDbData, dbSummary, hydrated, localUsage]);
 
   const quotaStatus = getQuotaStatus(quota);
+  const showLocalEstimates = !hasDbData && hydrated;
 
   return (
     <div className="space-y-6">
@@ -60,8 +82,10 @@ export function UsageDashboard() {
           <p className="text-sm text-muted-foreground">
             {hasDbData
               ? t("billing.currentBillingPeriod")
-              : t("billing.sinceDate", { date: periodStart })}
-            {!hasDbData && (
+              : showLocalEstimates
+                ? t("billing.sinceDate", { date: periodStart })
+                : t("common.loading")}
+            {showLocalEstimates && (
               <Badge variant="outline" className="ml-2 text-xs">
                 {t("billing.localEstimates")}
               </Badge>

@@ -2,6 +2,12 @@ export type PlanId = "free" | "plus" | "pro" | "team";
 export type Currency = "USD" | "MNT";
 export type BillingCadence = "monthly" | "annual";
 
+export type BillingSessionUser = {
+  id: string;
+  email?: string | null;
+  name?: string | null;
+};
+
 export type PlanFeatures = {
   webSearch: boolean;
   tools: boolean;

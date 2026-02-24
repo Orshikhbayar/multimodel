@@ -158,7 +158,7 @@ The application is deployed on Vercel with the following configuration:
 
 - **Project:** `multimodel-ai`
 - **Framework:** Next.js 16 (auto-detected)
-- **Build Command:** `prisma generate && next build`
+- **Build Command:** `next build`
 - **Runtime:** Node.js (for auth/database compatibility)
 
 ### Required Environment Variables (Vercel)

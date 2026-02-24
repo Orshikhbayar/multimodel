@@ -340,7 +340,7 @@ export function SettingsDrawer({ open, onOpenChange }: SettingsDrawerProps) {
                     value={instructions}
                     onChange={(event) => setInstructions(event.target.value)}
                     placeholder={t("settings.sharedInstructionsPlaceholder")}
-                    className="min-h-[120px]"
+                    className="min-h-[120px] border-border/95 bg-background ring-1 ring-border/85 shadow-[inset_0_0_0_1px_hsl(var(--border)/0.28)] focus-visible:ring-2 focus-visible:ring-primary/70 focus-visible:ring-offset-0"
                   />
                   <p className="text-xs text-muted-foreground">
                     {t("settings.sharedInstructionsApplied")}

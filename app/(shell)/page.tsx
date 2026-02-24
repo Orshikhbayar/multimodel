@@ -1,12 +1,5 @@
-"use client";
-
-import { ChatWorkspace } from "@/components/ChatWorkspace";
-import { ChatErrorBoundary } from "@/components/ErrorBoundary";
+import { redirect } from "next/navigation";
 
 export default function HomePage() {
-  return (
-    <ChatErrorBoundary>
-      <ChatWorkspace />
-    </ChatErrorBoundary>
-  );
+  redirect("/chat");
 }

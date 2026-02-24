@@ -5,6 +5,7 @@ export interface UserProfile {
   email: string;
   name: string;
   avatarInitial: string;
+  avatarUrl?: string;
   plan: UserPlanId;
   creditsUSD?: number;
   locale: string;

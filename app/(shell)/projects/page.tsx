@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Plus } from "lucide-react";
 
@@ -29,16 +31,21 @@ import { useChatStore } from "@/lib/store";
 export default function ProjectsPage() {
   const { t, formatDate } = useI18n();
   const { projects, addProject } = useChatStore();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const activeProjects = projects.filter((project) => !project.archivedAt);
+  const archivedProjects = projects.filter((project) => Boolean(project.archivedAt));
 
-  const create = () => {
+  const create = async () => {
     if (!name.trim()) return;
-    addProject(name, description);
+    const project = await addProject(name, description);
+    if (!project) return;
     setName("");
     setDescription("");
     setOpen(false);
+    router.push(`/projects/${project.id}/chat`);
   };
 
   return (
@@ -92,22 +99,24 @@ export default function ProjectsPage() {
         />
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {projects.map((project) => (
-            <Card key={project.id} className="h-full">
-              <CardHeader>
-                <CardTitle>{project.name}</CardTitle>
-                <CardDescription>
-                  {project.description || t("projects.noDescriptionYet")}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-xs text-muted-foreground">
-                  {t("projects.createdDate", {
-                    date: formatDate(new Date(project.createdAt)),
-                  })}
-                </p>
-              </CardContent>
-            </Card>
+          {activeProjects.map((project) => (
+            <Link key={project.id} href={`/projects/${project.id}/chat`}>
+              <Card className="h-full transition hover:border-primary/40 hover:bg-muted/20">
+                <CardHeader>
+                  <CardTitle>{project.name}</CardTitle>
+                  <CardDescription>
+                    {project.description || t("projects.noDescriptionYet")}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-xs text-muted-foreground">
+                    {t("projects.createdDate", {
+                      date: formatDate(new Date(project.createdAt)),
+                    })}
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
           {projects.length === 0 && (
             <Card>
@@ -120,6 +129,35 @@ export default function ProjectsPage() {
             </Card>
           )}
         </div>
+
+        {archivedProjects.length > 0 && (
+          <div className="space-y-3">
+            <h2 className="text-sm font-semibold text-muted-foreground">
+              {t("projects.archivedProjects")}
+            </h2>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {archivedProjects.map((project) => (
+                <Link key={project.id} href={`/projects/${project.id}`}>
+                  <Card className="h-full border-dashed opacity-80 transition hover:opacity-100">
+                    <CardHeader>
+                      <CardTitle>{project.name}</CardTitle>
+                      <CardDescription>
+                        {project.description || t("projects.noDescriptionYet")}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-xs text-muted-foreground">
+                        {t("projects.archivedDate", {
+                          date: formatDate(new Date(project.archivedAt!)),
+                        })}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </ContentColumn>
     </div>
   );

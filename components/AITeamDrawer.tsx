@@ -249,7 +249,7 @@ export function AITeamDrawer({ open, onOpenChange }: DrawerProps) {
               value={draftInstructions}
               onChange={(event) => setDraftInstructions(event.target.value)}
               placeholder={t("settings.sharedInstructionsPlaceholder")}
-              className="min-h-[140px]"
+              className="min-h-[140px] border-border/95 bg-background ring-1 ring-border/85 shadow-[inset_0_0_0_1px_hsl(var(--border)/0.28)] focus-visible:ring-2 focus-visible:ring-primary/70 focus-visible:ring-offset-0"
             />
           </div>
 

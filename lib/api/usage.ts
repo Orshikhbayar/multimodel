@@ -1,15 +1,8 @@
 /**
- * Server-side usage tracking utilities
- * 
- * These functions are used by API routes where we already have the userId
- * from the authenticated session. They don't need to call auth() again.
+ * Server-side usage tracking utilities.
  */
 
-import prisma from "@/lib/db";
-
-// ============================================
-// Model Pricing (per 1K tokens)
-// ============================================
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 interface ModelPricing {
   promptPer1k: number;
@@ -17,18 +10,12 @@ interface ModelPricing {
 }
 
 const MODEL_PRICING: Record<string, ModelPricing> = {
-  // GPT-4o
   "gpt-4o": { promptPer1k: 0.0025, completionPer1k: 0.01 },
   "gpt-4o-mini": { promptPer1k: 0.00015, completionPer1k: 0.0006 },
-  // GPT-4.1 series (estimate based on GPT-4 turbo pricing)
   "gpt-4.1": { promptPer1k: 0.01, completionPer1k: 0.03 },
-  // Default fallback
   default: { promptPer1k: 0.00015, completionPer1k: 0.0006 },
 };
 
-/**
- * Calculate cost based on model-specific pricing
- */
 export function calculateCost(
   model: string,
   promptTokens: number,
@@ -41,29 +28,20 @@ export function calculateCost(
   );
 }
 
-// ============================================
-// Quota Configuration
-// ============================================
-
 export interface QuotaConfig {
   dailyTokenLimit: number;
 }
 
-// Plan-based quota limits
 const PLAN_QUOTAS: Record<string, QuotaConfig> = {
-  free: { dailyTokenLimit: 100_000 }, // 100k tokens/day
-  plus: { dailyTokenLimit: 500_000 }, // 500k tokens/day
-  pro: { dailyTokenLimit: 2_000_000 }, // 2M tokens/day
-  team: { dailyTokenLimit: 10_000_000 }, // 10M tokens/day
+  free: { dailyTokenLimit: 100_000 },
+  plus: { dailyTokenLimit: 500_000 },
+  pro: { dailyTokenLimit: 2_000_000 },
+  team: { dailyTokenLimit: 10_000_000 },
 };
 
 export function getQuotaConfig(planId: string = "free"): QuotaConfig {
   return PLAN_QUOTAS[planId] ?? PLAN_QUOTAS.free;
 }
-
-// ============================================
-// Quota Check (for API routes)
-// ============================================
 
 export interface QuotaCheckResult {
   allowed: boolean;
@@ -73,37 +51,32 @@ export interface QuotaCheckResult {
   resetAt: Date;
 }
 
-/**
- * Check if user has quota remaining
- * Used by API routes where userId is already known
- */
 export async function checkUserQuota(
   userId: string,
   planId: string = "free",
 ): Promise<QuotaCheckResult> {
   const config = getQuotaConfig(planId);
 
-  // Get today's boundaries
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
 
   try {
-    const todayUsage = await prisma.usageRecord.aggregate({
-      where: {
-        userId,
-        createdAt: {
-          gte: today,
-          lt: tomorrow,
-        },
-      },
-      _sum: {
-        totalTokens: true,
-      },
-    });
+    const admin = createSupabaseAdminClient();
+    const { data, error } = await admin
+      .from("usage_runs")
+      .select("tokens_total")
+      .eq("user_id", userId)
+      .gte("created_at", today.toISOString())
+      .lt("created_at", tomorrow.toISOString())
+      .eq("status", "completed");
 
-    const used = todayUsage._sum.totalTokens ?? 0;
+    if (error) {
+      throw error;
+    }
+
+    const used = (data ?? []).reduce((sum, row) => sum + (row.tokens_total ?? 0), 0);
     const remaining = Math.max(0, config.dailyTokenLimit - used);
 
     return {
@@ -114,7 +87,6 @@ export async function checkUserQuota(
       resetAt: tomorrow,
     };
   } catch (error) {
-    // If DB is not configured, allow requests (development mode)
     console.warn("[Usage] Database not available, allowing request:", error);
     return {
       allowed: true,
@@ -126,10 +98,6 @@ export async function checkUserQuota(
   }
 }
 
-// ============================================
-// Usage Recording (for API routes)
-// ============================================
-
 export interface RecordUsageParams {
   userId: string;
   runId?: string;
@@ -139,10 +107,6 @@ export interface RecordUsageParams {
   completionTokens: number;
 }
 
-/**
- * Record usage for a completed API call
- * Used by API routes where userId is already known
- */
 export async function recordUserUsage(params: RecordUsageParams): Promise<void> {
   const {
     userId,
@@ -156,22 +120,40 @@ export async function recordUserUsage(params: RecordUsageParams): Promise<void> 
   const totalTokens = promptTokens + completionTokens;
   const estimatedCostUsd = calculateCost(model, promptTokens, completionTokens);
 
+  const runReferenceId = runId ?? `usage:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
+
   try {
-    await prisma.usageRecord.create({
-      data: {
-        userId,
-        runId: runId ?? null,
-        model,
-        provider,
-        promptTokens,
-        completionTokens,
-        totalTokens,
-        estimatedCostUsd,
+    const admin = createSupabaseAdminClient();
+    const { error } = await admin.from("usage_runs").upsert(
+      {
+        run_reference_id: runReferenceId,
+        user_id: userId,
+        plan_id: "free",
+        model_id: model,
+        mode: "conversation",
+        tokens_in: promptTokens,
+        tokens_out: completionTokens,
+        tokens_total: totalTokens,
+        usage_value_usd_int: Math.round(estimatedCostUsd * 100),
+        billed_amount_usd_int: 0,
+        billed_credits_int: 0,
+        billing_bucket: "included_plan",
+        status: "completed",
+        metadata: {
+          provider,
+        },
       },
-    });
+      {
+        onConflict: "run_reference_id",
+      },
+    );
+
+    if (error) {
+      throw error;
+    }
 
     if (process.env.NODE_ENV === "development") {
-      console.log(`[Usage] Recorded:`, {
+      console.log("[Usage] Recorded:", {
         userId,
         model,
         promptTokens,
@@ -181,7 +163,6 @@ export async function recordUserUsage(params: RecordUsageParams): Promise<void> 
       });
     }
   } catch (error) {
-    // Log but don't fail the request if recording fails
     console.error("[Usage] Failed to record usage:", error);
   }
 }

@@ -31,6 +31,7 @@ import { useConversationStore } from "@/lib/stores";
 
 interface MessageItemProps {
   message: Message;
+  projectId?: string;
   run?: Run;
   prompt?: string;
   conversationId?: string;
@@ -42,6 +43,7 @@ interface MessageItemProps {
 
 export function MessageItem({
   message,
+  projectId,
   run,
   prompt,
   conversationId,
@@ -231,7 +233,7 @@ export function MessageItem({
                 className="hover:text-foreground transition-colors"
                 title={t("chat.retry")}
                 aria-label={t("chat.retry")}
-                onClick={() => sendMessage(message.content)}
+                onClick={() => sendMessage(message.content, projectId)}
               >
                 <RotateCcw className="h-4 w-4" />
               </button>
@@ -261,7 +263,7 @@ export function MessageItem({
               {retryContent ? (
                 <button
                   type="button"
-                  onClick={() => sendMessage(retryContent)}
+                  onClick={() => sendMessage(retryContent, projectId)}
                   className="rounded-md border border-white/10 px-2 py-1 text-[11px] text-foreground transition hover:bg-muted/40"
                 >
                   {t("chat.retry")}
@@ -293,7 +295,7 @@ export function MessageItem({
                     className="hover:text-foreground transition-colors"
                     title={t("chat.tryAgain")}
                     onClick={() =>
-                      retryContent ? sendMessage(retryContent) : undefined
+                      retryContent ? sendMessage(retryContent, projectId) : undefined
                     }
                     disabled={!retryContent}
                     aria-label={t("chat.tryAgain")}

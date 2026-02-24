@@ -18,10 +18,10 @@ interface ConversationStoreState {
 
 interface ConversationStoreActions {
   createConversation: (title?: string, projectId?: string) => string;
-  setCurrentConversation: (id: string) => void;
+  setCurrentConversation: (id: string | null) => void;
   updateConversationTitle: (id: string, title: string) => void;
   removeConversation: (id: string) => void;
-  addProject: (name: string, description?: string) => void;
+  addProject: (name: string, description?: string) => Project;
   resetConversations: () => void;
   updateMessageContent: (
     conversationId: string,
@@ -59,6 +59,12 @@ interface ConversationStoreActions {
 
 export type ConversationStore = ConversationStoreState &
   ConversationStoreActions;
+const STORAGE_VERSION = 1;
+
+type PersistedConversationStoreState = Pick<
+  ConversationStoreState,
+  "conversations" | "projects" | "currentConversationId"
+>;
 
 const defaultProjectsEn: Project[] = [
   {
@@ -158,18 +164,20 @@ export const useConversationStore = create<ConversationStore>()(
           };
         }),
 
-      addProject: (name, description) =>
+      addProject: (name, description) => {
+        const project: Project = {
+          id: crypto.randomUUID(),
+          name,
+          description,
+          createdAt: Date.now(),
+        };
+
         set((state) => ({
-          projects: [
-            {
-              id: crypto.randomUUID(),
-              name,
-              description,
-              createdAt: Date.now(),
-            },
-            ...state.projects,
-          ],
-        })),
+          projects: [project, ...state.projects],
+        }));
+
+        return project;
+      },
 
       resetConversations: () =>
         set({
@@ -343,7 +351,33 @@ export const useConversationStore = create<ConversationStore>()(
     }),
     {
       name: "multi-model-conversations",
+      version: STORAGE_VERSION,
       storage: createJSONStorage(() => localStorage),
+      migrate: (persistedState) => {
+        const state = persistedState as
+          | Partial<PersistedConversationStoreState>
+          | undefined;
+        const conversations = Array.isArray(state?.conversations)
+          ? state.conversations
+          : [];
+        const projects =
+          Array.isArray(state?.projects) && state.projects.length > 0
+            ? state.projects
+            : getDefaultProjects();
+        const currentConversationId =
+          typeof state?.currentConversationId === "string" &&
+          conversations.some((conversation) => {
+            return conversation.id === state.currentConversationId;
+          })
+            ? state.currentConversationId
+            : null;
+
+        return {
+          conversations,
+          projects,
+          currentConversationId,
+        };
+      },
       partialize: (state) => ({
         conversations: state.conversations,
         projects: state.projects,

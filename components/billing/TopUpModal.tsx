@@ -16,7 +16,7 @@ import { TOP_UP_PACKS, getTopUpPayPrice } from "@/lib/billing/plans";
 
 export function TopUpModal() {
   const { t, locale } = useI18n();
-  const { ui, currency, topUp, closeTopUpModal } = useBillingStore();
+  const { ui, currency, loading, topUp, closeTopUpModal } = useBillingStore();
 
   return (
     <Dialog
@@ -51,6 +51,7 @@ export function TopUpModal() {
                 </p>
                 <Button
                   className="mt-4 w-full"
+                  disabled={loading}
                   onClick={async () => {
                     await topUp(pack.id);
                     closeTopUpModal();

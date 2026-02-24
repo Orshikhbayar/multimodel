@@ -73,7 +73,7 @@ export function UpgradeModal() {
             {t("billing.notNow")}
           </Button>
           <Button asChild variant="outline">
-            <Link href="/pricing">{t("billing.seeAllPlans")}</Link>
+            <Link href="/dashboard/plans">{t("billing.seeAllPlans")}</Link>
           </Button>
           {recommendedPlan ? (
             <Button
