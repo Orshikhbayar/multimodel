@@ -74,10 +74,16 @@ function AuthForm() {
     }
 
     const configuredAppUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+    const origin = window.location.origin;
+    const isLocalOrigin =
+      /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?$/i.test(origin);
+    const safeFallbackBase = isLocalOrigin
+      ? "https://multimodel-ai.vercel.app"
+      : origin;
     const baseUrl =
       configuredAppUrl && /^https?:\/\//i.test(configuredAppUrl)
         ? configuredAppUrl
-        : window.location.origin;
+        : safeFallbackBase;
 
     const callback = new URL("/auth/callback", baseUrl);
     callback.searchParams.set("next", next.startsWith("/") ? next : "/");
