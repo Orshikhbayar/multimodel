@@ -73,7 +73,13 @@ function AuthForm() {
       return undefined;
     }
 
-    const callback = new URL("/auth/callback", window.location.origin);
+    const configuredAppUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+    const baseUrl =
+      configuredAppUrl && /^https?:\/\//i.test(configuredAppUrl)
+        ? configuredAppUrl
+        : window.location.origin;
+
+    const callback = new URL("/auth/callback", baseUrl);
     callback.searchParams.set("next", next.startsWith("/") ? next : "/");
     return callback.toString();
   }, [next]);
