@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { getSupabaseConfig } from "@/lib/supabase/env";
+import { getSupabaseConfig } from "./env";
 
 const PUBLIC_ROUTES = new Set([
   "/auth/login",
