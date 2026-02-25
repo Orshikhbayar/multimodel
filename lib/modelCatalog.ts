@@ -76,6 +76,22 @@ export const MODELS: CatalogModel[] = [
     glyph: "openai",
   },
   {
+    id: "openai/gpt-4o",
+    label: "GPT-4o",
+    providerId: "openai",
+    description: "Fast multimodal flagship",
+    context: "128K",
+    glyph: "openai",
+  },
+  {
+    id: "openai/gpt-4o-mini",
+    label: "GPT-4o mini",
+    providerId: "openai",
+    description: "Lowest-cost OpenAI model",
+    context: "128K",
+    glyph: "openai",
+  },
+  {
     id: "openai/gpt-5.1",
     label: "GPT-5.1",
     providerId: "openai",

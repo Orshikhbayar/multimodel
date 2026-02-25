@@ -2,8 +2,17 @@ import type { Plan, PlanId, TopUpPack, TopUpPackId } from "./types";
 import { convertCurrency } from "./utils";
 import { MODELS } from "@/lib/modelCatalog";
 
-const FREE_MODELS = [
+const OPENAI_MODELS_AT_OR_BELOW_GPT_5_2 = [
   "openai/gpt-5.2",
+  "openai/gpt-5.1",
+  "openai/gpt-5-mini",
+  "openai/gpt-4.1",
+  "openai/gpt-4o",
+  "openai/gpt-4o-mini",
+];
+
+const FREE_MODELS = [
+  ...OPENAI_MODELS_AT_OR_BELOW_GPT_5_2,
   "anthropic/claude-sonnet-4",
   "google/gemini-3-pro-preview",
   "xai/grok-4",
@@ -12,10 +21,8 @@ const FREE_MODELS = [
 
 const PLUS_MODELS = [
   ...FREE_MODELS,
-  "openai/gpt-5-mini",
   "google/gemini-3-flash-preview",
   "deepseek/deepseek-reasoner",
-  "openai/gpt-4.1",
   "anthropic/claude-3.5",
   "google/gemini-2.5-flash",
   "google/gemini-2.0",
@@ -27,7 +34,6 @@ const PRO_MODELS = [
   "openai/gpt-5.2-codex",
   "anthropic/claude-opus-4.1",
   "google/gemini-3-pro-image-preview",
-  "openai/gpt-5.1",
   "anthropic/claude-opus-4",
 ];
 
