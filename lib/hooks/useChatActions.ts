@@ -13,7 +13,6 @@ import { useUsageStore } from "@/lib/analytics/usage";
 import { estimateTokenCostUsd } from "@/lib/billing/estimator";
 import { useBillingStore } from "@/lib/billing/store";
 import { useAppSettingsStore } from "@/lib/state/settingsStore";
-import { useSessionStore } from "@/lib/state/sessionStore";
 import { getLocaleResponseInstruction } from "@/lib/i18n/locale";
 import { t } from "@/lib/i18n/translate";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -60,6 +59,7 @@ interface StreamResult {
   code?: string;
   suggestedAction?: "topup" | "upgrade";
   requiredPlanId?: string;
+  httpStatus?: number;
 }
 
 /**
@@ -72,7 +72,7 @@ async function fetchStreamingChat(
   mode: string,
   projectId: string | null,
   metadata: {
-    conversationId: string;
+    conversationId?: string;
     messageId: string;
     runId: string;
   },
@@ -160,10 +160,27 @@ async function fetchStreamingChat(
       return;
     }
 
-    // Handle other errors
+    // Handle other non-stream errors
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `API error: ${response.status}`);
+      const fallbackError = `API error: ${response.status}`;
+      onError(errorData.message || errorData.error || fallbackError, {
+        status: "error",
+        requestId,
+        error:
+          typeof errorData.error === "string"
+            ? errorData.error
+            : fallbackError,
+        code: typeof errorData.code === "string" ? errorData.code : undefined,
+        suggestedAction:
+          errorData.suggestedAction === "upgrade" ? "upgrade" : "topup",
+        requiredPlanId:
+          typeof errorData.requiredPlanId === "string"
+            ? errorData.requiredPlanId
+            : undefined,
+        httpStatus: response.status,
+      });
+      return;
     }
 
     const reader = response.body?.getReader();
@@ -437,7 +454,6 @@ export function useChatActions() {
   const settingsStore = useSettingsStore();
   const streamStore = useStreamStore();
   const workspaceId = useWorkspaceStore((state) => state.workspaceId);
-  const isAuthenticated = useSessionStore((state) => state.isAuthenticated);
   const usageStore = useUsageStore();
   const locale = useAppSettingsStore((state) => state.locale);
   const isE2eBypass =
@@ -455,6 +471,33 @@ export function useChatActions() {
     return nextWorkspaceId;
   };
 
+  const ensureServerConversation = async (
+    conversationId: string,
+    title: string,
+    projectId?: string | null,
+  ) => {
+    if (isE2eBypass) return conversationId;
+    if (!supabase) return undefined;
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return undefined;
+    }
+
+    const resolvedWorkspaceId = await resolveWorkspaceId();
+    await upsertConversation(supabase, {
+      id: conversationId,
+      workspaceId: resolvedWorkspaceId,
+      title,
+      projectId,
+    });
+
+    return conversationId;
+  };
+
   const startRuns = async (
     conversationId: string,
     content: string,
@@ -464,6 +507,7 @@ export function useChatActions() {
     runs: Run[],
     assistantMessageId: string,
     apiMessages: { role: "system" | "user" | "assistant"; content: string }[],
+    serverConversationId?: string,
   ) => {
     const unifiedRun = runs.find((run) => run.model === UNIFIED_MODEL_NAME);
     const perspectiveRuns = runs.filter((run) => run.model !== UNIFIED_MODEL_NAME);
@@ -587,7 +631,7 @@ export function useChatActions() {
           mode,
           projectId,
           {
-            conversationId,
+            conversationId: serverConversationId,
             messageId: assistantMessageId,
             runId: run.id,
           },
@@ -829,7 +873,7 @@ export function useChatActions() {
           mode,
           projectId,
           {
-            conversationId,
+            conversationId: serverConversationId,
             messageId: assistantMessageId,
             runId: unifiedRun.id,
           },
@@ -1044,44 +1088,48 @@ export function useChatActions() {
       assistantMessage,
     ]);
 
+    let serverConversationId: string | undefined = isE2eBypass
+      ? conversationId
+      : undefined;
+
     // Persist turn metadata in Supabase before streaming starts.
-    if (!isE2eBypass && supabase && isAuthenticated) {
+    if (supabase) {
       try {
-        const resolvedWorkspaceId = await resolveWorkspaceId();
         const currentConversation = useConversationStore
           .getState()
           .conversations.find((conversation) => conversation.id === conversationId);
 
-        await upsertConversation(supabase, {
-          id: conversationId,
-          workspaceId: resolvedWorkspaceId,
-          title: currentConversation?.title ?? t(locale, "navigation.newChat"),
-          projectId: currentConversation?.projectId,
-        });
-
-        const runRows = runs
-          .filter((run) => run.model !== UNIFIED_MODEL_NAME)
-          .map((run) => {
-            const slot = slots.find((entry) => entry.slotId === run.slotId);
-            if (!slot) return null;
-
-            return {
-              id: run.id,
-              modelId: slot.modelId,
-              provider: getProviderFromModelId(slot.modelId),
-            };
-          })
-          .filter((value): value is { id: string; modelId: string; provider: string } =>
-            Boolean(value),
-          );
-
-        await createTurnRecords(supabase, {
+        serverConversationId = await ensureServerConversation(
           conversationId,
-          userMessageId: userMessage.id,
-          assistantMessageId: assistantMessage.id,
-          userContent: content,
-          runs: runRows,
-        });
+          currentConversation?.title ?? t(locale, "navigation.newChat"),
+          currentConversation?.projectId,
+        );
+
+        if (serverConversationId) {
+          const runRows = runs
+            .filter((run) => run.model !== UNIFIED_MODEL_NAME)
+            .map((run) => {
+              const slot = slots.find((entry) => entry.slotId === run.slotId);
+              if (!slot) return null;
+
+              return {
+                id: run.id,
+                modelId: slot.modelId,
+                provider: getProviderFromModelId(slot.modelId),
+              };
+            })
+            .filter((value): value is { id: string; modelId: string; provider: string } =>
+              Boolean(value),
+            );
+
+          await createTurnRecords(supabase, {
+            conversationId: serverConversationId,
+            userMessageId: userMessage.id,
+            assistantMessageId: assistantMessage.id,
+            userContent: content,
+            runs: runRows,
+          });
+        }
       } catch (error) {
         console.error("[useChatActions] Failed to persist turn pre-stream", {
           conversationId,
@@ -1132,6 +1180,7 @@ export function useChatActions() {
       runs,
       assistantMessage.id,
       apiMessages,
+      serverConversationId,
     );
   };
 
@@ -1170,45 +1219,49 @@ export function useChatActions() {
       assistantMessage,
     ]);
 
-    if (!isE2eBypass && supabase && isAuthenticated) {
+    let serverConversationId: string | undefined = isE2eBypass
+      ? conversationId
+      : undefined;
+
+    if (supabase) {
       try {
-        const resolvedWorkspaceId = await resolveWorkspaceId();
         const currentConversation = useConversationStore
           .getState()
           .conversations.find((conversation) => conversation.id === conversationId);
 
-        await upsertConversation(supabase, {
-          id: conversationId,
-          workspaceId: resolvedWorkspaceId,
-          title: currentConversation?.title ?? t(locale, "navigation.newChat"),
-          projectId: currentConversation?.projectId,
-        });
-
-        await updateUserMessageContent(supabase, {
-          messageId: userMessageId,
-          content,
-        });
-
-        const runRows = runs
-          .filter((run) => run.model !== UNIFIED_MODEL_NAME)
-          .map((run) => {
-            const slot = slots.find((entry) => entry.slotId === run.slotId);
-            if (!slot) return null;
-            return {
-              id: run.id,
-              modelId: slot.modelId,
-              provider: getProviderFromModelId(slot.modelId),
-            };
-          })
-          .filter((value): value is { id: string; modelId: string; provider: string } =>
-            Boolean(value),
-          );
-
-        await createAssistantMessageWithRuns(supabase, {
+        serverConversationId = await ensureServerConversation(
           conversationId,
-          assistantMessageId: assistantMessage.id,
-          runs: runRows,
-        });
+          currentConversation?.title ?? t(locale, "navigation.newChat"),
+          currentConversation?.projectId,
+        );
+
+        if (serverConversationId) {
+          await updateUserMessageContent(supabase, {
+            messageId: userMessageId,
+            content,
+          });
+
+          const runRows = runs
+            .filter((run) => run.model !== UNIFIED_MODEL_NAME)
+            .map((run) => {
+              const slot = slots.find((entry) => entry.slotId === run.slotId);
+              if (!slot) return null;
+              return {
+                id: run.id,
+                modelId: slot.modelId,
+                provider: getProviderFromModelId(slot.modelId),
+              };
+            })
+            .filter((value): value is { id: string; modelId: string; provider: string } =>
+              Boolean(value),
+            );
+
+          await createAssistantMessageWithRuns(supabase, {
+            conversationId: serverConversationId,
+            assistantMessageId: assistantMessage.id,
+            runs: runRows,
+          });
+        }
       } catch (error) {
         console.error("[useChatActions] Failed to persist edited turn", {
           conversationId,
@@ -1257,6 +1310,7 @@ export function useChatActions() {
       runs,
       assistantMessage.id,
       apiMessages,
+      serverConversationId,
     );
   };
 
