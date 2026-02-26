@@ -1,13 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import type { ComponentType } from "react";
-import {
-  Code2,
-  Cpu,
-  Layers,
-  Sparkles,
-  WandSparkles,
-} from "lucide-react";
+import { Code2, Layers } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { getModelGlyphKey, type ModelGlyphKey } from "@/lib/modelCatalog";
@@ -15,6 +10,13 @@ import { getModelGlyphKey, type ModelGlyphKey } from "@/lib/modelCatalog";
 type ModelGlyphSize = "sm" | "md" | "lg";
 
 type GlyphStyle =
+  | {
+      kind: "logo";
+      container: string;
+      src: string;
+      imageClass?: string;
+      codexBadge?: boolean;
+    }
   | {
       kind: "icon";
       container: string;
@@ -36,41 +38,36 @@ const SIZE_CLASSES: Record<ModelGlyphSize, string> = {
 
 const GLYPH_STYLES: Record<ModelGlyphKey, GlyphStyle> = {
   openai: {
-    kind: "icon",
-    container:
-      "border-zinc-700 bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-700 text-zinc-100",
-    icon: Sparkles,
+    kind: "logo",
+    container: "border-zinc-300 bg-white text-zinc-900",
+    src: "/model-logos/openai.svg",
   },
   openaiCodex: {
-    kind: "icon",
-    container:
-      "border-zinc-700 bg-gradient-to-br from-zinc-950 via-zinc-800 to-zinc-600 text-zinc-100",
-    icon: Code2,
+    kind: "logo",
+    container: "border-zinc-300 bg-white text-zinc-900",
+    src: "/model-logos/openai.svg",
+    codexBadge: true,
   },
   anthropic: {
-    kind: "text",
-    container: "border-[#c79f79] bg-[#d8b28e] text-zinc-900",
-    text: "AI",
-    textClass: "text-[10px] font-black leading-none tracking-tight",
+    kind: "logo",
+    container: "border-[#edc9af] bg-white",
+    src: "/model-logos/claude.svg",
+    imageClass: "h-[72%] w-[72%]",
   },
   google: {
-    kind: "icon",
-    container:
-      "border-indigo-300/40 bg-gradient-to-br from-sky-500 via-indigo-500 to-cyan-300 text-white",
-    icon: WandSparkles,
+    kind: "logo",
+    container: "border-zinc-300 bg-white",
+    src: "/model-logos/gemini.svg",
   },
   xai: {
-    kind: "text",
-    container:
-      "border-slate-500/50 bg-gradient-to-br from-slate-900 via-slate-700 to-slate-500 text-slate-100",
-    text: "x",
-    textClass: "text-[11px] font-extrabold leading-none",
+    kind: "logo",
+    container: "border-zinc-300 bg-white text-zinc-900",
+    src: "/model-logos/grok.svg",
   },
   deepseek: {
-    kind: "icon",
-    container:
-      "border-emerald-400/40 bg-gradient-to-br from-emerald-500 to-teal-700 text-emerald-50",
-    icon: Cpu,
+    kind: "logo",
+    container: "border-[#9aabff] bg-white",
+    src: "/model-logos/deepseek.svg",
   },
   misc: {
     kind: "icon",
@@ -96,7 +93,7 @@ export function ModelGlyph({
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-center justify-center rounded-full border shadow-sm",
+        "relative inline-flex shrink-0 items-center justify-center rounded-full border shadow-sm",
         "transition-transform duration-150",
         SIZE_CLASSES[size],
         glyph.container,
@@ -104,7 +101,25 @@ export function ModelGlyph({
       )}
       aria-hidden
     >
-      {glyph.kind === "icon" ? (
+      {glyph.kind === "logo" ? (
+        <>
+          <span className={cn("relative h-[68%] w-[68%]", glyph.imageClass)}>
+            <Image
+              src={glyph.src}
+              alt=""
+              fill
+              sizes="32px"
+              className="object-contain"
+              draggable={false}
+            />
+          </span>
+          {glyph.codexBadge ? (
+            <span className="absolute -bottom-0.5 -right-0.5 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full border border-zinc-300 bg-white text-zinc-800">
+              <Code2 className="h-2.5 w-2.5" />
+            </span>
+          ) : null}
+        </>
+      ) : glyph.kind === "icon" ? (
         <glyph.icon className={cn("h-3.5 w-3.5", glyph.iconClass)} />
       ) : (
         <span className={glyph.textClass}>{glyph.text}</span>
