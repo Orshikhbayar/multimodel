@@ -119,6 +119,36 @@ export interface ToolCall {
   name: string;
   arguments: Record<string, unknown>;
   status: "pending" | "running" | "completed" | "failed";
+  runId?: string;
+  toolVersion?: string;
+  permissions?: string[];
+  estimatedCost?: {
+    estimatedTokensIn?: number;
+    estimatedTokensOut?: number;
+    estimatedExternalCostUsd?: number;
+  };
+  actualCost?: {
+    tokensIn?: number;
+    tokensOut?: number;
+    totalTokens?: number;
+    externalCostUsd?: number;
+  };
+  sources?: Array<{
+    title?: string;
+    url: string;
+  }>;
+  artifacts?: Array<{
+    id?: string;
+    type?: string;
+    title?: string;
+    storagePath?: string;
+    downloadUrl?: string;
+  }>;
+  trace?: {
+    steps?: string[];
+    plan?: unknown;
+    raw?: unknown;
+  };
   result?: unknown;
   error?: string;
   /** Timestamp when the tool call started */

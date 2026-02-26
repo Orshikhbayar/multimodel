@@ -52,6 +52,7 @@ export default defineConfig({
             "lib/billing/**/*.{test,spec}.ts",
             "lib/supabase/**/*.{test,spec}.ts",
             "lib/actions/**/*.{test,spec}.ts",
+            "lib/tools/**/*.{test,spec}.ts",
             "app/api/**/*.test.ts",
             "app/auth/**/*.test.ts",
             "middleware.test.ts",

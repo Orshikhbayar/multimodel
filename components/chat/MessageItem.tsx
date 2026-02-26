@@ -6,6 +6,7 @@ import remarkGfm from "remark-gfm";
 import {
   Check,
   Copy,
+  ExternalLink,
   Pencil,
   RotateCcw,
   ThumbsDown,
@@ -24,7 +25,7 @@ import {
   normalizeLanguage,
 } from "./codeHighlight";
 import { useI18n } from "@/lib/i18n";
-import type { Message, Run } from "@/lib/types";
+import type { Message, Run, ToolCall } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useChatActions } from "@/lib/hooks/useChatActions";
 import { useConversationStore } from "@/lib/stores";
@@ -58,6 +59,7 @@ export function MessageItem({
   const perspectiveRuns = assistantRuns.filter((entry) => entry.model !== "Unified");
   const showUnifiedFlow = !isUser && Boolean(unifiedRun) && perspectiveRuns.length >= 2;
   const selectedRun = showUnifiedFlow ? unifiedRun : run;
+  const toolCalls = message.toolCalls ?? [];
   const text = selectedRun?.text?.trim() || message.content;
   const { sendMessage, respondToEditedMessage } = useChatActions();
   const { t, formatTime } = useI18n();
@@ -220,6 +222,9 @@ export function MessageItem({
                 </ReactMarkdown>
               )}
             </ExpandableMessage>
+          )}
+          {!isUser && toolCalls.length > 0 && (
+            <ToolActivityList toolCalls={toolCalls} />
           )}
 
           {/* Action buttons for assistant messages */}
@@ -425,6 +430,71 @@ function CodeBlock({ code, language }: { code: string; language?: string }) {
       >
         {code}
       </PrismLight>
+    </div>
+  );
+}
+
+function ToolActivityList({ toolCalls }: { toolCalls: ToolCall[] }) {
+  return (
+    <div className="mt-3 w-full max-w-[85%] space-y-2">
+      {toolCalls.map((toolCall) => (
+        <div
+          key={toolCall.id}
+          className="rounded-xl border border-border/70 bg-[hsl(var(--app-panel)/0.62)] px-3 py-2 text-xs"
+        >
+          <div className="flex items-center justify-between gap-2">
+            <div className="font-medium">
+              {toolCall.name}
+              {toolCall.toolVersion ? ` v${toolCall.toolVersion}` : ""}
+            </div>
+            <span className="text-muted-foreground">{toolCall.status}</span>
+          </div>
+          {toolCall.actualCost && (
+            <div className="mt-1 text-[11px] text-muted-foreground">
+              Cost: {toolCall.actualCost.totalTokens ?? 0} tokens
+              {typeof toolCall.actualCost.externalCostUsd === "number"
+                ? ` · $${toolCall.actualCost.externalCostUsd.toFixed(4)}`
+                : ""}
+            </div>
+          )}
+          {toolCall.sources && toolCall.sources.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {toolCall.sources.slice(0, 4).map((source) => (
+                <a
+                  key={`${toolCall.id}-${source.url}`}
+                  href={source.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 rounded-md border border-border/60 px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  {source.title ?? source.url}
+                </a>
+              ))}
+            </div>
+          )}
+          {toolCall.artifacts && toolCall.artifacts.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {toolCall.artifacts.slice(0, 4).map((artifact, index) => (
+                <span
+                  key={`${toolCall.id}-artifact-${index}`}
+                  className="rounded-md border border-border/60 px-2 py-1 text-[11px] text-muted-foreground"
+                >
+                  {artifact.type ?? "artifact"}:{" "}
+                  {artifact.title ??
+                    artifact.storagePath ??
+                    artifact.downloadUrl ??
+                    artifact.id ??
+                    "generated"}
+                </span>
+              ))}
+            </div>
+          )}
+          {toolCall.error && (
+            <div className="mt-2 text-[11px] text-destructive">{toolCall.error}</div>
+          )}
+        </div>
+      ))}
     </div>
   );
 }
