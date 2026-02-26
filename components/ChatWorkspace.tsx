@@ -8,6 +8,7 @@ import { Composer } from "@/components/Composer";
 import { DisagreementsDialog } from "@/components/DisagreementsDialog";
 import { SourcesDialog } from "@/components/SourcesDialog";
 import { SettingsDrawer } from "@/components/SettingsDrawer";
+import { ToolDrawer } from "@/components/tools/ToolDrawer";
 import { UpgradeModal } from "@/components/billing/UpgradeModal";
 import { TopUpModal } from "@/components/billing/TopUpModal";
 import { OutOfCreditsModal } from "@/components/billing/OutOfCreditsModal";
@@ -48,6 +49,7 @@ export function ChatWorkspace({
   const { mode } = useSettingsStore();
   const activeTab = activeSlotId ?? slots[0]?.slotId ?? "slot-1";
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
   const [sourcesRun, setSourcesRun] = useState<Run | null>(null);
   const [disagreementsRun, setDisagreementsRun] = useState<Run | null>(null);
   const {
@@ -146,6 +148,7 @@ export function ChatWorkspace({
     if (projectArchived) return;
     sendMessage(value, projectId ?? undefined);
   };
+  const latestMessageId = conversation?.messages?.[conversation.messages.length - 1]?.id;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -189,6 +192,7 @@ export function ChatWorkspace({
               {!projectArchived ? (
                 <Composer
                   onSend={handleSend}
+                  onOpenTools={() => setToolsOpen(true)}
                   modelId={activeSlot?.modelId ?? "openai/gpt-5.2"}
                   modelLabel={activeSlot?.label ?? t("topBar.selectModel")}
                   enabledModelIds={enabledModelIds}
@@ -230,6 +234,7 @@ export function ChatWorkspace({
               {!projectArchived ? (
                 <Composer
                   onSend={handleSend}
+                  onOpenTools={() => setToolsOpen(true)}
                   modelId={activeSlot?.modelId ?? "openai/gpt-5.2"}
                   modelLabel={activeSlot?.label ?? t("topBar.selectModel")}
                   enabledModelIds={enabledModelIds}
@@ -252,6 +257,13 @@ export function ChatWorkspace({
       </div>
 
       <SettingsDrawer open={settingsOpen} onOpenChange={setSettingsOpen} />
+      <ToolDrawer
+        open={toolsOpen}
+        onOpenChange={setToolsOpen}
+        projectId={projectId ?? null}
+        conversationId={conversation?.id}
+        currentMessageId={latestMessageId}
+      />
       <SourcesDialog
         open={Boolean(sourcesRun)}
         onOpenChange={(open) => !open && setSourcesRun(null)}

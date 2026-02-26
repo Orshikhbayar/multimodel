@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowUp, ChevronDown, Square } from "lucide-react";
+import { ArrowUp, ChevronDown, Square, Wrench } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,6 +17,7 @@ import { useI18n } from "@/lib/i18n";
 
 interface ComposerProps {
   onSend?: (value: string) => void;
+  onOpenTools?: () => void;
   modelId: string;
   modelLabel: string;
   enabledModelIds: string[];
@@ -28,6 +29,7 @@ interface ComposerProps {
 
 export function Composer({
   onSend,
+  onOpenTools,
   modelId,
   modelLabel,
   enabledModelIds,
@@ -158,6 +160,18 @@ export function Composer({
           }}
         />
         <div className="flex items-center gap-2 self-end">
+          {onOpenTools ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={onOpenTools}
+              className="h-9 rounded-xl px-3"
+            >
+              <Wrench className="mr-1 h-3.5 w-3.5" />
+              Tools
+            </Button>
+          ) : null}
           <ModelPicker
             value={modelId}
             onChange={onSelectModel}
