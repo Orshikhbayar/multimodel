@@ -62,6 +62,19 @@ describe("useChatActions behavior", () => {
     expect(conversation.messages[1].role).toBe("assistant");
   });
 
+  it("auto-generates a title from the first user message", async () => {
+    const { result } = renderHook(() => useChatActions());
+
+    await act(async () => {
+      await result.current.sendMessage("Draft a release checklist for launch day.");
+    });
+
+    await waitFor(() => {
+      const conversation = useConversationStore.getState().conversations[0];
+      expect(conversation.title).toBe("Draft a release checklist for launch day.");
+    });
+  });
+
   it("stops active streams", () => {
     const { result } = renderHook(() => useChatActions());
     const controller = new AbortController();

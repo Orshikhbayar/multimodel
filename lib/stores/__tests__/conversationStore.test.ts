@@ -41,7 +41,7 @@ describe("conversationStore", () => {
       const { conversations, currentConversationId } =
         useConversationStore.getState();
       expect(conversations).toHaveLength(1);
-      expect(conversations[0].title).toBe("New chat");
+      expect(conversations[0].title).toBe("Untitled chat");
       expect(currentConversationId).toBe(conversations[0].id);
     });
 
@@ -65,6 +65,17 @@ describe("conversationStore", () => {
 
       const { conversations } = useConversationStore.getState();
       expect(conversations[0].projectId).toBe("proj-ops");
+    });
+
+    it("does not attach unknown project IDs", () => {
+      const { createConversation } = useConversationStore.getState();
+
+      act(() => {
+        createConversation("Unknown Project Chat", "proj-missing");
+      });
+
+      const { conversations } = useConversationStore.getState();
+      expect(conversations[0].projectId).toBeUndefined();
     });
   });
 

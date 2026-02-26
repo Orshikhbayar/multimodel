@@ -14,6 +14,57 @@ import { useConversationStore, useWorkspaceStore } from "@/lib/stores";
 import { useSessionStore } from "@/lib/state/sessionStore";
 import { useUserStore } from "@/lib/state/userStore";
 import { getInitialFromName } from "@/lib/state/utils";
+import type { Conversation } from "@/lib/types";
+
+function getConversationActivityTimestamp(conversation: Conversation) {
+  return (
+    conversation.messages[conversation.messages.length - 1]?.createdAt ??
+    conversation.createdAt
+  );
+}
+
+function mergeConversation(server: Conversation, local?: Conversation): Conversation {
+  if (!local) {
+    return server;
+  }
+
+  const serverActivity = getConversationActivityTimestamp(server);
+  const localActivity = getConversationActivityTimestamp(local);
+  const useLocalMessages =
+    local.messages.length > server.messages.length ||
+    localActivity > serverActivity;
+
+  return {
+    ...server,
+    title: local.title?.trim() ? local.title : server.title,
+    projectId: local.projectId ?? server.projectId,
+    createdAt: Math.min(local.createdAt, server.createdAt),
+    messages: useLocalMessages ? local.messages : server.messages,
+  };
+}
+
+function mergeConversations(
+  serverConversations: Conversation[],
+  localConversations: Conversation[],
+) {
+  const localById = new Map(localConversations.map((conversation) => [conversation.id, conversation]));
+  const serverIds = new Set(serverConversations.map((conversation) => conversation.id));
+
+  const merged = serverConversations.map((conversation) =>
+    mergeConversation(conversation, localById.get(conversation.id)),
+  );
+
+  for (const localConversation of localConversations) {
+    if (!serverIds.has(localConversation.id)) {
+      merged.push(localConversation);
+    }
+  }
+
+  return merged.sort(
+    (a, b) =>
+      getConversationActivityTimestamp(b) - getConversationActivityTimestamp(a),
+  );
+}
 
 export function SupabaseBootstrap() {
   useEffect(() => {
@@ -39,14 +90,16 @@ export function SupabaseBootstrap() {
     }
 
     const supabase = createSupabaseBrowserClient();
-    const clearLocalAuthState = () => {
+    const clearLocalAuthState = (clearConversations: boolean) => {
       useSessionStore.getState().signOut();
       useUserStore.getState().resetUser();
       useWorkspaceStore.getState().setWorkspaceId(null);
-      useConversationStore.setState({
-        conversations: [],
-        currentConversationId: null,
-      });
+      if (clearConversations) {
+        useConversationStore.setState({
+          conversations: [],
+          currentConversationId: null,
+        });
+      }
     };
 
     const syncFromSession = async () => {
@@ -55,7 +108,9 @@ export function SupabaseBootstrap() {
       } = await supabase.auth.getUser();
 
       if (!user) {
-        clearLocalAuthState();
+        const shouldClearConversations =
+          useSessionStore.getState().isAuthenticated;
+        clearLocalAuthState(shouldClearConversations);
         return;
       }
 
@@ -64,7 +119,7 @@ export function SupabaseBootstrap() {
 
       if (oauthProvider && !avatarUrl) {
         await supabase.auth.signOut();
-        clearLocalAuthState();
+        clearLocalAuthState(true);
 
         if (typeof window !== "undefined") {
           const next = `${window.location.pathname}${window.location.search}`;
@@ -102,13 +157,27 @@ export function SupabaseBootstrap() {
 
       useWorkspaceStore.getState().setWorkspaceId(workspaceId);
 
-      const conversations = await hydrateWorkspaceConversations(
-        supabase,
-        workspaceId,
-      );
+      let serverConversations: Conversation[];
+      try {
+        serverConversations = await hydrateWorkspaceConversations(
+          supabase,
+          workspaceId,
+        );
+      } catch (error) {
+        console.error(
+          "[SupabaseBootstrap] Failed to hydrate workspace conversations",
+          error,
+        );
+        return;
+      }
 
       if (cancelled) return;
 
+      const localConversations = useConversationStore.getState().conversations;
+      const conversations = mergeConversations(
+        serverConversations,
+        localConversations,
+      );
       const currentConversationId =
         useConversationStore.getState().currentConversationId;
       const hasCurrent = conversations.some(

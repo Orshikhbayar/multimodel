@@ -292,7 +292,7 @@ export async function getConversation(
 }
 
 export async function createConversation(
-  title: string = "New chat",
+  title: string = "Untitled chat",
   projectId?: string,
 ): Promise<string | null> {
   const session = await auth();

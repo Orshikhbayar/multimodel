@@ -109,7 +109,7 @@ function getSeedLocale(): "en" | "mn" {
 }
 
 function getDefaultChatTitle(): string {
-  return getSeedLocale() === "mn" ? "Шинэ чат" : "New chat";
+  return getSeedLocale() === "mn" ? "Нэргүй чат" : "Untitled chat";
 }
 
 function getDefaultProjects(): Project[] {
@@ -126,17 +126,27 @@ export const useConversationStore = create<ConversationStore>()(
 
       createConversation: (title = getDefaultChatTitle(), projectId) => {
         const id = crypto.randomUUID();
-        const conversation: Conversation = {
-          id,
-          title,
-          projectId,
-          createdAt: Date.now(),
-          messages: [],
-        };
-        set((state) => ({
-          conversations: [conversation, ...state.conversations],
-          currentConversationId: id,
-        }));
+        set((state) => {
+          const safeTitle = title.trim() || getDefaultChatTitle();
+          const safeProjectId =
+            typeof projectId === "string" &&
+            state.projects.some((project) => project.id === projectId)
+              ? projectId
+              : undefined;
+
+          const conversation: Conversation = {
+            id,
+            title: safeTitle,
+            projectId: safeProjectId,
+            createdAt: Date.now(),
+            messages: [],
+          };
+
+          return {
+            conversations: [conversation, ...state.conversations],
+            currentConversationId: id,
+          };
+        });
         return id;
       },
 

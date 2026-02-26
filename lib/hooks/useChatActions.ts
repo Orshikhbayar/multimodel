@@ -31,6 +31,7 @@ import {
 const MAX_PARALLEL_STREAMS = 2;
 const CONCURRENCY_RETRY_DELAYS_MS = [800, 1600] as const;
 const DEFAULT_UNIFIED_SYNTHESIS_MODEL_ID = "openai/gpt-5.2";
+const AUTO_CHAT_TITLE_MAX_CHARS = 80;
 const activeRunSchedulerCancels = new Map<string, Set<() => void>>();
 
 /**
@@ -299,6 +300,38 @@ function sentenceSummary(value: string, fallback: string) {
   if (!normalized) return fallback;
   const sentence = normalized.split(/(?<=[.!?])\s+/)[0] ?? normalized;
   return truncateText(sentence, 150);
+}
+
+function normalizeTitle(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function isPlaceholderConversationTitle(title: string | undefined, locale: string) {
+  if (!title) return true;
+
+  const placeholders = new Set([
+    normalizeTitle(t(locale, "navigation.newChat")),
+    normalizeTitle(t(locale, "navigation.untitledChat")),
+    normalizeTitle("New chat"),
+    normalizeTitle("Untitled chat"),
+    normalizeTitle("Шинэ чат"),
+    normalizeTitle("Нэргүй чат"),
+  ]);
+
+  return placeholders.has(normalizeTitle(title));
+}
+
+function buildAutoConversationTitle(message: string, fallback: string) {
+  const normalized = message.trim().replace(/\s+/g, " ");
+  if (!normalized) return fallback;
+
+  const firstSentence = normalized.split(/(?<=[.!?])\s+/)[0] ?? normalized;
+  const cleaned = firstSentence.replace(/^[`"'([{]+|[`"')\]}]+$/g, "").trim();
+  const source = cleaned || normalized;
+
+  return source.length > AUTO_CHAT_TITLE_MAX_CHARS
+    ? `${source.slice(0, AUTO_CHAT_TITLE_MAX_CHARS - 3).trimEnd()}...`
+    : source;
 }
 
 function joinModelNames(names: string[], locale: string): string {
@@ -1053,10 +1086,23 @@ export function useChatActions() {
 
     if (!conversationId) {
       conversationId = conversationStore.createConversation(
-        t(locale, "navigation.newChat"),
+        t(locale, "navigation.untitledChat"),
         projectId,
       );
       conversationStore.setCurrentConversation(conversationId);
+    }
+
+    const conversationBeforeMessage = conversationStore.conversations.find(
+      (conversation) => conversation.id === conversationId,
+    );
+    const shouldAutoTitle =
+      (conversationBeforeMessage?.messages.length ?? 0) === 0 &&
+      isPlaceholderConversationTitle(conversationBeforeMessage?.title, locale);
+    if (shouldAutoTitle) {
+      conversationStore.updateConversationTitle(
+        conversationId,
+        buildAutoConversationTitle(content, t(locale, "navigation.untitledChat")),
+      );
     }
 
     const { slots } = modelStore;
@@ -1101,7 +1147,7 @@ export function useChatActions() {
 
         serverConversationId = await ensureServerConversation(
           conversationId,
-          currentConversation?.title ?? t(locale, "navigation.newChat"),
+          currentConversation?.title ?? t(locale, "navigation.untitledChat"),
           currentConversation?.projectId,
         );
 
@@ -1171,17 +1217,36 @@ export function useChatActions() {
     apiMessages.push(...historyMessages);
     apiMessages.push({ role: "user", content });
 
-    await startRuns(
-      conversationId!,
-      content,
-      mode,
-      targetProjectId,
-      slots,
-      runs,
-      assistantMessage.id,
-      apiMessages,
-      serverConversationId,
-    );
+    try {
+      await startRuns(
+        conversationId!,
+        content,
+        mode,
+        targetProjectId,
+        slots,
+        runs,
+        assistantMessage.id,
+        apiMessages,
+        serverConversationId,
+      );
+    } catch (error) {
+      console.error("[useChatActions] Failed to start runs", {
+        conversationId,
+        assistantMessageId: assistantMessage.id,
+        error: toLoggableError(error),
+      });
+      for (const run of runs) {
+        conversationStore.markRunError(
+          conversationId,
+          assistantMessage.id,
+          run.id,
+          t(locale, "errors.somethingWentWrong"),
+        );
+        if (run.slotId) {
+          modelStore.updateSlotStatus(run.slotId, "error");
+        }
+      }
+    }
   };
 
   const respondToEditedMessage = async (
@@ -1231,7 +1296,7 @@ export function useChatActions() {
 
         serverConversationId = await ensureServerConversation(
           conversationId,
-          currentConversation?.title ?? t(locale, "navigation.newChat"),
+          currentConversation?.title ?? t(locale, "navigation.untitledChat"),
           currentConversation?.projectId,
         );
 

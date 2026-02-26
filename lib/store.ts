@@ -53,6 +53,9 @@ export function useChatStore() {
 
   const createConversation = (title?: string, projectId?: string) => {
     const id = conversationStore.createConversation(title, projectId);
+    const createdConversation = useConversationStore
+      .getState()
+      .conversations.find((conversation) => conversation.id === id);
 
     if (isE2eBypass) {
       return id;
@@ -68,8 +71,10 @@ export function useChatStore() {
         await upsertConversation(supabase, {
           id,
           workspaceId: resolvedWorkspaceId,
-          title: title ?? (locale === "mn" ? "Шинэ чат" : "New chat"),
-          projectId,
+          title:
+            createdConversation?.title ??
+            (locale === "mn" ? "Нэргүй чат" : "Untitled chat"),
+          projectId: createdConversation?.projectId,
         });
       } catch (error) {
         console.error("[useChatStore] Failed to persist conversation create", error);

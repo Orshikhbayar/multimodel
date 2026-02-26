@@ -124,16 +124,10 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
   const targetProjectIdForNewChat = targetProjectForNewChat?.id ?? null;
   const isGeneralRoute = pathname === "/chat" || pathname.startsWith("/chat/");
 
-  useEffect(() => {
-    if (activeProjectId) {
-      setProjectChatsExpanded(true);
-    }
-  }, [activeProjectId]);
-
   const getConversationActivityTimestamp = useCallback(
     (conv: (typeof conversations)[number]) =>
       conv.messages[conv.messages.length - 1]?.createdAt ?? conv.createdAt,
-    [conversations],
+    [],
   );
 
   const routeForConversation = useCallback((conv: (typeof conversations)[number]) => {
@@ -305,16 +299,14 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
   );
   const sortedProjectConversations = useMemo(
     () =>
-      activeProjectId
-        ? [...conversations]
-            .filter((conversation) => conversation.projectId === activeProjectId)
-            .sort(
-              (a, b) =>
-                getConversationActivityTimestamp(b) -
-                getConversationActivityTimestamp(a),
-            )
-        : [],
-    [activeProjectId, conversations, getConversationActivityTimestamp],
+      [...conversations]
+        .filter((conversation) => Boolean(conversation.projectId))
+        .sort(
+          (a, b) =>
+            getConversationActivityTimestamp(b) -
+            getConversationActivityTimestamp(a),
+        ),
+    [conversations, getConversationActivityTimestamp],
   );
   const visibleGeneralConversations = useMemo(
     () => applyChatSearch(sortedGeneralConversations),
@@ -327,6 +319,10 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
   const groupedGeneralConversations = useMemo(
     () => groupConversationsByDate(visibleGeneralConversations),
     [groupConversationsByDate, visibleGeneralConversations],
+  );
+  const projectNameById = useMemo(
+    () => new Map(projects.map((project) => [project.id, project.name])),
+    [projects],
   );
   const groupedProjectConversations = useMemo(
     () => groupConversationsByDate(visibleProjectConversations),
@@ -638,13 +634,7 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
                         onNavigate?.();
                       }}
                     >
-                      <span>
-                        {activeProject
-                          ? t("navigation.projectChatsWithName", {
-                              project: activeProject.name,
-                            })
-                          : t("navigation.projectChats")}
-                      </span>
+                      <span>{t("navigation.projectChats")}</span>
                       <ChevronDown
                         className={cn(
                           "h-3.5 w-3.5 shrink-0 transition-transform",
@@ -653,11 +643,7 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
                       />
                     </button>
                     {projectChatsExpanded ? (
-                      !activeProjectId ? (
-                        <p className="px-2 text-xs text-muted-foreground">
-                          {t("projects.selectProjectForChats")}
-                        </p>
-                      ) : visibleProjectConversations.length === 0 ? (
+                      visibleProjectConversations.length === 0 ? (
                         <p className="px-2 text-xs text-muted-foreground">
                           {chatQuery
                             ? t("navigation.noMatchingChats")
@@ -673,6 +659,12 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
                               <Fragment key={conv.id}>
                                 <ChatListItem
                                   title={conv.title || t("navigation.untitledChat")}
+                                  subtitle={
+                                    conv.projectId
+                                      ? projectNameById.get(conv.projectId) ??
+                                        conv.projectId
+                                      : undefined
+                                  }
                                   active={conv.id === currentConversationId}
                                   collapsed={collapsed}
                                   onSelect={() => {
@@ -837,6 +829,7 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
 
 function ChatListItem({
   title,
+  subtitle,
   active,
   collapsed,
   onSelect,
@@ -844,6 +837,7 @@ function ChatListItem({
   onDelete,
 }: {
   title: string;
+  subtitle?: string;
   active: boolean;
   collapsed: boolean;
   onSelect: () => void;
@@ -875,7 +869,14 @@ function ChatListItem({
         )}
       >
         {!collapsed ? (
-          <span className="line-clamp-1 flex-1">{title}</span>
+          <span className="flex flex-1 flex-col gap-0.5 overflow-hidden">
+            <span className="line-clamp-1">{title}</span>
+            {subtitle ? (
+              <span className="line-clamp-1 text-[11px] text-muted-foreground">
+                {subtitle}
+              </span>
+            ) : null}
+          </span>
         ) : (
           <span className="flex h-6 w-6 items-center justify-center rounded-full border text-[11px] font-semibold">
             {shortLabel}
