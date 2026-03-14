@@ -1,3 +1,6 @@
+// NOTE: This file is duplicated at public/intro/script.js (which is the served copy).
+// Keep both in sync or consolidate into one location.
+
 // Smooth scrolling for navigation links
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function (e) {
