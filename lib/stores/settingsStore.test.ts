@@ -2,10 +2,9 @@ import { act } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("zustand/middleware", async () => {
-  const actual =
-    await vi.importActual<typeof import("zustand/middleware")>(
-      "zustand/middleware",
-    );
+  const actual = await vi.importActual<typeof import("zustand/middleware")>(
+    "zustand/middleware",
+  );
   return {
     ...actual,
     persist: (config: unknown) => config,
@@ -54,17 +53,5 @@ describe("settingsStore", () => {
       useSettingsStore.getState().dismissOnboarding();
     });
     expect(useSettingsStore.getState().onboardingCompleted).toBe(true);
-  });
-
-  it("applies workflow pack selection defaults", () => {
-    act(() => {
-      useSettingsStore.getState().selectWorkflowPack("online-seller");
-    });
-
-    const state = useSettingsStore.getState();
-    expect(state.selectedWorkflowPackId).toBe("online-seller");
-    expect(state.workflowPreset).toBe("marketing");
-    expect(state.mode).toBe("debate");
-    expect(state.instructions).toContain("customer-facing");
   });
 });

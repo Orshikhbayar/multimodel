@@ -1,6 +1,6 @@
 /**
  * Sentry Server Configuration
- *
+ * 
  * This file configures Sentry error tracking for the server.
  * See: https://docs.sentry.io/platforms/javascript/guides/nextjs/
  */
@@ -26,7 +26,7 @@ if (SENTRY_DSN) {
     // Add additional context
     beforeSend(event, hint) {
       const error = hint.originalException;
-
+      
       // Add error classification
       if (error instanceof Error) {
         event.tags = {

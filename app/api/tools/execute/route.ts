@@ -4,7 +4,10 @@ import { nanoid } from "nanoid";
 import { createRequestLogger } from "@/lib/logger";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { resolveWorkspaceId } from "@/lib/tools/context";
-import { executeToolRequest, ToolExecutionError } from "@/lib/tools/executor";
+import {
+  executeToolRequest,
+  ToolExecutionError,
+} from "@/lib/tools/executor";
 import type { ToolExecutionRequest } from "@/lib/tools/types";
 
 interface ExecutePayload extends ToolExecutionRequest {
@@ -68,11 +71,7 @@ export async function POST(request: NextRequest) {
     const projectId =
       payload.project_id === undefined ? null : (payload.project_id ?? null);
 
-    const workspaceId = await resolveWorkspaceId(
-      supabase,
-      claims.sub,
-      projectId,
-    );
+    const workspaceId = await resolveWorkspaceId(supabase, claims.sub, projectId);
 
     const context = {
       requestId,

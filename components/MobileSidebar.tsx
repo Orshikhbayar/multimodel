@@ -33,13 +33,8 @@ export function MobileSidebar() {
 
       {/* Mobile drawer */}
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent
-          side="left"
-          className="w-[19rem] border-0 bg-transparent p-2"
-        >
-          <SheetTitle className="sr-only">
-            {t("accessibility.navigation")}
-          </SheetTitle>
+        <SheetContent side="left" className="w-[19rem] border-0 bg-transparent p-2">
+          <SheetTitle className="sr-only">{t("accessibility.navigation")}</SheetTitle>
           <Sidebar onNavigate={() => setOpen(false)} />
         </SheetContent>
       </Sheet>

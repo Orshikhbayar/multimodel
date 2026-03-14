@@ -31,9 +31,7 @@ export function OutOfCreditsModal() {
             </div>
             <div>
               <DialogTitle>{t("billing.outOfCredits")}</DialogTitle>
-              <DialogDescription>
-                {t("billing.outOfCreditsDescription")}
-              </DialogDescription>
+              <DialogDescription>{t("billing.outOfCreditsDescription")}</DialogDescription>
             </div>
           </div>
         </DialogHeader>

@@ -2,44 +2,19 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getSupabaseConfig } from "./env";
 
-const PUBLIC_ROUTES = new Set(["/auth/login", "/auth/callback", "/intro"]);
-const PROTECTED_ROUTE_PREFIXES = [
-  "/",
-  "/about",
-  "/account",
-  "/autopilot",
-  "/billing",
-  "/chat",
-  "/dashboard",
-  "/fixtures",
-  "/insights",
-  "/pricing",
-  "/privacy",
-  "/projects",
-  "/support",
-  "/templates",
-  "/terms",
-  "/usage",
-] as const;
+const PUBLIC_ROUTES = new Set([
+  "/auth/login",
+  "/auth/callback",
+  "/intro",
+]);
 
 function isPublicRoute(pathname: string) {
   if (PUBLIC_ROUTES.has(pathname)) return true;
   if (pathname.startsWith("/auth/")) return true;
   if (pathname.startsWith("/_next/")) return true;
   if (pathname.startsWith("/favicon")) return true;
-  if (pathname.match(/\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml)$/))
-    return true;
+  if (pathname.match(/\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml)$/)) return true;
   return false;
-}
-
-function isKnownProtectedRoute(pathname: string) {
-  if (pathname === "/") return true;
-
-  return PROTECTED_ROUTE_PREFIXES.some(
-    (prefix) =>
-      prefix !== "/" &&
-      (pathname === prefix || pathname.startsWith(`${prefix}/`)),
-  );
 }
 
 function isE2EAuthBypassed() {
@@ -86,7 +61,7 @@ export async function updateSession(request: NextRequest) {
   const isApi = pathname.startsWith("/api/");
   const isAuthenticated = Boolean(claims?.sub);
 
-  if (!isApi && !isPublic && !isAuthenticated && isKnownProtectedRoute(pathname)) {
+  if (!isApi && !isPublic && !isAuthenticated) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/auth/login";
     const target = `${pathname}${request.nextUrl.search}`;

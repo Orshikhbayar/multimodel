@@ -1,9 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { mockChatSse } from "./helpers";
 
-test("user can send a message and receive streamed output", async ({
-  page,
-}) => {
+test("user can send a message and receive streamed output", async ({ page }) => {
   await mockChatSse(page, { token: "stream token" });
   await page.goto("/");
 
@@ -14,7 +12,5 @@ test("user can send a message and receive streamed output", async ({
   await expect(
     page.getByLabel("Your message").getByText("Explain test strategy"),
   ).toBeVisible();
-  await expect(
-    page.getByText("stream token", { exact: false }).first(),
-  ).toBeVisible();
+  await expect(page.getByText("stream token", { exact: false }).first()).toBeVisible();
 });

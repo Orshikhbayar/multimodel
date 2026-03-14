@@ -3,7 +3,11 @@ import { describe, expect, it } from "vitest";
 import { generateRuns } from "@/lib/hooks/runGeneration";
 import type { ModelSlot } from "@/lib/types";
 
-function buildSlot(slotId: string, label: string, enabled: boolean): ModelSlot {
+function buildSlot(
+  slotId: string,
+  label: string,
+  enabled: boolean,
+): ModelSlot {
   return {
     slotId,
     providerId: "openai",

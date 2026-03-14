@@ -23,14 +23,10 @@ export function useI18n() {
       locale: normalizedLocale,
       t: (key: I18nKey, params?: TranslationParams) =>
         t(normalizedLocale, key, params),
-      formatDate: (
-        value: Date | number | string,
-        options?: Intl.DateTimeFormatOptions,
-      ) => formatDateByLocale(value, normalizedLocale, options),
-      formatTime: (
-        value: Date | number | string,
-        options?: Intl.DateTimeFormatOptions,
-      ) => formatTimeByLocale(value, normalizedLocale, options),
+      formatDate: (value: Date | number | string, options?: Intl.DateTimeFormatOptions) =>
+        formatDateByLocale(value, normalizedLocale, options),
+      formatTime: (value: Date | number | string, options?: Intl.DateTimeFormatOptions) =>
+        formatTimeByLocale(value, normalizedLocale, options),
       formatDateTime: (
         value: Date | number | string,
         options?: Intl.DateTimeFormatOptions,
@@ -41,3 +37,4 @@ export function useI18n() {
     [normalizedLocale],
   );
 }
+

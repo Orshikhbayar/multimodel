@@ -1,6 +1,6 @@
 /**
  * Sentry Client Configuration
- *
+ * 
  * This file configures Sentry error tracking for the browser.
  * See: https://docs.sentry.io/platforms/javascript/guides/nextjs/
  */

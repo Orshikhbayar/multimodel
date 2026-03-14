@@ -26,9 +26,7 @@ export function TopUpModal() {
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>{t("billing.topUpCreditsTitle")}</DialogTitle>
-          <DialogDescription>
-            {t("billing.topUpCreditsDescription")}
-          </DialogDescription>
+          <DialogDescription>{t("billing.topUpCreditsDescription")}</DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-3 md:grid-cols-3">

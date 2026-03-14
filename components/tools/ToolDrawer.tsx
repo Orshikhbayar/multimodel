@@ -64,9 +64,7 @@ function normalizeApiMessage(value: unknown): Message | null {
 
   if (
     typeof row.id !== "string" ||
-    (row.role !== "user" &&
-      row.role !== "assistant" &&
-      row.role !== "system") ||
+    (row.role !== "user" && row.role !== "assistant" && row.role !== "system") ||
     typeof row.content !== "string" ||
     typeof row.createdAt !== "number"
   ) {
@@ -81,9 +79,7 @@ function normalizeApiMessage(value: unknown): Message | null {
     attachments: Array.isArray(row.attachments)
       ? (row.attachments as Message["attachments"])
       : undefined,
-    toolCalls: Array.isArray(row.toolCalls)
-      ? (row.toolCalls as ToolCall[])
-      : undefined,
+    toolCalls: Array.isArray(row.toolCalls) ? (row.toolCalls as ToolCall[]) : undefined,
   };
 }
 
@@ -96,24 +92,18 @@ export function ToolDrawer({
 }: ToolDrawerProps) {
   const addMessages = useConversationStore((state) => state.addMessages);
 
-  const [activeTab, setActiveTab] = useState<"tools" | "runs" | "artifacts">(
-    "tools",
-  );
+  const [activeTab, setActiveTab] = useState<"tools" | "runs" | "artifacts">("tools");
 
   const [registryLoading, setRegistryLoading] = useState(false);
   const [registryError, setRegistryError] = useState<string | null>(null);
   const [tools, setTools] = useState<ToolRegistryEntry[]>([]);
   const [search, setSearch] = useState("");
-  const [selectedToolName, setSelectedToolName] = useState<string | undefined>(
-    undefined,
-  );
+  const [selectedToolName, setSelectedToolName] = useState<string | undefined>(undefined);
 
   const [runsLoading, setRunsLoading] = useState(false);
   const [runsError, setRunsError] = useState<string | null>(null);
   const [runs, setRuns] = useState<ToolRunSummary[]>([]);
-  const [selectedRunId, setSelectedRunId] = useState<string | undefined>(
-    undefined,
-  );
+  const [selectedRunId, setSelectedRunId] = useState<string | undefined>(undefined);
 
   const [runDetailLoading, setRunDetailLoading] = useState(false);
   const [runDetailError, setRunDetailError] = useState<string | null>(null);
@@ -125,9 +115,7 @@ export function ToolDrawer({
 
   const [attachError, setAttachError] = useState<string | null>(null);
   const [attachingRunId, setAttachingRunId] = useState<string | null>(null);
-  const [attachingArtifactId, setAttachingArtifactId] = useState<string | null>(
-    null,
-  );
+  const [attachingArtifactId, setAttachingArtifactId] = useState<string | null>(null);
 
   const [seed, setSeed] = useState<{
     toolName: string;
@@ -171,9 +159,7 @@ export function ToolDrawer({
       const response = await fetch("/api/tools/registry", {
         method: "GET",
       });
-      const data = (await response.json()) as ToolsRegistryResponse & {
-        error?: string;
-      };
+      const data = (await response.json()) as ToolsRegistryResponse & { error?: string };
 
       if (!response.ok) {
         setRegistryError(data.error ?? "Failed to load tools registry");
@@ -204,9 +190,7 @@ export function ToolDrawer({
         limit: "50",
       });
       const response = await fetch(`/api/tools/runs?${params.toString()}`);
-      const data = (await response.json()) as ToolRunsResponse & {
-        error?: string;
-      };
+      const data = (await response.json()) as ToolRunsResponse & { error?: string };
 
       if (!response.ok) {
         setRunsError(data.error ?? "Failed to load tool runs");
@@ -221,40 +205,33 @@ export function ToolDrawer({
     }
   }, [scopeValue]);
 
-  const loadRunDetail = useCallback(
-    async (runId: string) => {
-      setRunDetailLoading(true);
-      setRunDetailError(null);
+  const loadRunDetail = useCallback(async (runId: string) => {
+    setRunDetailLoading(true);
+    setRunDetailError(null);
 
-      try {
-        const params = new URLSearchParams({
-          project_id: scopeValue,
-          run_id: runId,
-          include_payloads: "true",
-        });
-        const response = await fetch(`/api/tools/runs?${params.toString()}`);
-        const data = (await response.json()) as ToolRunDetailResponse & {
-          error?: string;
-        };
+    try {
+      const params = new URLSearchParams({
+        project_id: scopeValue,
+        run_id: runId,
+        include_payloads: "true",
+      });
+      const response = await fetch(`/api/tools/runs?${params.toString()}`);
+      const data = (await response.json()) as ToolRunDetailResponse & { error?: string };
 
-        if (!response.ok) {
-          setRunDetailError(data.error ?? "Failed to load run details");
-          setRunDetail(null);
-          return;
-        }
-
-        setRunDetail(data.run ?? null);
-      } catch (error) {
-        setRunDetailError(
-          error instanceof Error ? error.message : String(error),
-        );
+      if (!response.ok) {
+        setRunDetailError(data.error ?? "Failed to load run details");
         setRunDetail(null);
-      } finally {
-        setRunDetailLoading(false);
+        return;
       }
-    },
-    [scopeValue],
-  );
+
+      setRunDetail(data.run ?? null);
+    } catch (error) {
+      setRunDetailError(error instanceof Error ? error.message : String(error));
+      setRunDetail(null);
+    } finally {
+      setRunDetailLoading(false);
+    }
+  }, [scopeValue]);
 
   const loadArtifacts = useCallback(async () => {
     setArtifactsLoading(true);
@@ -267,9 +244,7 @@ export function ToolDrawer({
       });
 
       const response = await fetch(`/api/artifacts?${params.toString()}`);
-      const data = (await response.json()) as ArtifactsResponse & {
-        error?: string;
-      };
+      const data = (await response.json()) as ArtifactsResponse & { error?: string };
 
       if (!response.ok) {
         setArtifactsError(data.error ?? "Failed to load artifacts");
@@ -313,63 +288,54 @@ export function ToolDrawer({
     void loadRunDetail(selectedRunId);
   }, [loadRunDetail, open, selectedRunId]);
 
-  const attachToChat = useCallback(
-    async (
-      payload: { run_id?: string; artifact_id?: string },
-      setLoading: (value: boolean) => void,
-    ) => {
-      if (!conversationId) {
-        setAttachError("Open a conversation before attaching tool outputs.");
+  const attachToChat = useCallback(async (
+    payload: { run_id?: string; artifact_id?: string },
+    setLoading: (value: boolean) => void,
+  ) => {
+    if (!conversationId) {
+      setAttachError("Open a conversation before attaching tool outputs.");
+      return;
+    }
+
+    setAttachError(null);
+    setLoading(true);
+
+    try {
+      const response = await fetch("/api/chat/append-tool-result", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          conversation_id: conversationId,
+          message_id: currentMessageId ?? null,
+          ...payload,
+        }),
+      });
+
+      const data = (await response.json()) as AppendToolResultResponse & { error?: string };
+
+      if (!response.ok) {
+        setAttachError(data.error ?? "Failed to attach to chat");
         return;
       }
 
-      setAttachError(null);
-      setLoading(true);
-
-      try {
-        const response = await fetch("/api/chat/append-tool-result", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            conversation_id: conversationId,
-            message_id: currentMessageId ?? null,
-            ...payload,
-          }),
-        });
-
-        const data = (await response.json()) as AppendToolResultResponse & {
-          error?: string;
-        };
-
-        if (!response.ok) {
-          setAttachError(data.error ?? "Failed to attach to chat");
-          return;
-        }
-
-        const normalized = normalizeApiMessage(data.message);
-        if (!normalized) {
-          setAttachError(
-            "Attach succeeded but returned message payload was invalid.",
-          );
-          return;
-        }
-
-        addMessages(conversationId, [normalized]);
-
-        await Promise.all([loadRuns(), loadArtifacts()]);
-      } catch (error) {
-        setAttachError(error instanceof Error ? error.message : String(error));
-      } finally {
-        setLoading(false);
+      const normalized = normalizeApiMessage(data.message);
+      if (!normalized) {
+        setAttachError("Attach succeeded but returned message payload was invalid.");
+        return;
       }
-    },
-    [addMessages, conversationId, currentMessageId, loadArtifacts, loadRuns],
-  );
+
+      addMessages(conversationId, [normalized]);
+
+      await Promise.all([loadRuns(), loadArtifacts()]);
+    } catch (error) {
+      setAttachError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setLoading(false);
+    }
+  }, [addMessages, conversationId, currentMessageId, loadArtifacts, loadRuns]);
 
   const formSeed =
-    seed && selectedTool && seed.toolName === selectedTool.tool_name
-      ? seed
-      : null;
+    seed && selectedTool && seed.toolName === selectedTool.tool_name ? seed : null;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -382,17 +348,13 @@ export function ToolDrawer({
                 Tools
               </SheetTitle>
               <p className="text-xs text-muted-foreground">
-                Scope:{" "}
-                {projectId ? `project ${projectId}` : "workspace general"}
+                Scope: {projectId ? `project ${projectId}` : "workspace general"}
               </p>
             </SheetHeader>
           </div>
 
           <div className="flex-1 overflow-hidden px-4 py-3">
-            <Tabs
-              value={activeTab}
-              onValueChange={(value) => setActiveTab(value as typeof activeTab)}
-            >
+            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)}>
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="tools">Tools</TabsTrigger>
                 <TabsTrigger value="runs">Recent Runs</TabsTrigger>
@@ -422,16 +384,10 @@ export function ToolDrawer({
                     <div className="mt-4 space-y-2 rounded-xl border border-border/70 p-3">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div>
-                          <p className="text-sm font-semibold">
-                            Run {selectedTool.tool_name}
-                          </p>
-                          <p className="text-[11px] text-muted-foreground">
-                            v{selectedTool.tool_version}
-                          </p>
+                          <p className="text-sm font-semibold">Run {selectedTool.tool_name}</p>
+                          <p className="text-[11px] text-muted-foreground">v{selectedTool.tool_version}</p>
                         </div>
-                        {registryLoading ? (
-                          <Badge variant="outline">Loading…</Badge>
-                        ) : null}
+                        {registryLoading ? <Badge variant="outline">Loading…</Badge> : null}
                       </div>
 
                       <ToolRunForm
@@ -544,10 +500,7 @@ export function ToolDrawer({
                 </ScrollArea>
               </TabsContent>
 
-              <TabsContent
-                value="artifacts"
-                className="mt-3 h-[calc(100vh-185px)]"
-              >
+              <TabsContent value="artifacts" className="mt-3 h-[calc(100vh-185px)]">
                 <ScrollArea className="h-full pr-2">
                   {artifactsError ? (
                     <div className="mb-2 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
@@ -564,12 +517,9 @@ export function ToolDrawer({
                     }}
                     onAttach={(artifactId) => {
                       setAttachingArtifactId(artifactId);
-                      void attachToChat(
-                        { artifact_id: artifactId },
-                        (value) => {
-                          setAttachingArtifactId(value ? artifactId : null);
-                        },
-                      );
+                      void attachToChat({ artifact_id: artifactId }, (value) => {
+                        setAttachingArtifactId(value ? artifactId : null);
+                      });
                     }}
                   />
                 </ScrollArea>

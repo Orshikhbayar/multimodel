@@ -283,15 +283,12 @@ export const useBillingStore = create<BillingStore>()(
             body: JSON.stringify({ planId, cadence }),
           });
 
-          const payload = (await response.json().catch(() => null)) as {
-            url?: string;
-            error?: string;
-          } | null;
+          const payload = (await response.json().catch(() => null)) as
+            | { url?: string; error?: string }
+            | null;
 
           if (!response.ok || !payload?.url) {
-            throw new Error(
-              payload?.error || "Failed to create subscription checkout",
-            );
+            throw new Error(payload?.error || "Failed to create subscription checkout");
           }
 
           await redirectToCheckout(payload.url);
@@ -299,7 +296,9 @@ export const useBillingStore = create<BillingStore>()(
           set({
             loading: false,
             error:
-              error instanceof Error ? error.message : "Failed to change plan",
+              error instanceof Error
+                ? error.message
+                : "Failed to change plan",
           });
         }
       },
@@ -313,15 +312,12 @@ export const useBillingStore = create<BillingStore>()(
             body: JSON.stringify({ packId }),
           });
 
-          const payload = (await response.json().catch(() => null)) as {
-            url?: string;
-            error?: string;
-          } | null;
+          const payload = (await response.json().catch(() => null)) as
+            | { url?: string; error?: string }
+            | null;
 
           if (!response.ok || !payload?.url) {
-            throw new Error(
-              payload?.error || "Failed to create top-up checkout",
-            );
+            throw new Error(payload?.error || "Failed to create top-up checkout");
           }
 
           await redirectToCheckout(payload.url);

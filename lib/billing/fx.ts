@@ -5,9 +5,7 @@ export type FxRateSnapshot = {
   live: boolean;
 };
 
-const FALLBACK_RATE = Number(
-  process.env.NEXT_PUBLIC_USD_TO_MNT_RATE ?? "3568.5492",
-);
+const FALLBACK_RATE = Number(process.env.NEXT_PUBLIC_USD_TO_MNT_RATE ?? "3568.5492");
 const CACHE_TTL_MS = 15 * 60 * 1000;
 
 let cached: {
@@ -65,9 +63,7 @@ async function fetchFromFrankfurter(): Promise<FxRateSnapshot | null> {
     return null;
   }
 
-  const fetchedAt = json.date
-    ? new Date(`${json.date}T00:00:00.000Z`)
-    : new Date();
+  const fetchedAt = json.date ? new Date(`${json.date}T00:00:00.000Z`) : new Date();
 
   return {
     usdToMnt: rate,

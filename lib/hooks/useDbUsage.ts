@@ -1,11 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import {
-  getUsageSummary,
-  checkQuota,
-  type UsageSummary,
-} from "@/lib/actions/usage";
+import { getUsageSummary, checkQuota, type UsageSummary } from "@/lib/actions/usage";
 
 /**
  * Hook to fetch and track usage data from the database
@@ -26,19 +22,17 @@ export function useDbUsage() {
     try {
       setLoading(true);
       setError(null);
-
+      
       const [summaryData, quotaData] = await Promise.all([
         getUsageSummary(),
         checkQuota(),
       ]);
-
+      
       setSummary(summaryData);
       setQuota(quotaData);
     } catch (err) {
       console.error("[useDbUsage] Failed to fetch usage:", err);
-      setError(
-        err instanceof Error ? err.message : "Failed to fetch usage data",
-      );
+      setError(err instanceof Error ? err.message : "Failed to fetch usage data");
     } finally {
       setLoading(false);
     }
@@ -70,13 +64,11 @@ export interface QuotaStatus {
   isOverLimit: boolean;
 }
 
-export function getQuotaStatus(
-  quota: {
-    remaining: number;
-    limit: number;
-    used: number;
-  } | null,
-): QuotaStatus {
+export function getQuotaStatus(quota: {
+  remaining: number;
+  limit: number;
+  used: number;
+} | null): QuotaStatus {
   if (!quota) {
     return {
       percentUsed: 0,

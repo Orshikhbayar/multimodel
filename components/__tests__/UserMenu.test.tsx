@@ -1,14 +1,12 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-const { mockPush, mockRefresh, mockUpdateLocale, mockLogoutLocal } = vi.hoisted(
-  () => ({
-    mockPush: vi.fn(),
-    mockRefresh: vi.fn(),
-    mockUpdateLocale: vi.fn(),
-    mockLogoutLocal: vi.fn(),
-  }),
-);
+const { mockPush, mockRefresh, mockUpdateLocale, mockLogoutLocal } = vi.hoisted(() => ({
+  mockPush: vi.fn(),
+  mockRefresh: vi.fn(),
+  mockUpdateLocale: vi.fn(),
+  mockLogoutLocal: vi.fn(),
+}));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush, refresh: mockRefresh }),
@@ -34,10 +32,7 @@ import { UserMenu } from "@/components/UserMenu";
 
 describe("UserMenu", () => {
   it("opens menu and language modal", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () => ({ ok: true })),
-    );
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true })));
 
     render(<UserMenu />);
 
@@ -45,9 +40,7 @@ describe("UserMenu", () => {
     expect(screen.getByText("Settings")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("menuitem", { name: /language/i }));
-    expect(
-      screen.getByText(/select your display language/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/select your display language/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByLabelText(/монгол/i));
     expect(mockUpdateLocale).toHaveBeenCalledWith("mn");

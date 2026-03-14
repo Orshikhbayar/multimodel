@@ -52,7 +52,11 @@ export function ChatWorkspace({
   const [toolsOpen, setToolsOpen] = useState(false);
   const [sourcesRun, setSourcesRun] = useState<Run | null>(null);
   const [disagreementsRun, setDisagreementsRun] = useState<Run | null>(null);
-  const { currency, currentPlanId, openUpgradeModal } = useBillingStore();
+  const {
+    currency,
+    currentPlanId,
+    openUpgradeModal,
+  } = useBillingStore();
   const isProjectScope = typeof projectId === "string" && projectId.length > 0;
 
   const scopedConversations = useMemo(
@@ -69,9 +73,10 @@ export function ChatWorkspace({
       return scopedConversations.find((conv) => conv.id === conversationId);
     }
 
-    const current = currentConversationId
-      ? scopedConversations.find((conv) => conv.id === currentConversationId)
-      : undefined;
+    const current =
+      currentConversationId
+        ? scopedConversations.find((conv) => conv.id === currentConversationId)
+        : undefined;
     return current ?? scopedConversations[0];
   }, [conversationId, currentConversationId, scopedConversations]);
   const isEmpty = !conversation?.messages?.length;
@@ -129,21 +134,21 @@ export function ChatWorkspace({
   const contextBreadcrumb = isProjectScope
     ? `${t("navigation.projects")} / ${projectName ?? t("projects.title")} / ${t("navigation.chat")}`
     : `${t("navigation.chat")} / ${t("navigation.general")}`;
-  const emptyScopeMessage = projectArchived
-    ? t("projects.archivedReadOnly", {
-        project: projectName ?? t("projects.title"),
-      })
-    : isProjectScope
-      ? t("projects.noChatsInProject")
-      : null;
+  const emptyScopeMessage =
+    projectArchived
+      ? t("projects.archivedReadOnly", {
+          project: projectName ?? t("projects.title"),
+        })
+      : isProjectScope
+        ? t("projects.noChatsInProject")
+        : null;
 
   const handleSend = (value: string) => {
     if (!value.trim()) return;
     if (projectArchived) return;
     sendMessage(value, projectId ?? undefined);
   };
-  const latestMessageId =
-    conversation?.messages?.[conversation.messages.length - 1]?.id;
+  const latestMessageId = conversation?.messages?.[conversation.messages.length - 1]?.id;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">

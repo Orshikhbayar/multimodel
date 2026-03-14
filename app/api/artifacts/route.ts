@@ -29,17 +29,10 @@ export async function GET(request: NextRequest) {
   const hasProjectParam = params.has("project_id");
   const projectIdRaw = params.get("project_id");
   const conversationId = params.get("conversation_id");
-  const limit = Math.min(
-    100,
-    Math.max(1, Number.parseInt(params.get("limit") ?? "30", 10)),
-  );
+  const limit = Math.min(100, Math.max(1, Number.parseInt(params.get("limit") ?? "30", 10)));
 
   const projectId =
-    projectIdRaw === "null"
-      ? null
-      : projectIdRaw && projectIdRaw.length > 0
-        ? projectIdRaw
-        : null;
+    projectIdRaw === "null" ? null : (projectIdRaw && projectIdRaw.length > 0 ? projectIdRaw : null);
 
   const workspaceId = await resolveWorkspaceId(supabase, claims.sub, projectId);
 
@@ -69,17 +62,19 @@ export async function GET(request: NextRequest) {
   const { data: artifacts, error } = await query;
 
   if (error) {
-    return new Response(JSON.stringify({ error: error.message, requestId }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: error.message, requestId }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
   }
 
   const records = Array.isArray(artifacts) ? artifacts : [];
   const signed = await Promise.all(
     records.map(async (artifact) => {
-      const storagePath =
-        typeof artifact.storage_path === "string" ? artifact.storage_path : "";
+      const storagePath = typeof artifact.storage_path === "string" ? artifact.storage_path : "";
       if (!storagePath) {
         return {
           ...artifact,
@@ -98,8 +93,11 @@ export async function GET(request: NextRequest) {
     }),
   );
 
-  return new Response(JSON.stringify({ requestId, artifacts: signed }), {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-  });
+  return new Response(
+    JSON.stringify({ requestId, artifacts: signed }),
+    {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    },
+  );
 }

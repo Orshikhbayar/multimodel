@@ -30,9 +30,7 @@ describe("billing utils", () => {
   it("returns plan pricing and included credits", () => {
     const plan = getPlanById("plus");
     expect(getPlanPrice(plan, "USD", "monthly")).toBe(plan.monthlyPrice.USD);
-    expect(getIncludedCredits(plan, "USD")).toBe(
-      plan.includedMonthlyCredits.USD,
-    );
+    expect(getIncludedCredits(plan, "USD")).toBe(plan.includedMonthlyCredits.USD);
   });
 
   it("handles date helpers", () => {

@@ -101,9 +101,7 @@ describe("webFetchTool hardening", () => {
   it("blocks hostnames that resolve to private IPs", async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
-    mocks.lookup.mockResolvedValueOnce([
-      { address: "192.168.1.24", family: 4 },
-    ]);
+    mocks.lookup.mockResolvedValueOnce([{ address: "192.168.1.24", family: 4 }]);
 
     const context = createWebContext();
     await expect(
@@ -130,14 +128,13 @@ describe("webFetchTool hardening", () => {
       },
     });
 
-    const fetchMock = vi.fn(
-      async () =>
-        new Response(largeBody, {
-          status: 200,
-          headers: {
-            "content-type": "text/html",
-          },
-        }),
+    const fetchMock = vi.fn(async () =>
+      new Response(largeBody, {
+        status: 200,
+        headers: {
+          "content-type": "text/html",
+        },
+      }),
     );
     vi.stubGlobal("fetch", fetchMock);
 

@@ -15,9 +15,7 @@ export default function GeneralConversationPage() {
   const params = useParams<{ conversationId: string }>();
   const conversationId = getParam(params?.conversationId);
   const { conversations } = useChatStore();
-  const conversation = conversations.find(
-    (entry) => entry.id === conversationId,
-  );
+  const conversation = conversations.find((entry) => entry.id === conversationId);
 
   if (!conversation) {
     return (

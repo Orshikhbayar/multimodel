@@ -88,9 +88,7 @@ export function BillingSummaryCard() {
           <Button asChild variant="outline">
             <Link href="/dashboard/plans">{t("billing.changePlan")}</Link>
           </Button>
-          <Button onClick={openTopUpModal}>
-            {t("billing.topUpCreditsAction")}
-          </Button>
+          <Button onClick={openTopUpModal}>{t("billing.topUpCreditsAction")}</Button>
           <Button variant="ghost" className="text-muted-foreground">
             {t("billing.managePaymentMethod")}
           </Button>

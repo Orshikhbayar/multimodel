@@ -22,9 +22,7 @@ export function UsageBars({
     <div className="space-y-4">
       <div className="space-y-2">
         <div className="flex items-center justify-between text-xs">
-          <span className="text-muted-foreground">
-            {t("billing.includedCredits")}
-          </span>
+          <span className="text-muted-foreground">{t("billing.includedCredits")}</span>
           <span className="font-medium">
             {t("billing.remaining", {
               credits: formatCredits(includedRemaining, currency, locale),
@@ -46,9 +44,7 @@ export function UsageBars({
 
       <div className="space-y-2">
         <div className="flex items-center justify-between text-xs">
-          <span className="text-muted-foreground">
-            {t("billing.topUpBalance")}
-          </span>
+          <span className="text-muted-foreground">{t("billing.topUpBalance")}</span>
           <span className="font-medium">
             {formatCredits(topUpBalance, currency, locale)}
           </span>

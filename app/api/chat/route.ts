@@ -48,23 +48,7 @@ interface ChatRequestBody {
 function estimatePromptTokensFromMessages(messages: ChatMessage[]) {
   return Math.max(
     1,
-    messages.reduce(
-      (total, message) => total + Math.ceil(message.content.length / 4),
-      0,
-    ),
-  );
-}
-
-export async function GET() {
-  return new Response(
-    JSON.stringify({ error: "Method Not Allowed", allowed: ["POST"] }),
-    {
-      status: 405,
-      headers: {
-        "Content-Type": "application/json",
-        Allow: "POST",
-      },
-    },
+    messages.reduce((total, message) => total + Math.ceil(message.content.length / 4), 0),
   );
 }
 
@@ -104,9 +88,7 @@ export async function POST(request: NextRequest) {
     const headers = getRateLimitHeaders(permission.rateLimit);
 
     if (permission.reason === "rate_limit") {
-      log.info("Rate limit exceeded", {
-        resetIn: permission.rateLimit.resetIn,
-      });
+      log.info("Rate limit exceeded", { resetIn: permission.rateLimit.resetIn });
       Metrics.rateLimitHit({ userId: sessionUserId, type: "rate" });
       Metrics.apiRequestCount({ endpoint: "/api/chat", status: 429 });
 
@@ -129,9 +111,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (permission.reason === "concurrency_limit") {
-      log.info("Concurrency limit exceeded", {
-        active: permission.concurrency.active,
-      });
+      log.info("Concurrency limit exceeded", { active: permission.concurrency.active });
       Metrics.rateLimitHit({ userId: sessionUserId, type: "concurrency" });
       Metrics.apiRequestCount({ endpoint: "/api/chat", status: 429 });
 
@@ -178,10 +158,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const hasProjectScope = Object.prototype.hasOwnProperty.call(
-      body,
-      "projectId",
-    );
+    const hasProjectScope = Object.prototype.hasOwnProperty.call(body, "projectId");
     if (
       hasProjectScope &&
       projectId !== null &&
@@ -190,10 +167,7 @@ export async function POST(request: NextRequest) {
     ) {
       releaseConcurrencySlot(sessionUserId, streamId);
       return new Response(
-        JSON.stringify({
-          error: "projectId must be a string or null",
-          requestId,
-        }),
+        JSON.stringify({ error: "projectId must be a string or null", requestId }),
         { status: 400, headers: { "Content-Type": "application/json" } },
       );
     }
@@ -208,10 +182,7 @@ export async function POST(request: NextRequest) {
       if (conversationError) {
         releaseConcurrencySlot(sessionUserId, streamId);
         return new Response(
-          JSON.stringify({
-            error: "Failed to validate conversation scope",
-            requestId,
-          }),
+          JSON.stringify({ error: "Failed to validate conversation scope", requestId }),
           { status: 500, headers: { "Content-Type": "application/json" } },
         );
       }
@@ -423,10 +394,7 @@ export async function POST(request: NextRequest) {
             if (streamClosed) break;
 
             if (event.type === "token") {
-              fallbackCompletionTokens += Math.max(
-                1,
-                Math.ceil(event.content.length / 4),
-              );
+              fallbackCompletionTokens += Math.max(1, Math.ceil(event.content.length / 4));
               accumulatedText += event.content;
               const data = JSON.stringify({ token: event.content, requestId });
               controller.enqueue(encoder.encode(`data: ${data}\n\n`));
@@ -437,18 +405,20 @@ export async function POST(request: NextRequest) {
 
           if (!streamClosed) {
             const elapsed = Date.now() - startTime;
-            const promptTokens =
-              tokenUsage?.promptTokens ?? estimatedPromptTokens;
+            const promptTokens = tokenUsage?.promptTokens ?? estimatedPromptTokens;
             const completionTokens =
-              tokenUsage?.completionTokens ??
-              Math.max(1, fallbackCompletionTokens);
+              tokenUsage?.completionTokens ?? Math.max(1, fallbackCompletionTokens);
             const costUsd = estimateTokenCostUsd({
               modelId: resolvedModelId,
               inputTokens: promptTokens,
               outputTokens: completionTokens,
             });
 
-            await finalizeMetering("completed", promptTokens, completionTokens);
+            await finalizeMetering(
+              "completed",
+              promptTokens,
+              completionTokens,
+            );
 
             if (conversationId && runId) {
               await supabase
@@ -467,10 +437,7 @@ export async function POST(request: NextRequest) {
                 .eq("conversation_id", conversationId);
             }
 
-            Metrics.streamTokens(promptTokens, {
-              model: resolvedModel,
-              type: "prompt",
-            });
+            Metrics.streamTokens(promptTokens, { model: resolvedModel, type: "prompt" });
             Metrics.streamTokens(completionTokens, {
               model: resolvedModel,
               type: "completion",
@@ -489,10 +456,7 @@ export async function POST(request: NextRequest) {
               status: 200,
               model: resolvedModel,
             });
-            Metrics.streamDuration(elapsed, {
-              model: resolvedModel,
-              status: "done",
-            });
+            Metrics.streamDuration(elapsed, { model: resolvedModel, status: "done" });
 
             const doneData = JSON.stringify({
               done: true,
@@ -532,8 +496,7 @@ export async function POST(request: NextRequest) {
           );
 
           if (conversationId && runId) {
-            const failedStatus =
-              status === "cancelled" ? "completed" : "failed";
+            const failedStatus = status === "cancelled" ? "completed" : "failed";
             await supabase
               .from("model_runs")
               .update({
@@ -596,14 +559,8 @@ export async function POST(request: NextRequest) {
             .eq("conversation_id", conversationId);
         }
 
-        log.info("Client disconnected", {
-          durationMs: elapsed,
-          model: resolvedModel,
-        });
-        Metrics.streamDuration(elapsed, {
-          model: resolvedModel,
-          status: "cancelled",
-        });
+        log.info("Client disconnected", { durationMs: elapsed, model: resolvedModel });
+        Metrics.streamDuration(elapsed, { model: resolvedModel, status: "cancelled" });
       },
     });
 

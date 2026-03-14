@@ -1,9 +1,9 @@
 /**
  * Metrics collection utility
- *
+ * 
  * Provides lightweight metrics collection for monitoring.
  * In production, these could be sent to a metrics service like Datadog or Prometheus.
- *
+ * 
  * For now, metrics are logged and can be aggregated by log analysis tools.
  */
 
@@ -78,7 +78,7 @@ function addToBucket(key: string, value: number): void {
   bucket.sum += value;
   bucket.min = Math.min(bucket.min, value);
   bucket.max = Math.max(bucket.max, value);
-
+  
   // Keep only last N values for percentile calculation
   bucket.values.push(value);
   if (bucket.values.length > BUCKET_SIZE) {
@@ -100,14 +100,10 @@ function calculatePercentile(values: number[], percentile: number): number {
 /**
  * Record a timing metric (e.g., request latency)
  */
-export function timing(
-  name: string,
-  durationMs: number,
-  tags?: MetricTags,
-): void {
+export function timing(name: string, durationMs: number, tags?: MetricTags): void {
   const key = getBucketKey(name, tags);
   addToBucket(key, durationMs);
-
+  
   // Log individual timing in development
   if (process.env.NODE_ENV === "development") {
     logger.debug(`[Metric] ${name}`, { durationMs, ...tags });
@@ -117,14 +113,10 @@ export function timing(
 /**
  * Increment a counter (e.g., request count, error count)
  */
-export function increment(
-  name: string,
-  value: number = 1,
-  tags?: MetricTags,
-): void {
+export function increment(name: string, value: number = 1, tags?: MetricTags): void {
   const key = getBucketKey(name, tags);
   addToBucket(key, value);
-
+  
   if (process.env.NODE_ENV === "development") {
     logger.debug(`[Metric] ${name}`, { value, ...tags });
   }
@@ -142,7 +134,7 @@ export function gauge(name: string, value: number, tags?: MetricTags): void {
   bucket.sum = value;
   bucket.min = value;
   bucket.max = value;
-
+  
   if (process.env.NODE_ENV === "development") {
     logger.debug(`[Metric] ${name}`, { value, ...tags });
   }
@@ -151,9 +143,16 @@ export function gauge(name: string, value: number, tags?: MetricTags): void {
 /**
  * Get aggregated metrics summary
  */
-export function getMetricsSummary(): Record<
-  string,
-  {
+export function getMetricsSummary(): Record<string, {
+  count: number;
+  avg: number;
+  min: number;
+  max: number;
+  p50: number;
+  p95: number;
+  p99: number;
+}> {
+  const summary: Record<string, {
     count: number;
     avg: number;
     min: number;
@@ -161,24 +160,11 @@ export function getMetricsSummary(): Record<
     p50: number;
     p95: number;
     p99: number;
-  }
-> {
-  const summary: Record<
-    string,
-    {
-      count: number;
-      avg: number;
-      min: number;
-      max: number;
-      p50: number;
-      p95: number;
-      p99: number;
-    }
-  > = {};
-
+  }> = {};
+  
   for (const [key, bucket] of metricsBuckets) {
     if (bucket.count === 0) continue;
-
+    
     summary[key] = {
       count: bucket.count,
       avg: bucket.sum / bucket.count,
@@ -189,7 +175,7 @@ export function getMetricsSummary(): Record<
       p99: calculatePercentile(bucket.values, 99),
     };
   }
-
+  
   return summary;
 }
 
@@ -206,11 +192,11 @@ export function resetMetrics(): void {
  */
 export function flushMetrics(): void {
   const summary = getMetricsSummary();
-
+  
   if (Object.keys(summary).length === 0) return;
-
+  
   logger.info("[Metrics] Periodic summary", { metrics: summary });
-
+  
   // Reset after flush (comment out if you want cumulative metrics)
   // resetMetrics();
 }
@@ -221,47 +207,40 @@ export function flushMetrics(): void {
 
 export const Metrics = {
   // API metrics
-  apiRequestDuration: (
-    durationMs: number,
-    tags: { endpoint: string; status: number; model?: string },
-  ) => timing("api.request.duration", durationMs, tags),
-
+  apiRequestDuration: (durationMs: number, tags: { endpoint: string; status: number; model?: string }) =>
+    timing("api.request.duration", durationMs, tags),
+  
   apiRequestCount: (tags: { endpoint: string; status: number }) =>
     increment("api.request.count", 1, tags),
-
+  
   apiError: (tags: { endpoint: string; errorType: string }) =>
     increment("api.error.count", 1, tags),
-
+  
   // Stream metrics
-  streamDuration: (
-    durationMs: number,
-    tags: { model: string; status: string },
-  ) => timing("stream.duration", durationMs, tags),
-
-  streamTokens: (
-    tokens: number,
-    tags: { model: string; type: "prompt" | "completion" },
-  ) => increment("stream.tokens", tokens, tags),
-
-  activeStreams: (count: number) => gauge("stream.active", count),
-
+  streamDuration: (durationMs: number, tags: { model: string; status: string }) =>
+    timing("stream.duration", durationMs, tags),
+  
+  streamTokens: (tokens: number, tags: { model: string; type: "prompt" | "completion" }) =>
+    increment("stream.tokens", tokens, tags),
+  
+  activeStreams: (count: number) =>
+    gauge("stream.active", count),
+  
   // Usage metrics
   tokenUsage: (tokens: number, tags: { model: string; userId: string }) =>
     increment("usage.tokens", tokens, tags),
-
+  
   costIncurred: (costUsd: number, tags: { model: string }) =>
     increment("usage.cost_usd", costUsd * 100, tags), // Store as cents for precision
-
+  
   // Rate limiting metrics
-  rateLimitHit: (tags: {
-    userId: string;
-    type: "rate" | "concurrency" | "quota";
-  }) => increment("ratelimit.hit", 1, tags),
-
+  rateLimitHit: (tags: { userId: string; type: "rate" | "concurrency" | "quota" }) =>
+    increment("ratelimit.hit", 1, tags),
+  
   // Auth metrics
   authSuccess: (tags: { provider: string }) =>
     increment("auth.success", 1, tags),
-
+  
   authFailure: (tags: { provider: string; reason: string }) =>
     increment("auth.failure", 1, tags),
 };
@@ -270,10 +249,7 @@ export const Metrics = {
 // Auto-flush in production
 // ============================================
 
-if (
-  typeof globalThis !== "undefined" &&
-  process.env.NODE_ENV === "production"
-) {
+if (typeof globalThis !== "undefined" && process.env.NODE_ENV === "production") {
   // Flush metrics every minute in production
   setInterval(flushMetrics, FLUSH_INTERVAL_MS);
 }

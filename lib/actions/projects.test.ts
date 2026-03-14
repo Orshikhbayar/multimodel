@@ -3,8 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 function createThenableTableMock() {
   let result: { data: unknown; error: unknown } = { data: null, error: null };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase query builder mock requires flexible typing
-  const table: Record<string, (...args: any[]) => any> = {
+  const table: Record<string, any> = {
     select: vi.fn(() => table),
     insert: vi.fn(() => table),
     update: vi.fn(() => table),
@@ -14,10 +13,8 @@ function createThenableTableMock() {
     limit: vi.fn(() => table),
     maybeSingle: vi.fn(async () => result),
     single: vi.fn(async () => result),
-    then: (
-      onFulfilled: (value: unknown) => unknown,
-      onRejected?: (reason: unknown) => unknown,
-    ) => Promise.resolve(result).then(onFulfilled, onRejected),
+    then: (onFulfilled: (value: unknown) => unknown, onRejected?: (reason: unknown) => unknown) =>
+      Promise.resolve(result).then(onFulfilled, onRejected),
     setResult: (next: { data: unknown; error: unknown }) => {
       result = next;
     },
@@ -26,12 +23,11 @@ function createThenableTableMock() {
   return table;
 }
 
-const { mockAuth, mockCreateSupabaseServerClient, mockRevalidatePath } =
-  vi.hoisted(() => ({
-    mockAuth: vi.fn(),
-    mockCreateSupabaseServerClient: vi.fn(),
-    mockRevalidatePath: vi.fn(),
-  }));
+const { mockAuth, mockCreateSupabaseServerClient, mockRevalidatePath } = vi.hoisted(() => ({
+  mockAuth: vi.fn(),
+  mockCreateSupabaseServerClient: vi.fn(),
+  mockRevalidatePath: vi.fn(),
+}));
 
 vi.mock("next/cache", () => ({ revalidatePath: mockRevalidatePath }));
 vi.mock("@/lib/auth", () => ({ auth: mockAuth }));
@@ -91,9 +87,7 @@ describe("project actions", () => {
 
     const project = await getProject("p1");
     expect(project?.id).toBe("p1");
-    expect(project?.createdAt).toBe(
-      new Date("2025-01-01T00:00:00.000Z").getTime(),
-    );
+    expect(project?.createdAt).toBe(new Date("2025-01-01T00:00:00.000Z").getTime());
   });
 
   it("creates and updates project", async () => {

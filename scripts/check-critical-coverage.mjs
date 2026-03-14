@@ -4,10 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const THRESHOLD = 85;
-const SUMMARY_PATH = path.resolve(
-  process.cwd(),
-  "coverage/coverage-summary.json",
-);
+const SUMMARY_PATH = path.resolve(process.cwd(), "coverage/coverage-summary.json");
 const FINAL_PATH = path.resolve(process.cwd(), "coverage/coverage-final.json");
 
 const CRITICAL_FILES = [
@@ -103,10 +100,7 @@ for (const file of CRITICAL_FILES) {
 }
 
 if (failures.length > 0) {
-  console.error(
-    "Critical coverage check failed:\n" +
-      failures.map((f) => `- ${f}`).join("\n"),
-  );
+  console.error("Critical coverage check failed:\n" + failures.map((f) => `- ${f}`).join("\n"));
   process.exit(1);
 }
 

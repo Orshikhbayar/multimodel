@@ -64,11 +64,7 @@ export class InsufficientCreditsError extends Error {
   }
 }
 
-export {
-  calculateUsageCostCents,
-  estimatePromptTokensFromMessages,
-  estimateUsageHoldCents,
-};
+export { calculateUsageCostCents, estimatePromptTokensFromMessages, estimateUsageHoldCents };
 
 export function getBalanceCents(user: {
   includedCreditsCents: number;
@@ -90,10 +86,7 @@ export function getIncludedCreditsCentsForPlan(planId: PlanId) {
   return toUsdCents(getPlanById(planId).includedMonthlyCredits.USD);
 }
 
-export function getSubscriptionPriceCents(
-  planId: PlanId,
-  cadence: BillingCadence,
-) {
+export function getSubscriptionPriceCents(planId: PlanId, cadence: BillingCadence) {
   const plan = getPlanById(planId);
   return toUsdCents(
     cadence === "annual" ? plan.annualPrice.USD : plan.monthlyPrice.USD,
@@ -114,10 +107,7 @@ export async function resetPeriodIfNeeded(_userId: string) {
   removed("resetPeriodIfNeeded");
 }
 
-export async function checkQuota(
-  _userId: string,
-  _planId: string,
-): Promise<QuotaCheck> {
+export async function checkQuota(_userId: string, _planId: string): Promise<QuotaCheck> {
   removed("checkQuota");
 }
 

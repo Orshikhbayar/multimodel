@@ -121,12 +121,7 @@ export function UserMenu() {
                     style={avatarStyle}
                   />
                 ) : null}
-                <span
-                  className={cn(
-                    "relative z-10",
-                    user.avatarUrl ? "opacity-0" : "",
-                  )}
-                >
+                <span className={cn("relative z-10", user.avatarUrl ? "opacity-0" : "")}>
                   {user.avatarInitial}
                 </span>
               </span>
@@ -147,11 +142,7 @@ export function UserMenu() {
           side="top"
           className="z-[120] w-64 overflow-hidden rounded-2xl border border-border/85 bg-[hsl(var(--card))] p-2 shadow-[0_28px_64px_-34px_hsl(var(--foreground)/0.78)]"
         >
-          <div
-            className="space-y-1"
-            role="menu"
-            aria-label={t("userMenu.menuAria")}
-          >
+          <div className="space-y-1" role="menu" aria-label={t("userMenu.menuAria")}>
             <p className="px-2 py-1 text-xs text-muted-foreground">
               {user.email || t("common.notSignedIn")}
             </p>
@@ -247,9 +238,7 @@ export function UserMenu() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>{t("userMenu.language")}</DialogTitle>
-            <DialogDescription>
-              {t("userMenu.selectDisplayLanguage")}
-            </DialogDescription>
+            <DialogDescription>{t("userMenu.selectDisplayLanguage")}</DialogDescription>
           </DialogHeader>
           <RadioGroup
             value={user.locale}
@@ -267,9 +256,7 @@ export function UserMenu() {
             ))}
           </RadioGroup>
           <DialogFooter>
-            <Button onClick={() => setLanguageOpen(false)}>
-              {t("common.done")}
-            </Button>
+            <Button onClick={() => setLanguageOpen(false)}>{t("common.done")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -278,25 +265,19 @@ export function UserMenu() {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{t("userMenu.getHelp")}</DialogTitle>
-            <DialogDescription>
-              {t("userMenu.helpDescription")}
-            </DialogDescription>
+            <DialogDescription>{t("userMenu.helpDescription")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-2">
               <Button asChild variant="outline" className="justify-center">
-                <a href="mailto:support@multimodel.ai">
-                  {t("userMenu.contactSupport")}
-                </a>
+                <a href="mailto:support@multimodel.ai">{t("userMenu.contactSupport")}</a>
               </Button>
               <Button asChild variant="outline" className="justify-center">
                 <Link href="/support">{t("userMenu.reportBug")}</Link>
               </Button>
             </div>
             <div className="rounded-lg border bg-muted/30 p-4">
-              <p className="text-sm font-semibold">
-                {t("userMenu.keyboardShortcuts")}
-              </p>
+              <p className="text-sm font-semibold">{t("userMenu.keyboardShortcuts")}</p>
               <div className="mt-3 space-y-2">
                 {shortcutItems.map((item) => (
                   <div

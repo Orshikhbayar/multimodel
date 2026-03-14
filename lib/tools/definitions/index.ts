@@ -5,10 +5,7 @@ import {
   exportPptxTool,
   skillRunTool,
 } from "@/lib/tools/providers/exportTools";
-import {
-  fileIngestTool,
-  fileSearchTool,
-} from "@/lib/tools/providers/fileTools";
+import { fileIngestTool, fileSearchTool } from "@/lib/tools/providers/fileTools";
 import {
   applyPatchTool,
   createPullRequestTool,
@@ -83,10 +80,7 @@ const webSearchDefinition: ToolDefinition = {
   },
   changelog: "Initial release.",
   execute: async (context, input) => ({
-    output: await webSearchTool(
-      context,
-      input as Parameters<typeof webSearchTool>[1],
-    ),
+    output: await webSearchTool(context, input as Parameters<typeof webSearchTool>[1]),
   }),
 };
 
@@ -142,10 +136,7 @@ const webFetchDefinition: ToolDefinition = {
   },
   changelog: "Initial release.",
   execute: async (context, input) => ({
-    output: await webFetchTool(
-      context,
-      input as Parameters<typeof webFetchTool>[1],
-    ),
+    output: await webFetchTool(context, input as Parameters<typeof webFetchTool>[1]),
   }),
 };
 
@@ -228,10 +219,7 @@ const deepResearchDefinition: ToolDefinition = {
   },
   changelog: "Initial release.",
   execute: async (context, input) => ({
-    output: await deepResearchTool(
-      context,
-      input as Parameters<typeof deepResearchTool>[1],
-    ),
+    output: await deepResearchTool(context, input as Parameters<typeof deepResearchTool>[1]),
   }),
 };
 
@@ -345,18 +333,14 @@ const fileIngestDefinition: ToolDefinition = {
   },
   changelog: "Initial release.",
   execute: async (context, input) => ({
-    output: await fileIngestTool(
-      context,
-      input as Parameters<typeof fileIngestTool>[1],
-    ),
+    output: await fileIngestTool(context, input as Parameters<typeof fileIngestTool>[1]),
   }),
 };
 
 const fileSearchDefinition: ToolDefinition = {
   tool_name: "file_search",
   tool_version: "1.0.0",
-  description:
-    "Searches indexed file chunks with scoped filters and reference-aware matches.",
+  description: "Searches indexed file chunks with scoped filters and reference-aware matches.",
   input_schema: {
     ...strictObject,
     required: ["query"],
@@ -424,18 +408,14 @@ const fileSearchDefinition: ToolDefinition = {
   },
   changelog: "Initial release.",
   execute: async (context, input) => ({
-    output: await fileSearchTool(
-      context,
-      input as Parameters<typeof fileSearchTool>[1],
-    ),
+    output: await fileSearchTool(context, input as Parameters<typeof fileSearchTool>[1]),
   }),
 };
 
 const exportDocxDefinition: ToolDefinition = {
   tool_name: "export_docx",
   tool_version: "1.0.0",
-  description:
-    "Creates a DOCX artifact from markdown content and optional citations.",
+  description: "Creates a DOCX artifact from markdown content and optional citations.",
   input_schema: {
     ...strictObject,
     required: ["title", "content_markdown"],
@@ -469,18 +449,14 @@ const exportDocxDefinition: ToolDefinition = {
   },
   changelog: "Initial release.",
   execute: async (context, input) => ({
-    output: await exportDocxTool(
-      context,
-      input as Parameters<typeof exportDocxTool>[1],
-    ),
+    output: await exportDocxTool(context, input as Parameters<typeof exportDocxTool>[1]),
   }),
 };
 
 const exportPdfDefinition: ToolDefinition = {
   tool_name: "export_pdf",
   tool_version: "1.0.0",
-  description:
-    "Creates a PDF artifact from markdown content and optional citations.",
+  description: "Creates a PDF artifact from markdown content and optional citations.",
   input_schema: exportDocxDefinition.input_schema,
   output_schema: exportDocxDefinition.output_schema,
   permissions: ["export:pdf"],
@@ -491,10 +467,7 @@ const exportPdfDefinition: ToolDefinition = {
   },
   changelog: "Initial release.",
   execute: async (context, input) => ({
-    output: await exportPdfTool(
-      context,
-      input as Parameters<typeof exportPdfTool>[1],
-    ),
+    output: await exportPdfTool(context, input as Parameters<typeof exportPdfTool>[1]),
   }),
 };
 
@@ -559,18 +532,14 @@ const exportPptxDefinition: ToolDefinition = {
   },
   changelog: "Initial release.",
   execute: async (context, input) => ({
-    output: await exportPptxTool(
-      context,
-      input as Parameters<typeof exportPptxTool>[1],
-    ),
+    output: await exportPptxTool(context, input as Parameters<typeof exportPptxTool>[1]),
   }),
 };
 
 const skillRunDefinition: ToolDefinition = {
   tool_name: "skill_run",
   tool_version: "1.0.0",
-  description:
-    "Executes an external skill runner with explicit skill id and output format.",
+  description: "Executes an external skill runner with explicit skill id and output format.",
   input_schema: {
     ...strictObject,
     required: ["skill_id", "inputs", "output_format"],
@@ -602,10 +571,7 @@ const skillRunDefinition: ToolDefinition = {
   },
   changelog: "Initial release.",
   execute: async (context, input) => ({
-    output: await skillRunTool(
-      context,
-      input as Parameters<typeof skillRunTool>[1],
-    ),
+    output: await skillRunTool(context, input as Parameters<typeof skillRunTool>[1]),
   }),
 };
 
@@ -613,8 +579,7 @@ const githubConnectDefinition: ToolDefinition = {
   tool_name: "github_connect_repo",
   tool_version: "1.0.0",
   requires_confirmation: true,
-  description:
-    "Connects a GitHub repository with encrypted token storage and project scoping.",
+  description: "Connects a GitHub repository with encrypted token storage and project scoping.",
   input_schema: {
     ...strictObject,
     required: ["owner", "name", "access_token"],
@@ -660,8 +625,7 @@ const githubConnectDefinition: ToolDefinition = {
 const repoIndexDefinition: ToolDefinition = {
   tool_name: "repo_index",
   tool_version: "1.0.0",
-  description:
-    "Indexes repository file tree metadata for search and file operations.",
+  description: "Indexes repository file tree metadata for search and file operations.",
   input_schema: {
     ...strictObject,
     required: ["repo_id"],
@@ -686,18 +650,14 @@ const repoIndexDefinition: ToolDefinition = {
   },
   changelog: "Initial release.",
   execute: async (context, input) => ({
-    output: await repoIndexTool(
-      context,
-      input as Parameters<typeof repoIndexTool>[1],
-    ),
+    output: await repoIndexTool(context, input as Parameters<typeof repoIndexTool>[1]),
   }),
 };
 
 const repoListFilesDefinition: ToolDefinition = {
   tool_name: "repo_list_files",
   tool_version: "1.0.0",
-  description:
-    "Lists indexed repository files, with optional path/glob filtering.",
+  description: "Lists indexed repository files, with optional path/glob filtering.",
   input_schema: {
     ...strictObject,
     required: ["repo_id"],
@@ -774,18 +734,14 @@ const repoReadFileDefinition: ToolDefinition = {
   },
   changelog: "Initial release.",
   execute: async (context, input) => ({
-    output: await repoReadFileTool(
-      context,
-      input as Parameters<typeof repoReadFileTool>[1],
-    ),
+    output: await repoReadFileTool(context, input as Parameters<typeof repoReadFileTool>[1]),
   }),
 };
 
 const repoSearchDefinition: ToolDefinition = {
   tool_name: "repo_search",
   tool_version: "1.0.0",
-  description:
-    "Searches repository indexed content by keyword (semantic optional later).",
+  description: "Searches repository indexed content by keyword (semantic optional later).",
   input_schema: {
     ...strictObject,
     required: ["repo_id", "query"],
@@ -824,10 +780,7 @@ const repoSearchDefinition: ToolDefinition = {
   },
   changelog: "Initial release.",
   execute: async (context, input) => ({
-    output: await repoSearchTool(
-      context,
-      input as Parameters<typeof repoSearchTool>[1],
-    ),
+    output: await repoSearchTool(context, input as Parameters<typeof repoSearchTool>[1]),
   }),
 };
 
@@ -893,14 +846,7 @@ const applyPatchDefinition: ToolDefinition = {
     "Applies approved unified diffs to non-protected branches with secret scanning and guardrails.",
   input_schema: {
     ...strictObject,
-    required: [
-      "repo_id",
-      "branch",
-      "diff_unified",
-      "commit_message",
-      "approved",
-      "approval_note",
-    ],
+    required: ["repo_id", "branch", "diff_unified", "commit_message", "approved", "approval_note"],
     properties: {
       repo_id: { type: "string" },
       branch: { type: "string", minLength: 1 },
@@ -941,10 +887,7 @@ const applyPatchDefinition: ToolDefinition = {
   },
   changelog: "Initial release.",
   execute: async (context, input) => ({
-    output: await applyPatchTool(
-      context,
-      input as Parameters<typeof applyPatchTool>[1],
-    ),
+    output: await applyPatchTool(context, input as Parameters<typeof applyPatchTool>[1]),
   }),
 };
 
@@ -993,10 +936,7 @@ const runChecksDefinition: ToolDefinition = {
   },
   changelog: "Initial release.",
   execute: async (context, input) => ({
-    output: await runChecksTool(
-      context,
-      input as Parameters<typeof runChecksTool>[1],
-    ),
+    output: await runChecksTool(context, input as Parameters<typeof runChecksTool>[1]),
   }),
 };
 
@@ -1008,14 +948,7 @@ const createPullRequestDefinition: ToolDefinition = {
     "Creates GitHub pull requests after explicit approval and pre-PR secret scanning.",
   input_schema: {
     ...strictObject,
-    required: [
-      "repo_id",
-      "title",
-      "body",
-      "branch",
-      "approved",
-      "approval_note",
-    ],
+    required: ["repo_id", "title", "body", "branch", "approved", "approval_note"],
     properties: {
       repo_id: { type: "string" },
       title: { type: "string", minLength: 3 },

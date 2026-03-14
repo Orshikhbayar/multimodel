@@ -59,11 +59,7 @@ function getPathValue(root: unknown, path: string[]): unknown {
   return current;
 }
 
-function setPathValue(
-  root: unknown,
-  path: string[],
-  nextValue: unknown,
-): unknown {
+function setPathValue(root: unknown, path: string[], nextValue: unknown): unknown {
   if (path.length === 0) {
     return nextValue;
   }
@@ -163,9 +159,7 @@ function sanitizeBySchema(schema: JsonSchemaNode, value: unknown): unknown {
   if (schemaTypeIncludes(schema, "array")) {
     if (!Array.isArray(value)) return [];
     if (schema.items) {
-      return value.map((item) =>
-        sanitizeBySchema(schema.items as JsonSchemaNode, item),
-      );
+      return value.map((item) => sanitizeBySchema(schema.items as JsonSchemaNode, item));
     }
     return value;
   }
@@ -183,11 +177,7 @@ function validateBySchema(
     return;
   }
 
-  if (
-    schema.enum &&
-    Array.isArray(schema.enum) &&
-    !schema.enum.includes(value)
-  ) {
+  if (schema.enum && Array.isArray(schema.enum) && !schema.enum.includes(value)) {
     errors.push(`${path}: value must be one of ${schema.enum.join(", ")}`);
     return;
   }
@@ -198,27 +188,18 @@ function validateBySchema(
       return;
     }
 
-    if (
-      typeof schema.minLength === "number" &&
-      value.length < schema.minLength
-    ) {
+    if (typeof schema.minLength === "number" && value.length < schema.minLength) {
       errors.push(`${path}: minimum length is ${schema.minLength}`);
     }
 
-    if (
-      typeof schema.maxLength === "number" &&
-      value.length > schema.maxLength
-    ) {
+    if (typeof schema.maxLength === "number" && value.length > schema.maxLength) {
       errors.push(`${path}: maximum length is ${schema.maxLength}`);
     }
 
     return;
   }
 
-  if (
-    schemaTypeIncludes(schema, "integer") ||
-    schemaTypeIncludes(schema, "number")
-  ) {
+  if (schemaTypeIncludes(schema, "integer") || schemaTypeIncludes(schema, "number")) {
     if (typeof value !== "number" || Number.isNaN(value)) {
       errors.push(`${path}: expected number`);
       return;
@@ -263,12 +244,7 @@ function validateBySchema(
 
     if (schema.items) {
       value.forEach((item, index) =>
-        validateBySchema(
-          schema.items as JsonSchemaNode,
-          item,
-          `${path}[${index}]`,
-          errors,
-        ),
+        validateBySchema(schema.items as JsonSchemaNode, item, `${path}[${index}]`, errors),
       );
     }
 
@@ -285,10 +261,7 @@ function validateBySchema(
     const required = schema.required ?? [];
 
     for (const key of required) {
-      if (
-        !Object.prototype.hasOwnProperty.call(value, key) ||
-        value[key] === undefined
-      ) {
+      if (!Object.prototype.hasOwnProperty.call(value, key) || value[key] === undefined) {
         errors.push(`${path}.${key}: required`);
       }
     }
@@ -350,30 +323,19 @@ export function ToolRunForm({
     if (seedInput !== undefined) {
       return deepClone(seedInput);
     }
-    return (
-      buildDefaultInput(inputSchema) ??
-      (schemaTypeIncludes(inputSchema, "object") ? {} : undefined)
-    );
+    return buildDefaultInput(inputSchema) ?? (schemaTypeIncludes(inputSchema, "object") ? {} : undefined);
   }, [inputSchema, seedInput]);
 
   const [formValue, setFormValue] = useState<unknown>(defaultInput);
-  const [toolVersion, setToolVersion] = useState(
-    seedToolVersion ?? tool.tool_version,
-  );
+  const [toolVersion, setToolVersion] = useState(seedToolVersion ?? tool.tool_version);
   const [idempotencyKey, setIdempotencyKey] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
-  const [executeError, setExecuteError] = useState<ToolExecuteError | null>(
-    null,
-  );
+  const [executeError, setExecuteError] = useState<ToolExecuteError | null>(null);
   const [result, setResult] = useState<ToolExecuteSuccess | null>(null);
-  const [rawEditors, setRawEditors] = useState<Record<string, RawEditorState>>(
-    {},
-  );
-  const [challenge, setChallenge] = useState<ToolConfirmationChallenge | null>(
-    null,
-  );
+  const [rawEditors, setRawEditors] = useState<Record<string, RawEditorState>>({});
+  const [challenge, setChallenge] = useState<ToolConfirmationChallenge | null>(null);
 
   useEffect(() => {
     setFormValue(defaultInput);
@@ -467,9 +429,7 @@ export function ToolRunForm({
         <p className="text-[11px] text-muted-foreground">
           JSON fallback editor used for advanced schema structure.
         </p>
-        {editor?.error ? (
-          <p className="text-[11px] text-destructive">{editor.error}</p>
-        ) : null}
+        {editor?.error ? <p className="text-[11px] text-destructive">{editor.error}</p> : null}
       </div>
     );
   };
@@ -518,8 +478,7 @@ export function ToolRunForm({
     }
 
     if (Array.isArray(schema.enum) && schema.enum.length > 0) {
-      const stringValue =
-        value === undefined || value === null ? "" : String(value);
+      const stringValue = value === undefined || value === null ? "" : String(value);
       return (
         <div className="space-y-1">
           <label className="text-xs font-medium">
@@ -533,9 +492,7 @@ export function ToolRunForm({
                 removeValue(path);
                 return;
               }
-              const raw = schema.enum?.find(
-                (item) => String(item) === event.target.value,
-              );
+              const raw = schema.enum?.find((item) => String(item) === event.target.value);
               updateValue(path, raw ?? event.target.value);
             }}
             className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
@@ -568,10 +525,7 @@ export function ToolRunForm({
       );
     }
 
-    if (
-      schemaTypeIncludes(schema, "number") ||
-      schemaTypeIncludes(schema, "integer")
-    ) {
+    if (schemaTypeIncludes(schema, "number") || schemaTypeIncludes(schema, "integer")) {
       const numberValue = numericInputValue(value);
       return (
         <div className="space-y-1">
@@ -582,12 +536,8 @@ export function ToolRunForm({
           <Input
             type="number"
             step={schemaTypeIncludes(schema, "integer") ? "1" : "any"}
-            min={
-              typeof schema.minimum === "number" ? schema.minimum : undefined
-            }
-            max={
-              typeof schema.maximum === "number" ? schema.maximum : undefined
-            }
+            min={typeof schema.minimum === "number" ? schema.minimum : undefined}
+            max={typeof schema.maximum === "number" ? schema.maximum : undefined}
             value={numberValue}
             onChange={(event) => {
               const next = event.target.value;
@@ -599,12 +549,7 @@ export function ToolRunForm({
               if (Number.isNaN(parsed)) {
                 return;
               }
-              updateValue(
-                path,
-                schemaTypeIncludes(schema, "integer")
-                  ? Math.trunc(parsed)
-                  : parsed,
-              );
+              updateValue(path, schemaTypeIncludes(schema, "integer") ? Math.trunc(parsed) : parsed);
             }}
           />
         </div>
@@ -622,12 +567,8 @@ export function ToolRunForm({
         <Input
           value={stringValue}
           onChange={(event) => updateValue(path, event.target.value)}
-          minLength={
-            typeof schema.minLength === "number" ? schema.minLength : undefined
-          }
-          maxLength={
-            typeof schema.maxLength === "number" ? schema.maxLength : undefined
-          }
+          minLength={typeof schema.minLength === "number" ? schema.minLength : undefined}
+          maxLength={typeof schema.maxLength === "number" ? schema.maxLength : undefined}
         />
       </div>
     );
@@ -642,10 +583,7 @@ export function ToolRunForm({
       }
     }
 
-    if (
-      schemaTypeIncludes(inputSchema, "object") &&
-      isPlainObject(payloadInput)
-    ) {
+    if (schemaTypeIncludes(inputSchema, "object") && isPlainObject(payloadInput)) {
       const requiredFields = inputSchema.required ?? [];
       for (const field of requiredFields) {
         if (!Object.prototype.hasOwnProperty.call(payloadInput, field)) {
@@ -698,19 +636,12 @@ export function ToolRunForm({
         body: JSON.stringify(payload),
       });
 
-      const body = (await response.json().catch(() => ({}))) as Record<
-        string,
-        unknown
-      >;
+      const body = (await response.json().catch(() => ({}))) as Record<string, unknown>;
 
       if (!response.ok) {
         const errorPayload: ToolExecuteError = {
-          requestId:
-            typeof body.requestId === "string" ? body.requestId : undefined,
-          error:
-            typeof body.error === "string"
-              ? body.error
-              : "Tool execution failed",
+          requestId: typeof body.requestId === "string" ? body.requestId : undefined,
+          error: typeof body.error === "string" ? body.error : "Tool execution failed",
           code: typeof body.code === "string" ? body.code : undefined,
           details: isPlainObject(body.details) ? body.details : undefined,
         };
@@ -738,23 +669,16 @@ export function ToolRunForm({
       const success: ToolExecuteSuccess = {
         requestId: typeof body.requestId === "string" ? body.requestId : "",
         run_id: typeof body.run_id === "string" ? body.run_id : "",
-        tool_name:
-          typeof body.tool_name === "string" ? body.tool_name : tool.tool_name,
+        tool_name: typeof body.tool_name === "string" ? body.tool_name : tool.tool_name,
         tool_version:
-          typeof body.tool_version === "string"
-            ? body.tool_version
-            : toolVersion.trim(),
+          typeof body.tool_version === "string" ? body.tool_version : toolVersion.trim(),
         output: body.output,
         cost: isPlainObject(body.cost)
           ? {
               tokens_in:
-                typeof body.cost.tokens_in === "number"
-                  ? body.cost.tokens_in
-                  : undefined,
+                typeof body.cost.tokens_in === "number" ? body.cost.tokens_in : undefined,
               tokens_out:
-                typeof body.cost.tokens_out === "number"
-                  ? body.cost.tokens_out
-                  : undefined,
+                typeof body.cost.tokens_out === "number" ? body.cost.tokens_out : undefined,
               total_tokens:
                 typeof body.cost.total_tokens === "number"
                   ? body.cost.total_tokens
@@ -798,9 +722,7 @@ export function ToolRunForm({
   }, [inputSchema]);
 
   const confirmationWarning = useMemo(() => {
-    const parts = [
-      "This action can modify external systems or create billable artifacts.",
-    ];
+    const parts = ["This action can modify external systems or create billable artifacts."];
 
     if (writeTarget) {
       parts.push(`Target: ${writeTarget}`);
@@ -826,15 +748,13 @@ export function ToolRunForm({
 
       {tool.tool_name === "web_fetch" ? (
         <div className="rounded-lg border border-border/70 bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
-          `web_fetch` blocks localhost/private network URLs and enforces
-          size/content safety limits.
+          `web_fetch` blocks localhost/private network URLs and enforces size/content safety limits.
         </div>
       ) : null}
 
       {tool.tool_name === "file_ingest" ? (
         <div className="rounded-lg border border-border/70 bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
-          Large files may take longer to parse; verify file type and size before
-          running.
+          Large files may take longer to parse; verify file type and size before running.
         </div>
       ) : null}
 
@@ -842,12 +762,7 @@ export function ToolRunForm({
         <div className="space-y-3">
           {objectSchemaFields.map((field) => (
             <div key={`${tool.tool_name}.${field.key}`}>
-              {renderField(
-                field.schema,
-                [field.key],
-                field.schema.title ?? field.key,
-                field.required,
-              )}
+              {renderField(field.schema, [field.key], field.schema.title ?? field.key, field.required)}
             </div>
           ))}
         </div>
@@ -868,9 +783,7 @@ export function ToolRunForm({
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-medium">
-              idempotency_key (optional)
-            </label>
+            <label className="text-xs font-medium">idempotency_key (optional)</label>
             <Input
               value={idempotencyKey}
               onChange={(event) => setIdempotencyKey(event.target.value)}
@@ -882,9 +795,7 @@ export function ToolRunForm({
 
       {validationErrors.length > 0 ? (
         <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2">
-          <p className="text-xs font-medium text-destructive">
-            Validation errors
-          </p>
+          <p className="text-xs font-medium text-destructive">Validation errors</p>
           <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[11px] text-destructive">
             {validationErrors.map((error) => (
               <li key={error}>{error}</li>
@@ -898,19 +809,13 @@ export function ToolRunForm({
           <p className="font-medium">{executeError.error}</p>
           <p className="mt-0.5">
             {executeError.code ? `code: ${executeError.code}` : ""}
-            {executeError.requestId
-              ? ` · request: ${executeError.requestId}`
-              : ""}
+            {executeError.requestId ? ` · request: ${executeError.requestId}` : ""}
           </p>
         </div>
       ) : null}
 
       <div className="flex flex-wrap items-center gap-2">
-        <Button
-          type="button"
-          onClick={() => execute()}
-          disabled={submitting || confirming}
-        >
+        <Button type="button" onClick={() => execute()} disabled={submitting || confirming}>
           {submitting ? "Running..." : "Run tool"}
         </Button>
         <Badge variant="outline">{tool.tool_name}</Badge>

@@ -2,7 +2,6 @@ import { Sidebar } from "@/components/Sidebar";
 import { MobileSidebar } from "@/components/MobileSidebar";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { SupabaseBootstrap } from "@/components/SupabaseBootstrap";
-import { WorkflowOnboardingGate } from "@/components/onboarding/WorkflowOnboardingGate";
 import { getAuthenticatedUser } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
@@ -32,7 +31,7 @@ export default async function AppLayout({
 
         {/* Main content with mobile top padding for hamburger */}
         <div className="surface-enter flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[1.5rem] bg-[hsl(var(--app-panel)/0.82)] pt-16 shadow-[0_18px_48px_-34px_hsl(var(--foreground)/0.45)] backdrop-blur-md md:pt-0">
-          <WorkflowOnboardingGate>{children}</WorkflowOnboardingGate>
+          {children}
         </div>
       </div>
     </main>

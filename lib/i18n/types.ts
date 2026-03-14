@@ -6,7 +6,9 @@ export type TranslationPrimitive = string | number | boolean | null | undefined;
 
 export type TranslationParams = Record<string, TranslationPrimitive>;
 
-type Join<P extends string, K extends string> = P extends "" ? K : `${P}.${K}`;
+type Join<P extends string, K extends string> = P extends ""
+  ? K
+  : `${P}.${K}`;
 
 type DotPath<T, Prefix extends string = ""> = T extends string
   ? Prefix
@@ -15,3 +17,4 @@ type DotPath<T, Prefix extends string = ""> = T extends string
     }[keyof T & string];
 
 export type I18nKey = DotPath<(typeof messages)["en"]>;
+

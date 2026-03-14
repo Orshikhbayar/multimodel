@@ -60,9 +60,7 @@ export function UpgradeModal() {
           )}
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <Badge variant="secondary">
-              {t("billing.recommendedPlan", {
-                plan: recommendedPlan?.name ?? "",
-              })}
+              {t("billing.recommendedPlan", { plan: recommendedPlan?.name ?? "" })}
             </Badge>
             <span className="text-xs text-muted-foreground">
               {t("billing.higherCreditsMoreModels")}

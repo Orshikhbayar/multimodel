@@ -33,16 +33,8 @@ export function ArtifactsList({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <p className="text-xs text-muted-foreground">
-          Artifacts available in this scope
-        </p>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          onClick={onRefresh}
-          disabled={loading}
-        >
+        <p className="text-xs text-muted-foreground">Artifacts available in this scope</p>
+        <Button type="button" size="sm" variant="outline" onClick={onRefresh} disabled={loading}>
           Refresh
         </Button>
       </div>
@@ -64,9 +56,7 @@ export function ArtifactsList({
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <p className="text-sm font-medium">{artifact.title}</p>
-                <p className="text-[11px] text-muted-foreground">
-                  {artifact.mime_type}
-                </p>
+                <p className="text-[11px] text-muted-foreground">{artifact.mime_type}</p>
               </div>
               <Badge variant="outline">{artifact.artifact_type}</Badge>
             </div>
@@ -84,11 +74,7 @@ export function ArtifactsList({
                 disabled={!artifact.download_url}
                 asChild
               >
-                <a
-                  href={artifact.download_url ?? "#"}
-                  target="_blank"
-                  rel="noreferrer"
-                >
+                <a href={artifact.download_url ?? "#"} target="_blank" rel="noreferrer">
                   <Download className="mr-1 h-3.5 w-3.5" />
                   Download
                 </a>

@@ -116,10 +116,7 @@ function authorityFromUrl(url: string): number {
   return 0.7;
 }
 
-function recencyScore(
-  dateValue: string | undefined,
-  recencyDays?: number,
-): number {
+function recencyScore(dateValue: string | undefined, recencyDays?: number): number {
   if (!recencyDays) return 0.7;
   if (!dateValue) return 0.3;
 
@@ -140,9 +137,7 @@ function dedupeSources<T extends { url: string; content_hash?: string }>(
   const result: T[] = [];
 
   for (const entry of entries) {
-    const key = entry.content_hash
-      ? `hash:${entry.content_hash}`
-      : `url:${entry.url}`;
+    const key = entry.content_hash ? `hash:${entry.content_hash}` : `url:${entry.url}`;
     if (seen.has(key)) continue;
     seen.add(key);
     result.push(entry);
@@ -152,12 +147,11 @@ function dedupeSources<T extends { url: string; content_hash?: string }>(
 }
 
 function buildPlan(input: DeepResearchInput) {
-  const goals = input.goals?.length
-    ? input.goals
-    : ["Build factual, cited answer"];
-  const constraints = input.constraints?.length
-    ? input.constraints
-    : ["Prefer primary sources", "Cite every substantive claim"];
+  const goals = input.goals?.length ? input.goals : ["Build factual, cited answer"];
+  const constraints =
+    input.constraints?.length
+      ? input.constraints
+      : ["Prefer primary sources", "Cite every substantive claim"];
 
   const keyQuestions = [
     `What is the current state of ${input.topic}?`,
@@ -226,7 +220,10 @@ function summarizeForQuestion(
       `- ${source.snippet.slice(0, 220)}${source.snippet.length > 220 ? "..." : ""} (${source.citationId})`,
   );
 
-  return [`Key findings for **${question}**:`, ...lines].join("\n");
+  return [
+    `Key findings for **${question}**:`,
+    ...lines,
+  ].join("\n");
 }
 
 function detectConflicts(
@@ -237,10 +234,7 @@ function detectConflicts(
   const byTitle = new Map<string, string[]>();
 
   for (const entry of entries) {
-    const key = entry.title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, " ")
-      .trim();
+    const key = entry.title.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
     const existing = byTitle.get(key) ?? [];
 
     if (entry.detected_date) {
@@ -301,9 +295,7 @@ export async function deepResearchTool(
 
     for (const result of searchResults.slice(0, 3)) {
       try {
-        const fetched = await webFetchTool(context, {
-          url: result.canonical_url,
-        });
+        const fetched = await webFetchTool(context, { url: result.canonical_url });
 
         callLog.push({
           tool: "web_fetch",
@@ -333,15 +325,10 @@ export async function deepResearchTool(
   const topicTerms = keywordSet(input.topic);
 
   const scored = deduped.map((source) => {
-    const sourceTerms = keywordSet(
-      `${source.title} ${source.snippet} ${source.fetched_text.slice(0, 1200)}`,
-    );
+    const sourceTerms = keywordSet(`${source.title} ${source.snippet} ${source.fetched_text.slice(0, 1200)}`);
     const authority = authorityFromUrl(source.url);
     const relevance = overlapScore(topicTerms, sourceTerms);
-    const recency = recencyScore(
-      source.published_date ?? source.detected_date,
-      input.recency_days,
-    );
+    const recency = recencyScore(source.published_date ?? source.detected_date, input.recency_days);
     const redundancy = 1;
 
     const final = Number(
@@ -442,9 +429,7 @@ export async function deepResearchTool(
       return `- ${citation?.id ?? "S?"}: score=${source.final.toFixed(2)} (authority=${source.authority.toFixed(2)}, relevance=${source.relevance.toFixed(2)}, recency=${source.recency.toFixed(2)})`;
     }),
     "",
-    conflicts.length > 0
-      ? "## Conflicts and Disagreements"
-      : "## Conflicts and Disagreements",
+    conflicts.length > 0 ? "## Conflicts and Disagreements" : "## Conflicts and Disagreements",
     ...(conflicts.length > 0
       ? conflicts.map((entry) => `- ${entry}`)
       : ["- No direct factual conflicts detected in selected sources."]),
@@ -542,9 +527,7 @@ export async function deepResearchTool(
     .single();
 
   if (reportError || !reportRow?.id) {
-    throw new Error(
-      `Failed to persist research report: ${reportError?.message ?? "unknown"}`,
-    );
+    throw new Error(`Failed to persist research report: ${reportError?.message ?? "unknown"}`);
   }
 
   const reportId = reportRow.id as string;
@@ -572,28 +555,26 @@ export async function deepResearchTool(
     metadata: source.metadata,
   }));
 
-  const { error: sourcesError } = await db
-    .from("research_sources")
-    .insert(sourceRows);
+  const { error: sourcesError } = await db.from("research_sources").insert(sourceRows);
 
   if (sourcesError) {
-    throw new Error(
-      `Failed to persist research sources: ${sourcesError.message}`,
-    );
+    throw new Error(`Failed to persist research sources: ${sourcesError.message}`);
   }
 
-  const { error: traceError } = await db.from("research_traces").insert({
-    report_id: reportId,
-    workspace_id: context.workspaceId,
-    project_id: context.projectId,
-    plan: trace.plan,
-    queries: trace.queries,
-    selected_sources: trace.chosen_sources,
-    scoring: trace.scoring,
-    tool_call_log: trace.tool_call_log,
-    conflicts: trace.conflicts,
-    uncertainty_notes: trace.uncertainty_notes,
-  });
+  const { error: traceError } = await db
+    .from("research_traces")
+    .insert({
+      report_id: reportId,
+      workspace_id: context.workspaceId,
+      project_id: context.projectId,
+      plan: trace.plan,
+      queries: trace.queries,
+      selected_sources: trace.chosen_sources,
+      scoring: trace.scoring,
+      tool_call_log: trace.tool_call_log,
+      conflicts: trace.conflicts,
+      uncertainty_notes: trace.uncertainty_notes,
+    });
 
   if (traceError) {
     throw new Error(`Failed to persist research trace: ${traceError.message}`);

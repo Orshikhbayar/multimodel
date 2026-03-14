@@ -4,15 +4,10 @@ const REQUIRED_AVATAR_PROVIDERS = ["google", "github"] as const;
 
 export type RequiredAvatarProvider = (typeof REQUIRED_AVATAR_PROVIDERS)[number];
 
-type SupabaseAuthUser = Pick<
-  User,
-  "app_metadata" | "user_metadata" | "identities"
->;
+type SupabaseAuthUser = Pick<User, "app_metadata" | "user_metadata" | "identities">;
 type AnyObject = Record<string, unknown>;
 
-function isRequiredAvatarProvider(
-  value: string,
-): value is RequiredAvatarProvider {
+function isRequiredAvatarProvider(value: string): value is RequiredAvatarProvider {
   return (REQUIRED_AVATAR_PROVIDERS as readonly string[]).includes(value);
 }
 
@@ -89,9 +84,7 @@ export function getOAuthProviderRequiringAvatar(
   }
 
   const providers = getStringArray(appMetadata?.providers);
-  const providerFromArray = providers.find((entry) =>
-    isRequiredAvatarProvider(entry),
-  );
+  const providerFromArray = providers.find((entry) => isRequiredAvatarProvider(entry));
   if (providerFromArray) {
     return providerFromArray;
   }

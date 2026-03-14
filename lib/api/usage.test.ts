@@ -3,17 +3,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 function createThenableTableMock() {
   let result: { data: unknown; error: unknown } = { data: null, error: null };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase query builder mock requires flexible typing
-  const table: Record<string, (...args: any[]) => any> = {
+  const table: Record<string, any> = {
     select: vi.fn(() => table),
     upsert: vi.fn(async () => result),
     eq: vi.fn(() => table),
     gte: vi.fn(() => table),
     lt: vi.fn(() => table),
-    then: (
-      onFulfilled: (value: unknown) => unknown,
-      onRejected?: (reason: unknown) => unknown,
-    ) => Promise.resolve(result).then(onFulfilled, onRejected),
+    then: (onFulfilled: (value: unknown) => unknown, onRejected?: (reason: unknown) => unknown) =>
+      Promise.resolve(result).then(onFulfilled, onRejected),
     setResult: (next: { data: unknown; error: unknown }) => {
       result = next;
     },

@@ -2,11 +2,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useChatActions } from "@/lib/hooks/useChatActions";
-import {
-  useConversationStore,
-  useModelStore,
-  useStreamStore,
-} from "@/lib/stores";
+import { useConversationStore, useModelStore, useStreamStore } from "@/lib/stores";
 
 function sseResponse() {
   const body = [
@@ -36,10 +32,7 @@ describe("useChatActions behavior", () => {
     useConversationStore.getState().resetConversations();
     useModelStore.getState().resetSlots();
     useStreamStore.setState({ activeStreams: new Map() });
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () => sseResponse()),
-    );
+    vi.stubGlobal("fetch", vi.fn(async () => sseResponse()));
   });
 
   it("ignores empty messages", async () => {
@@ -73,16 +66,12 @@ describe("useChatActions behavior", () => {
     const { result } = renderHook(() => useChatActions());
 
     await act(async () => {
-      await result.current.sendMessage(
-        "Draft a release checklist for launch day.",
-      );
+      await result.current.sendMessage("Draft a release checklist for launch day.");
     });
 
     await waitFor(() => {
       const conversation = useConversationStore.getState().conversations[0];
-      expect(conversation.title).toBe(
-        "Draft a release checklist for launch day.",
-      );
+      expect(conversation.title).toBe("Draft a release checklist for launch day.");
     });
   });
 

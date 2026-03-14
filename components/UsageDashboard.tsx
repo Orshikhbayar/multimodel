@@ -42,12 +42,8 @@ export function UsageDashboard() {
         totalCostUsd: 0,
         periodStart: "",
       };
-  const totalTokens = hasDbData
-    ? dbSummary.totalTokens
-    : localTotals.totalTokens;
-  const totalCostUsd = hasDbData
-    ? dbSummary.totalCostUsd
-    : localTotals.totalCostUsd;
+  const totalTokens = hasDbData ? dbSummary.totalTokens : localTotals.totalTokens;
+  const totalCostUsd = hasDbData ? dbSummary.totalCostUsd : localTotals.totalCostUsd;
   const periodStart = hasDbData
     ? formatDate(dbSummary.periodStart)
     : localTotals.periodStart;
@@ -82,9 +78,7 @@ export function UsageDashboard() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold">
-            {t("billing.usageStatistics")}
-          </h2>
+          <h2 className="text-lg font-semibold">{t("billing.usageStatistics")}</h2>
           <p className="text-sm text-muted-foreground">
             {hasDbData
               ? t("billing.currentBillingPeriod")
@@ -114,38 +108,31 @@ export function UsageDashboard() {
       {quota && (
         <div className="rounded-lg border bg-card p-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">
-              {t("billing.dailyTokenQuota")}
-            </span>
+            <span className="text-sm font-medium">{t("billing.dailyTokenQuota")}</span>
             <span className="text-sm text-muted-foreground">
-              {formatCompactNumber(quota.used, formatLocalizedNumber)} /{" "}
-              {formatCompactNumber(quota.limit, formatLocalizedNumber)}
+              {formatCompactNumber(quota.used, formatLocalizedNumber)} / {formatCompactNumber(quota.limit, formatLocalizedNumber)}
             </span>
           </div>
-          <Progress
-            value={quotaStatus.percentUsed}
+          <Progress 
+            value={quotaStatus.percentUsed} 
             className={`h-2 ${quotaStatus.isNearLimit ? "bg-yellow-100" : ""}`}
           />
           <div className="mt-2 flex items-center justify-between">
             <span className="text-xs text-muted-foreground">
               {t("billing.tokensRemainingToday", {
-                count: formatCompactNumber(
-                  quota.remaining,
-                  formatLocalizedNumber,
-                ),
+                count: formatCompactNumber(quota.remaining, formatLocalizedNumber),
               })}
             </span>
             {quotaStatus.isNearLimit && !quotaStatus.isOverLimit && (
-              <Badge
-                variant="outline"
-                className="text-yellow-600 border-yellow-300"
-              >
+              <Badge variant="outline" className="text-yellow-600 border-yellow-300">
                 <AlertTriangle className="h-3 w-3 mr-1" />
                 {t("billing.nearLimit")}
               </Badge>
             )}
             {quotaStatus.isOverLimit && (
-              <Badge variant="destructive">{t("billing.quotaExceeded")}</Badge>
+              <Badge variant="destructive">
+                {t("billing.quotaExceeded")}
+              </Badge>
             )}
           </div>
         </div>
@@ -190,22 +177,16 @@ export function UsageDashboard() {
         <StatCard
           title={t("billing.cost")}
           value={`$${totalCostUsd.toFixed(4)}`}
-          description={
-            hasDbData ? t("billing.actualCost") : t("billing.estimatedCost")
-          }
+          description={hasDbData ? t("billing.actualCost") : t("billing.estimatedCost")}
         />
       </div>
 
       <Separator />
 
       <div>
-        <h3 className="mb-4 text-sm font-semibold">
-          {t("billing.usageByModel")}
-        </h3>
+        <h3 className="mb-4 text-sm font-semibold">{t("billing.usageByModel")}</h3>
         {modelBreakdown.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            {t("billing.noUsageDataYet")}
-          </p>
+          <p className="text-sm text-muted-foreground">{t("billing.noUsageDataYet")}</p>
         ) : (
           <div className="space-y-2">
             {modelBreakdown.map(({ model, count, tokens, cost }) => (
@@ -218,14 +199,13 @@ export function UsageDashboard() {
                   <p className="text-xs text-muted-foreground">
                     {t("billing.requestsAndTokens", {
                       count,
-                      tokens: formatCompactNumber(
-                        tokens,
-                        formatLocalizedNumber,
-                      ),
+                      tokens: formatCompactNumber(tokens, formatLocalizedNumber),
                     })}
                   </p>
                 </div>
-                <span className="font-mono text-sm">${cost.toFixed(4)}</span>
+                <span className="font-mono text-sm">
+                  ${cost.toFixed(4)}
+                </span>
               </div>
             ))}
           </div>

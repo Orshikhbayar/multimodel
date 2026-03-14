@@ -29,26 +29,26 @@ function getAppUrl() {
 
 export async function POST(request: Request) {
   if (!isStripeConfigured()) {
-    return new Response(JSON.stringify({ error: "Stripe is not configured" }), {
-      status: 503,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: "Stripe is not configured" }),
+      { status: 503, headers: { "Content-Type": "application/json" } },
+    );
   }
 
   const session = await auth();
   if (!session?.user?.id) {
-    return new Response(JSON.stringify({ error: "Authentication required" }), {
-      status: 401,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: "Authentication required" }),
+      { status: 401, headers: { "Content-Type": "application/json" } },
+    );
   }
 
   const body = (await request.json()) as RequestBody;
   if (!body?.packId) {
-    return new Response(JSON.stringify({ error: "packId is required" }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: "packId is required" }),
+      { status: 400, headers: { "Content-Type": "application/json" } },
+    );
   }
 
   const priceId = getTopUpPriceId(body.packId);
@@ -101,10 +101,8 @@ export async function POST(request: Request) {
   }
 
   const baseUrl = getAppUrl();
-  const successUrl =
-    body.successUrl ?? `${baseUrl}/dashboard/billing?topup=success`;
-  const cancelUrl =
-    body.cancelUrl ?? `${baseUrl}/dashboard/billing?topup=cancelled`;
+  const successUrl = body.successUrl ?? `${baseUrl}/dashboard/billing?topup=success`;
+  const cancelUrl = body.cancelUrl ?? `${baseUrl}/dashboard/billing?topup=cancelled`;
 
   const checkout = await createStripeCheckoutSession({
     mode: "payment",
@@ -119,8 +117,8 @@ export async function POST(request: Request) {
     },
   });
 
-  return new Response(JSON.stringify({ id: checkout.id, url: checkout.url }), {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-  });
+  return new Response(
+    JSON.stringify({ id: checkout.id, url: checkout.url }),
+    { status: 200, headers: { "Content-Type": "application/json" } },
+  );
 }

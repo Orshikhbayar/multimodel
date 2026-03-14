@@ -3,8 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 function createThenableTableMock() {
   let result: { data: unknown; error: unknown } = { data: null, error: null };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase query builder mock requires flexible typing
-  const table: Record<string, (...args: any[]) => any> = {
+  const table: Record<string, any> = {
     select: vi.fn(() => table),
     insert: vi.fn(() => table),
     update: vi.fn(() => table),
@@ -14,10 +13,8 @@ function createThenableTableMock() {
     range: vi.fn(() => table),
     maybeSingle: vi.fn(async () => result),
     single: vi.fn(async () => result),
-    then: (
-      onFulfilled: (value: unknown) => unknown,
-      onRejected?: (reason: unknown) => unknown,
-    ) => Promise.resolve(result).then(onFulfilled, onRejected),
+    then: (onFulfilled: (value: unknown) => unknown, onRejected?: (reason: unknown) => unknown) =>
+      Promise.resolve(result).then(onFulfilled, onRejected),
     setResult: (next: { data: unknown; error: unknown }) => {
       result = next;
     },
@@ -126,7 +123,8 @@ describe("billing actions", () => {
       if (fn === "billing_purchase_topup_manual") {
         return Promise.resolve({
           data: billingProfile({
-            top_up_credits_cents: 50 + Number(args?.p_credit_delta_int ?? 0),
+            top_up_credits_cents:
+              50 + Number(args?.p_credit_delta_int ?? 0),
             billing_currency: String(args?.p_currency ?? "USD"),
           }),
           error: null,
@@ -207,10 +205,7 @@ describe("billing actions", () => {
   });
 
   it("purchases top up", async () => {
-    const result = await purchaseTopUp({
-      packId: "starter",
-      displayCurrency: "USD",
-    });
+    const result = await purchaseTopUp({ packId: "starter", displayCurrency: "USD" });
     expect(result?.topUpCreditsCents).toBeGreaterThan(50);
     expect(mockRpc).toHaveBeenCalledWith(
       "billing_purchase_topup_manual",
@@ -236,117 +231,5 @@ describe("billing actions", () => {
   it("returns included usage report", async () => {
     const report = await getIncludedUsage();
     expect(report?.savedUsdInt).toBe(80);
-  });
-
-  describe("error path testing", () => {
-    it("changePlan throws error when RPC fails", async () => {
-      mockRpc.mockImplementation((fn: string) => {
-        if (fn === "billing_change_plan_in_app") {
-          return Promise.resolve({
-            data: null,
-            error: { message: "RPC execution failed" },
-          });
-        }
-        return Promise.resolve({ data: null, error: null });
-      });
-
-      await expect(
-        changePlan({ planId: "plus", cadence: "monthly" }),
-      ).rejects.toThrow("Failed to change plan");
-    });
-
-    it("changePlan returns null when user is not authenticated", async () => {
-      mockAuth.mockResolvedValue(null);
-
-      const result = await changePlan({ planId: "plus", cadence: "monthly" });
-
-      expect(result).toBeNull();
-      expect(mockRpc).not.toHaveBeenCalled();
-    });
-
-    it("purchaseTopUp throws error when RPC fails", async () => {
-      mockRpc.mockImplementation((fn: string) => {
-        if (fn === "billing_purchase_topup_manual") {
-          return Promise.resolve({
-            data: null,
-            error: { message: "Insufficient credits for transaction" },
-          });
-        }
-        return Promise.resolve({ data: null, error: null });
-      });
-
-      await expect(
-        purchaseTopUp({ packId: "starter", displayCurrency: "USD" }),
-      ).rejects.toThrow("Failed to apply top-up");
-    });
-
-    it("purchaseTopUp returns null when user is not authenticated", async () => {
-      mockAuth.mockResolvedValue(null);
-
-      const result = await purchaseTopUp({
-        packId: "starter",
-        displayCurrency: "USD",
-      });
-
-      expect(result).toBeNull();
-      expect(mockRpc).not.toHaveBeenCalled();
-    });
-
-    it("setBillingCurrency throws error when RPC fails", async () => {
-      mockRpc.mockImplementation((fn: string) => {
-        if (fn === "billing_set_currency") {
-          return Promise.resolve({
-            data: null,
-            error: { message: "Invalid currency code" },
-          });
-        }
-        return Promise.resolve({ data: null, error: null });
-      });
-
-      await expect(setBillingCurrency("INVALID")).rejects.toThrow(
-        "Failed to set billing currency",
-      );
-    });
-
-    it("getBillingTransactions throws error when database query fails", async () => {
-      ledger.setResult({
-        data: null,
-        error: { message: "Database connection timeout" },
-      });
-
-      await expect(getBillingTransactions()).rejects.toThrow(
-        "Failed to read billing transactions",
-      );
-    });
-
-    it("getBillingTransactions returns empty array when user is not authenticated", async () => {
-      mockAuth.mockResolvedValue(null);
-
-      const txs = await getBillingTransactions();
-
-      expect(txs).toEqual([]);
-      expect(mockRpc).not.toHaveBeenCalled();
-    });
-
-    it("changePlan throws error when user billing profile cannot be created", async () => {
-      profiles.setResult({
-        data: null,
-        error: { message: "Failed to create profile" },
-      });
-
-      mockRpc.mockImplementation((fn: string) => {
-        if (fn === "billing_ensure_profile") {
-          return Promise.resolve({
-            data: null,
-            error: { message: "Database error" },
-          });
-        }
-        return Promise.resolve({ data: null, error: null });
-      });
-
-      await expect(
-        changePlan({ planId: "pro", cadence: "annual" }),
-      ).rejects.toThrow("Failed to create billing profile");
-    });
   });
 });

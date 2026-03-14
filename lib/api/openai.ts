@@ -74,7 +74,7 @@ export type StreamEvent =
 /**
  * Creates a streaming request to OpenAI
  * Returns an async generator that yields tokens and usage data
- *
+ * 
  * The generator yields token events during streaming,
  * and a usage event at the end with actual token counts from OpenAI.
  */

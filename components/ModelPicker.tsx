@@ -97,13 +97,8 @@ export function ModelPicker({
     if (!query) return [];
     return MODELS.filter((model) => {
       const descriptionKey = MODEL_DESCRIPTION_KEYS[model.id];
-      const description = descriptionKey
-        ? t(descriptionKey)
-        : model.description;
-      return [model.label, description ?? ""]
-        .join(" ")
-        .toLowerCase()
-        .includes(query);
+      const description = descriptionKey ? t(descriptionKey) : model.description;
+      return [model.label, description ?? ""].join(" ").toLowerCase().includes(query);
     });
   }, [query, t]);
 
@@ -300,9 +295,7 @@ function ModelSection({
           const active = model.id === activeId;
           const locked = lockedModelIds?.includes(model.id);
           const descriptionKey = MODEL_DESCRIPTION_KEYS[model.id];
-          const description = descriptionKey
-            ? t(descriptionKey)
-            : model.description;
+          const description = descriptionKey ? t(descriptionKey) : model.description;
           return (
             <div
               key={model.id}

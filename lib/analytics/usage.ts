@@ -116,9 +116,7 @@ export const useUsageStore = create<UsageState>()(
       storage: createJSONStorage(() => localStorage),
       migrate: (persistedState) => {
         const fallback = createInitialPersistedUsageState();
-        const state = persistedState as
-          | Partial<PersistedUsageState>
-          | undefined;
+        const state = persistedState as Partial<PersistedUsageState> | undefined;
         const records = Array.isArray(state?.records)
           ? state.records.slice(-100)
           : fallback.records;

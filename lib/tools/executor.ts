@@ -19,10 +19,7 @@ import {
 import { validateAgainstSchema } from "@/lib/tools/schema";
 import { syncToolRegistryToDb } from "@/lib/tools/supabaseRegistrySync";
 import { hashCanonicalJson, projectScopeKey } from "@/lib/tools/hash";
-import type {
-  ToolExecutionContext,
-  ToolExecutionRequest,
-} from "@/lib/tools/types";
+import type { ToolExecutionContext, ToolExecutionRequest } from "@/lib/tools/types";
 
 const DEFAULT_TIMEOUT_MS = 90_000;
 const CONFIRMATION_TOKEN_MIN_LENGTH = 6;
@@ -63,9 +60,7 @@ async function withTimeout<T>(
   const timeout = new Promise<never>((_resolve, reject) => {
     timer = setTimeout(() => {
       abortController.abort();
-      reject(
-        new ToolExecutionError(504, "TOOL_TIMEOUT", "Tool execution timed out"),
-      );
+      reject(new ToolExecutionError(504, "TOOL_TIMEOUT", "Tool execution timed out"));
     }, timeoutMs);
   });
 
@@ -110,26 +105,11 @@ async function findIdempotentRun(
   const db = context.supabase as unknown as {
     from: (table: string) => {
       select: (value: string) => {
-        eq: (
-          column: string,
-          filter: string,
-        ) => {
-          eq: (
-            column: string,
-            filter: string,
-          ) => {
-            eq: (
-              column: string,
-              filter: string,
-            ) => {
-              eq: (
-                column: string,
-                filter: string,
-              ) => {
-                eq: (
-                  column: string,
-                  filter: string,
-                ) => {
+        eq: (column: string, filter: string) => {
+          eq: (column: string, filter: string) => {
+            eq: (column: string, filter: string) => {
+              eq: (column: string, filter: string) => {
+                eq: (column: string, filter: string) => {
                   maybeSingle: () => Promise<{
                     data: Record<string, unknown> | null;
                     error: { message: string } | null;
@@ -158,12 +138,14 @@ async function findIdempotentRun(
     throw new Error(`Failed to read idempotency run: ${error.message}`);
   }
 
-  const row = data as {
-    id?: string;
-    status?: string;
-    input_hash?: string;
-    output_payload_redacted?: unknown;
-  } | null;
+  const row = data as
+    | {
+        id?: string;
+        status?: string;
+        input_hash?: string;
+        output_payload_redacted?: unknown;
+      }
+    | null;
 
   if (!row) {
     return null;
@@ -341,11 +323,7 @@ function coerceToToolExecutionError(error: unknown): ToolExecutionError | null {
   }
 
   if (error && typeof error === "object") {
-    const candidate = error as {
-      statusCode?: unknown;
-      code?: unknown;
-      message?: unknown;
-    };
+    const candidate = error as { statusCode?: unknown; code?: unknown; message?: unknown };
     if (
       typeof candidate.statusCode === "number" &&
       typeof candidate.code === "string" &&
@@ -391,17 +369,10 @@ export async function executeToolRequest(
   const definition = registry.get(request.tool_name, request.tool_version);
 
   if (!definition) {
-    throw new ToolExecutionError(
-      404,
-      "TOOL_NOT_FOUND",
-      "Requested tool is not registered",
-    );
+    throw new ToolExecutionError(404, "TOOL_NOT_FOUND", "Requested tool is not registered");
   }
 
-  const inputValidation = validateAgainstSchema(
-    definition.input_schema,
-    request.input,
-  );
+  const inputValidation = validateAgainstSchema(definition.input_schema, request.input);
 
   if (!inputValidation.valid) {
     throw new ToolExecutionError(
@@ -476,11 +447,7 @@ export async function executeToolRequest(
   }
 
   const localRunId = nanoid(12);
-  const concurrency = acquireToolConcurrency(
-    context.userId,
-    context.projectId,
-    localRunId,
-  );
+  const concurrency = acquireToolConcurrency(context.userId, context.projectId, localRunId);
 
   if (!concurrency.allowed) {
     await failToolAudit(
@@ -552,11 +519,7 @@ export async function executeToolRequest(
     }
 
     const message = error instanceof Error ? error.message : String(error);
-    const wrapped = new ToolExecutionError(
-      500,
-      "TOOL_EXECUTION_FAILED",
-      message,
-    );
+    const wrapped = new ToolExecutionError(500, "TOOL_EXECUTION_FAILED", message);
     await failToolAudit(context, run, wrapped, wrapped.code);
     throw wrapped;
   } finally {

@@ -2,7 +2,7 @@
 
 /**
  * Global Error Boundary
- *
+ * 
  * Catches unhandled errors in the app and reports to Sentry.
  * This is the root error boundary for the entire application.
  */

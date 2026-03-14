@@ -1,6 +1,12 @@
 import { createHash } from "node:crypto";
 
-import { Document, HeadingLevel, Packer, Paragraph, TextRun } from "docx";
+import {
+  Document,
+  HeadingLevel,
+  Packer,
+  Paragraph,
+  TextRun,
+} from "docx";
 import PDFDocument from "pdfkit";
 import PptxGenJS from "pptxgenjs";
 
@@ -134,12 +140,14 @@ async function uploadArtifact(
   const hash = createHash("sha256").update(payload).digest("hex").slice(0, 12);
   const storagePath = `${context.workspaceId}/${context.projectId ?? "general"}/${Date.now()}-${safeTitle || "artifact"}-${hash}.${artifactType}`;
 
-  const { error: uploadError } = await db.storage
-    .from("artifacts")
-    .upload(storagePath, payload, {
+  const { error: uploadError } = await db.storage.from("artifacts").upload(
+    storagePath,
+    payload,
+    {
       contentType: mimeType,
       upsert: false,
-    });
+    },
+  );
 
   if (uploadError) {
     throw new Error(`Artifact upload failed: ${uploadError.message}`);
@@ -166,9 +174,7 @@ async function uploadArtifact(
     .single();
 
   if (insertError || !artifactRow?.id) {
-    throw new Error(
-      `Artifact metadata insert failed: ${insertError?.message ?? "unknown"}`,
-    );
+    throw new Error(`Artifact metadata insert failed: ${insertError?.message ?? "unknown"}`);
   }
 
   return {
@@ -383,9 +389,7 @@ async function exportPptxBuffer(input: ExportPptxInput): Promise<Buffer> {
     });
   }
 
-  const arrayBuffer = (await pptx.write({
-    outputType: "arraybuffer",
-  })) as ArrayBuffer;
+  const arrayBuffer = (await pptx.write({ outputType: "arraybuffer" })) as ArrayBuffer;
   return Buffer.from(arrayBuffer);
 }
 

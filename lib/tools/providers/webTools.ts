@@ -59,11 +59,7 @@ const ALLOWED_CONTENT_TYPES = new Set(["text/html", "application/xhtml+xml"]);
 const MAX_HTML_BYTES = 3 * 1024 * 1024;
 const MAX_REDIRECTS = 5;
 
-function createToolError(
-  statusCode: number,
-  code: string,
-  message: string,
-): WebToolError {
+function createToolError(statusCode: number, code: string, message: string): WebToolError {
   const error = new Error(message) as WebToolError;
   error.code = code;
   error.statusCode = statusCode;
@@ -75,10 +71,7 @@ function hashText(value: string): string {
 }
 
 function normalizeDomain(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/^www\./, "");
+  return value.trim().toLowerCase().replace(/^www\./, "");
 }
 
 function normalizeUrl(value: string): string {
@@ -91,9 +84,7 @@ function domainMatches(url: URL, domains: string[]): boolean {
   const host = normalizeDomain(url.hostname);
   const normalized = domains.map((domain) => normalizeDomain(domain));
 
-  return normalized.some(
-    (domain) => host === domain || host.endsWith(`.${domain}`),
-  );
+  return normalized.some((domain) => host === domain || host.endsWith(`.${domain}`));
 }
 
 function parseIpv4(address: string): number | null {
@@ -122,7 +113,7 @@ function ipv4InCidr(address: string, cidr: string): boolean {
     return false;
   }
 
-  const mask = prefix === 0 ? 0 : (0xffffffff << (32 - prefix)) >>> 0;
+  const mask = prefix === 0 ? 0 : ((0xffffffff << (32 - prefix)) >>> 0);
   return (ip & mask) === (network & mask);
 }
 
@@ -168,13 +159,7 @@ function ipv6InCidr(address: string, cidr: string): boolean {
   const ip = parseIpv6(address);
   const network = parseIpv6(base);
 
-  if (
-    ip === null ||
-    network === null ||
-    !Number.isFinite(prefix) ||
-    prefix < 0 ||
-    prefix > 128
-  ) {
+  if (ip === null || network === null || !Number.isFinite(prefix) || prefix < 0 || prefix > 128) {
     return false;
   }
 
@@ -224,24 +209,16 @@ async function resolvePublicAddresses(hostname: string): Promise<string[]> {
     addresses = [hostname];
   } else {
     try {
-      addresses = (
-        await dnsLookup(hostname, { all: true, verbatim: true })
-      ).map((entry) => entry.address);
-    } catch {
-      throw createToolError(
-        400,
-        "TOOL_INVALID_URL",
-        "Could not resolve target host",
+      addresses = (await dnsLookup(hostname, { all: true, verbatim: true })).map(
+        (entry) => entry.address,
       );
+    } catch {
+      throw createToolError(400, "TOOL_INVALID_URL", "Could not resolve target host");
     }
   }
 
   if (!addresses.length) {
-    throw createToolError(
-      400,
-      "TOOL_INVALID_URL",
-      "Could not resolve target host",
-    );
+    throw createToolError(400, "TOOL_INVALID_URL", "Could not resolve target host");
   }
 
   for (const address of addresses) {
@@ -257,10 +234,7 @@ async function resolvePublicAddresses(hostname: string): Promise<string[]> {
   return addresses;
 }
 
-async function checkSafeBrowsing(
-  url: string,
-  signal?: AbortSignal,
-): Promise<boolean> {
+async function checkSafeBrowsing(url: string, signal?: AbortSignal): Promise<boolean> {
   const apiKey = process.env.GOOGLE_SAFE_BROWSING_API_KEY;
 
   if (!apiKey) {
@@ -314,35 +288,19 @@ async function validateTargetUrl(
   }
 
   if (!SAFE_PROTOCOLS.has(parsed.protocol)) {
-    throw createToolError(
-      400,
-      "TOOL_INVALID_URL",
-      "Only http/https URLs are allowed",
-    );
+    throw createToolError(400, "TOOL_INVALID_URL", "Only http/https URLs are allowed");
   }
 
   if (parsed.username || parsed.password) {
-    throw createToolError(
-      400,
-      "TOOL_INVALID_URL",
-      "URL userinfo is not allowed",
-    );
+    throw createToolError(400, "TOOL_INVALID_URL", "URL userinfo is not allowed");
   }
 
   if (domainsAllow?.length && !domainMatches(parsed, domainsAllow)) {
-    throw createToolError(
-      403,
-      "TOOL_DOMAIN_NOT_ALLOWED",
-      "URL domain is not in allow list",
-    );
+    throw createToolError(403, "TOOL_DOMAIN_NOT_ALLOWED", "URL domain is not in allow list");
   }
 
   if (domainsDeny?.length && domainMatches(parsed, domainsDeny)) {
-    throw createToolError(
-      403,
-      "TOOL_DOMAIN_DENIED",
-      "URL domain is in deny list",
-    );
+    throw createToolError(403, "TOOL_DOMAIN_DENIED", "URL domain is in deny list");
   }
 
   await resolvePublicAddresses(parsed.hostname);
@@ -393,8 +351,7 @@ function htmlToText(value: string): {
     undefined;
   const canonicalUrl = $("link[rel='canonical']").attr("href") || undefined;
   const language = $("html").attr("lang") || undefined;
-  const publisher =
-    $("meta[property='og:site_name']").attr("content") || undefined;
+  const publisher = $("meta[property='og:site_name']").attr("content") || undefined;
 
   const published =
     $("meta[property='article:published_time']").attr("content") ||
@@ -458,33 +415,25 @@ function isRedirectStatus(status: number): boolean {
 }
 
 function parseContentType(value: string | null): string {
-  return (value ?? "").split(";")[0].trim().toLowerCase();
+  return (value ?? "")
+    .split(";")[0]
+    .trim()
+    .toLowerCase();
 }
 
 async function readHtmlWithLimit(
   response: Response,
   maxBytes: number,
 ): Promise<string> {
-  const contentLength = Number.parseInt(
-    response.headers.get("content-length") ?? "",
-    10,
-  );
+  const contentLength = Number.parseInt(response.headers.get("content-length") ?? "", 10);
   if (Number.isFinite(contentLength) && contentLength > maxBytes) {
-    throw createToolError(
-      413,
-      "TOOL_FETCH_TOO_LARGE",
-      "Fetched page exceeds size limit",
-    );
+    throw createToolError(413, "TOOL_FETCH_TOO_LARGE", "Fetched page exceeds size limit");
   }
 
   if (!response.body) {
     const text = await response.text();
     if (Buffer.byteLength(text, "utf8") > maxBytes) {
-      throw createToolError(
-        413,
-        "TOOL_FETCH_TOO_LARGE",
-        "Fetched page exceeds size limit",
-      );
+      throw createToolError(413, "TOOL_FETCH_TOO_LARGE", "Fetched page exceeds size limit");
     }
     return text;
   }
@@ -502,11 +451,7 @@ async function readHtmlWithLimit(
     bytes += value.byteLength;
     if (bytes > maxBytes) {
       await reader.cancel();
-      throw createToolError(
-        413,
-        "TOOL_FETCH_TOO_LARGE",
-        "Fetched page exceeds size limit",
-      );
+      throw createToolError(413, "TOOL_FETCH_TOO_LARGE", "Fetched page exceeds size limit");
     }
 
     text += decoder.decode(value, { stream: true });
@@ -531,11 +476,7 @@ async function fetchHtmlPage(
 
     const safe = await checkSafeBrowsing(validatedUrl.toString(), signal);
     if (!safe) {
-      throw createToolError(
-        403,
-        "TOOL_SAFE_BROWSING_BLOCKED",
-        "URL failed safe browsing checks",
-      );
+      throw createToolError(403, "TOOL_SAFE_BROWSING_BLOCKED", "URL failed safe browsing checks");
     }
 
     const response = await fetch(validatedUrl.toString(), {
@@ -551,20 +492,12 @@ async function fetchHtmlPage(
 
     if (isRedirectStatus(response.status)) {
       if (redirects >= MAX_REDIRECTS) {
-        throw createToolError(
-          400,
-          "TOOL_TOO_MANY_REDIRECTS",
-          "Too many redirects",
-        );
+        throw createToolError(400, "TOOL_TOO_MANY_REDIRECTS", "Too many redirects");
       }
 
       const location = response.headers.get("location");
       if (!location) {
-        throw createToolError(
-          400,
-          "TOOL_REDIRECT_MISSING_LOCATION",
-          "Redirect missing location",
-        );
+        throw createToolError(400, "TOOL_REDIRECT_MISSING_LOCATION", "Redirect missing location");
       }
 
       currentUrl = new URL(location, validatedUrl.toString()).toString();
@@ -572,11 +505,7 @@ async function fetchHtmlPage(
     }
 
     if (!response.ok) {
-      throw createToolError(
-        502,
-        "TOOL_FETCH_FAILED",
-        `Failed to fetch URL (${response.status})`,
-      );
+      throw createToolError(502, "TOOL_FETCH_FAILED", `Failed to fetch URL (${response.status})`);
     }
 
     const contentType = parseContentType(response.headers.get("content-type"));
@@ -618,9 +547,7 @@ export async function webSearchTool(
     .maybeSingle();
 
   if (cacheReadError) {
-    throw new Error(
-      `Failed to read web search cache: ${cacheReadError.message}`,
-    );
+    throw new Error(`Failed to read web search cache: ${cacheReadError.message}`);
   }
 
   if (cacheHit?.results && Array.isArray(cacheHit.results)) {
@@ -644,12 +571,7 @@ export async function webSearchTool(
 
   const html = await response.text();
   const $ = cheerio.load(html);
-  const candidates: Array<{
-    title: string;
-    href: string;
-    snippet: string;
-    index: number;
-  }> = [];
+  const candidates: Array<{ title: string; href: string; snippet: string; index: number }> = [];
 
   $(".result").each((index, element) => {
     if (candidates.length >= topK * 2) return;
@@ -657,8 +579,7 @@ export async function webSearchTool(
     const titleEl = $(element).find(".result__title .result__a").first();
     const rawHref = titleEl.attr("href")?.trim();
     const title = titleEl.text().trim();
-    const snippet =
-      $(element).find(".result__snippet").first().text().trim() || "";
+    const snippet = $(element).find(".result__snippet").first().text().trim() || "";
 
     if (!rawHref || !title) return;
     candidates.push({ title, href: rawHref, snippet, index });
@@ -704,9 +625,7 @@ export async function webSearchTool(
       query: input.query,
       params: {
         recency_days: input.recency_days ?? null,
-        recency_mode: input.recency_days
-          ? "best_effort_query_modifier"
-          : "disabled",
+        recency_mode: input.recency_days ? "best_effort_query_modifier" : "disabled",
         provider_query: providerQuery,
         domains_allow: input.domains_allow ?? [],
         domains_deny: input.domains_deny ?? [],
@@ -742,9 +661,7 @@ export async function webFetchTool(
 
   const { data: cached, error: cacheReadError } = await db
     .from("web_pages_cache")
-    .select(
-      "clean_text, headings, metadata, detected_date, content_hash, word_count",
-    )
+    .select("clean_text, headings, metadata, detected_date, content_hash, word_count")
     .eq("workspace_id", context.workspaceId)
     .eq("project_scope_key", scopeKey)
     .eq("url", cacheLookupUrl)
@@ -752,9 +669,7 @@ export async function webFetchTool(
     .maybeSingle();
 
   if (cacheReadError) {
-    throw new Error(
-      `Failed to read fetched page cache: ${cacheReadError.message}`,
-    );
+    throw new Error(`Failed to read fetched page cache: ${cacheReadError.message}`);
   }
 
   if (cached?.clean_text) {
@@ -768,10 +683,7 @@ export async function webFetchTool(
     };
   }
 
-  const { rawHtml, finalUrl, status } = await fetchHtmlPage(
-    input,
-    context.abortSignal,
-  );
+  const { rawHtml, finalUrl, status } = await fetchHtmlPage(input, context.abortSignal);
   const extracted = htmlToText(rawHtml);
 
   if (!extracted.text || extracted.text.length < 40) {

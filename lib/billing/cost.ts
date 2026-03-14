@@ -13,15 +13,9 @@ const MODEL_PRICING_USD_PER_1K: Record<
   "anthropic/claude-opus-4.1": { promptPer1k: 0.0185, completionPer1k: 0.0555 },
   "anthropic/claude-3.5": { promptPer1k: 0.0115, completionPer1k: 0.0345 },
   "anthropic/claude-opus-4": { promptPer1k: 0.018, completionPer1k: 0.054 },
-  "google/gemini-3-flash-preview": {
-    promptPer1k: 0.0065,
-    completionPer1k: 0.0195,
-  },
+  "google/gemini-3-flash-preview": { promptPer1k: 0.0065, completionPer1k: 0.0195 },
   "google/gemini-3-pro-preview": { promptPer1k: 0.014, completionPer1k: 0.042 },
-  "google/gemini-3-pro-image-preview": {
-    promptPer1k: 0.02,
-    completionPer1k: 0.06,
-  },
+  "google/gemini-3-pro-image-preview": { promptPer1k: 0.02, completionPer1k: 0.06 },
   "google/gemini-2.5-flash": { promptPer1k: 0.005, completionPer1k: 0.015 },
   "google/gemini-2.0": { promptPer1k: 0.0125, completionPer1k: 0.0375 },
   "xai/grok-4": { promptPer1k: 0.0135, completionPer1k: 0.0405 },

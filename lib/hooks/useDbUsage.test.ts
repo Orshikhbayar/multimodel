@@ -16,12 +16,7 @@ import { getQuotaStatus, useDbUsage } from "@/lib/hooks/useDbUsage";
 describe("useDbUsage", () => {
   it("fetches usage summary and quota on mount", async () => {
     mockGetUsageSummary.mockResolvedValue({ totalTokens: 10 });
-    mockCheckQuota.mockResolvedValue({
-      allowed: true,
-      remaining: 90,
-      limit: 100,
-      used: 10,
-    });
+    mockCheckQuota.mockResolvedValue({ allowed: true, remaining: 90, limit: 100, used: 10 });
 
     const { result } = renderHook(() => useDbUsage());
 
@@ -35,12 +30,7 @@ describe("useDbUsage", () => {
 
   it("surfaces errors from usage fetch", async () => {
     mockGetUsageSummary.mockRejectedValue(new Error("fetch failed"));
-    mockCheckQuota.mockResolvedValue({
-      allowed: true,
-      remaining: 0,
-      limit: 0,
-      used: 0,
-    });
+    mockCheckQuota.mockResolvedValue({ allowed: true, remaining: 0, limit: 0, used: 0 });
 
     const { result } = renderHook(() => useDbUsage());
 

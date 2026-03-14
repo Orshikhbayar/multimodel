@@ -53,11 +53,7 @@ describe("state actions", () => {
 
   it("signs in a local user", () => {
     act(() => {
-      signInLocal({
-        name: "Test User",
-        email: "test@example.com",
-        plan: "plus",
-      });
+      signInLocal({ name: "Test User", email: "test@example.com", plan: "plus" });
     });
 
     expect(useSessionStore.getState().isAuthenticated).toBe(true);
@@ -76,9 +72,7 @@ describe("state actions", () => {
   it("logs out and resets related stores", () => {
     act(() => {
       useConversationStore.getState().createConversation("Temp");
-      useModelStore
-        .getState()
-        .setActiveSlot(useModelStore.getState().slots[0].slotId);
+      useModelStore.getState().setActiveSlot(useModelStore.getState().slots[0].slotId);
       useSettingsStore.getState().setMode("debate");
       useBillingStore.getState().openTopUpModal();
       logoutLocal();

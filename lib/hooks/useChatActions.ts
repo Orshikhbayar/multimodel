@@ -15,7 +15,6 @@ import { useBillingStore } from "@/lib/billing/store";
 import { useAppSettingsStore } from "@/lib/state/settingsStore";
 import { getLocaleResponseInstruction } from "@/lib/i18n/locale";
 import { t } from "@/lib/i18n/translate";
-import { evaluateGuardrails } from "@/lib/guardrails/flagging";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   createAssistantMessageWithRuns,
@@ -25,7 +24,10 @@ import {
   updateUserMessageContent,
   upsertConversation,
 } from "@/lib/supabase/chatPersistence";
-import { generateRuns, UNIFIED_MODEL_NAME } from "@/lib/hooks/runGeneration";
+import {
+  generateRuns,
+  UNIFIED_MODEL_NAME,
+} from "@/lib/hooks/runGeneration";
 const MAX_PARALLEL_STREAMS = 2;
 const CONCURRENCY_RETRY_DELAYS_MS = [800, 1600] as const;
 const DEFAULT_UNIFIED_SYNTHESIS_MODEL_ID = "openai/gpt-5.2";
@@ -108,12 +110,12 @@ async function fetchStreamingChat(
         response.headers.get("Retry-After") || "60",
         10,
       );
-
+      
       // Check if it's a concurrency limit vs rate limit
       const isConcurrencyLimit =
         errorData.error === "Too many concurrent requests" ||
         errorData.activeStreams !== undefined;
-
+      
       onError(errorData.message || errorData.error || "Rate limit exceeded", {
         status: isConcurrencyLimit ? "concurrency_limited" : "rate_limited",
         requestId,
@@ -154,10 +156,7 @@ async function fetchStreamingChat(
         status: "error",
         requestId,
         error: errorData.error,
-        code:
-          typeof errorData.code === "string"
-            ? errorData.code
-            : "BILLING_LOCKED",
+        code: typeof errorData.code === "string" ? errorData.code : "BILLING_LOCKED",
       });
       return;
     }
@@ -170,7 +169,9 @@ async function fetchStreamingChat(
         status: "error",
         requestId,
         error:
-          typeof errorData.error === "string" ? errorData.error : fallbackError,
+          typeof errorData.error === "string"
+            ? errorData.error
+            : fallbackError,
         code: typeof errorData.code === "string" ? errorData.code : undefined,
         suggestedAction:
           errorData.suggestedAction === "upgrade" ? "upgrade" : "topup",
@@ -305,10 +306,7 @@ function normalizeTitle(value: string) {
   return value.trim().toLowerCase();
 }
 
-function isPlaceholderConversationTitle(
-  title: string | undefined,
-  locale: string,
-) {
+function isPlaceholderConversationTitle(title: string | undefined, locale: string) {
   if (!title) return true;
 
   const placeholders = new Set([
@@ -429,10 +427,7 @@ function buildUnifiedSynthesisPrompt(
   return messages;
 }
 
-function buildUnifiedFallbackText(
-  locale: string,
-  successfulRuns: Run[],
-): string {
+function buildUnifiedFallbackText(locale: string, successfulRuns: Run[]): string {
   if (successfulRuns.length === 0) {
     return t(locale, "chat.unifiedNoAnswer");
   }
@@ -548,9 +543,7 @@ export function useChatActions() {
     serverConversationId?: string,
   ) => {
     const unifiedRun = runs.find((run) => run.model === UNIFIED_MODEL_NAME);
-    const perspectiveRuns = runs.filter(
-      (run) => run.model !== UNIFIED_MODEL_NAME,
-    );
+    const perspectiveRuns = runs.filter((run) => run.model !== UNIFIED_MODEL_NAME);
     const perspectiveRunIds = perspectiveRuns.map((run) => run.id);
     const slotByRunId = new Map<string, ModelSlot>();
     perspectiveRuns.forEach((run) => {
@@ -596,10 +589,7 @@ export function useChatActions() {
       const currentUnifiedRun = assistantMessage.runs.find(
         (entry) => entry.id === unifiedRun.id,
       );
-      if (
-        currentUnifiedRun?.status === "done" &&
-        currentUnifiedRun.text.trim()
-      ) {
+      if (currentUnifiedRun?.status === "done" && currentUnifiedRun.text.trim()) {
         return;
       }
 
@@ -637,15 +627,10 @@ export function useChatActions() {
     }
 
     perspectiveRuns.forEach((run) => {
-      conversationStore.completeRun(
-        conversationId,
-        assistantMessageId,
-        run.id,
-        {
-          status: "queued",
-          text: t(locale, "chat.waitingForSlot"),
-        },
-      );
+      conversationStore.completeRun(conversationId, assistantMessageId, run.id, {
+        status: "queued",
+        text: t(locale, "chat.waitingForSlot"),
+      });
       if (run.slotId) {
         modelStore.updateSlotStatus(run.slotId, "idle");
       }
@@ -663,15 +648,10 @@ export function useChatActions() {
       const startTime = Date.now();
       let accumulatedText = "";
 
-      conversationStore.completeRun(
-        conversationId,
-        assistantMessageId,
-        run.id,
-        {
-          status: "streaming",
-          text: "",
-        },
-      );
+      conversationStore.completeRun(conversationId, assistantMessageId, run.id, {
+        status: "streaming",
+        text: "",
+      });
       if (run.slotId) {
         modelStore.updateSlotStatus(run.slotId, "streaming");
       }
@@ -719,16 +699,11 @@ export function useChatActions() {
       latencyMs: number,
     ) => {
       if (result.status === "cancelled") {
-        conversationStore.completeRun(
-          conversationId,
-          assistantMessageId,
-          run.id,
-          {
-            status: "done",
-            interrupted: true,
-            latencyMs,
-          },
-        );
+        conversationStore.completeRun(conversationId, assistantMessageId, run.id, {
+          status: "done",
+          interrupted: true,
+          latencyMs,
+        });
         if (run.slotId) {
           modelStore.updateSlotStatus(run.slotId, "done");
         }
@@ -737,22 +712,17 @@ export function useChatActions() {
       }
 
       if (result.status === "done") {
-        conversationStore.completeRun(
-          conversationId,
-          assistantMessageId,
-          run.id,
-          {
-            latencyMs,
-            costUsd: result.costUsd,
-            tokens: result.usage
-              ? {
-                  prompt: result.usage.promptTokens,
-                  completion: result.usage.completionTokens,
-                  total: result.usage.totalTokens,
-                }
-              : undefined,
-          },
-        );
+        conversationStore.completeRun(conversationId, assistantMessageId, run.id, {
+          latencyMs,
+          costUsd: result.costUsd,
+          tokens: result.usage
+            ? {
+                prompt: result.usage.promptTokens,
+                completion: result.usage.completionTokens,
+                total: result.usage.totalTokens,
+              }
+            : undefined,
+        });
         if (run.slotId) {
           modelStore.updateSlotStatus(run.slotId, "done");
         }
@@ -872,15 +842,10 @@ export function useChatActions() {
           attempt < CONCURRENCY_RETRY_DELAYS_MS.length &&
           !schedulerState.cancelled;
         if (shouldRetryConcurrency) {
-          conversationStore.completeRun(
-            conversationId,
-            assistantMessageId,
-            run.id,
-            {
-              status: "queued",
-              text: t(locale, "chat.waitingForSlot"),
-            },
-          );
+          conversationStore.completeRun(conversationId, assistantMessageId, run.id, {
+            status: "queued",
+            text: t(locale, "chat.waitingForSlot"),
+          });
           if (run.slotId) {
             modelStore.updateSlotStatus(run.slotId, "idle");
           }
@@ -1008,10 +973,7 @@ export function useChatActions() {
 
         const inputTokens =
           result.usage?.promptTokens ??
-          Math.ceil(
-            synthesisMessages.map((message) => message.content).join("\n")
-              .length / 4,
-          );
+          Math.ceil(synthesisMessages.map((message) => message.content).join("\n").length / 4);
         const outputTokens =
           result.usage?.completionTokens ?? Math.ceil(finalText.length / 4);
         const estimatedCostUsd =
@@ -1058,65 +1020,6 @@ export function useChatActions() {
       });
     };
 
-    const applyGuardrailFlagging = () => {
-      const selectedPackId = settingsStore.selectedWorkflowPackId;
-      if (!selectedPackId) return;
-
-      const conversation = useConversationStore
-        .getState()
-        .conversations.find((entry) => entry.id === conversationId);
-      const assistantMessage = conversation?.messages.find(
-        (entry) => entry.id === assistantMessageId,
-      );
-      if (!assistantMessage?.runs || assistantMessage.runs.length === 0) return;
-
-      const completedRuns = assistantMessage.runs.filter(
-        (entry) => entry.status === "done" && entry.text.trim().length > 0,
-      );
-      const unifiedCompleted = completedRuns.find(
-        (entry) => entry.model === UNIFIED_MODEL_NAME,
-      );
-      const targetRun = unifiedCompleted ?? completedRuns[0];
-      if (!targetRun) return;
-
-      const guardrail = evaluateGuardrails(selectedPackId, targetRun.text);
-      if (!guardrail.flagged || !guardrail.warningText) return;
-
-      conversationStore.completeRun(
-        conversationId,
-        assistantMessageId,
-        targetRun.id,
-        {
-          status: "done",
-          text: `${targetRun.text.trim()}\n\n${guardrail.warningText}`,
-        },
-      );
-
-      const severityByScore = { low: 1, medium: 2, high: 3 } as const;
-      const highestSeverity = guardrail.flags.reduce<"low" | "medium" | "high">(
-        (highest, current) =>
-          severityByScore[current.severity] > severityByScore[highest]
-            ? current.severity
-            : highest,
-        "low",
-      );
-
-      analytics.track("guardrail_flagged", {
-        workspace_id: workspaceId ?? undefined,
-        pack_id: selectedPackId,
-        policy_id: guardrail.flags.map((flag) => flag.id).join(","),
-        severity: highestSeverity,
-      });
-
-      if (guardrail.safeTemplateId) {
-        analytics.track("safe_template_suggested", {
-          workspace_id: workspaceId ?? undefined,
-          pack_id: selectedPackId,
-          safe_template_id: guardrail.safeTemplateId,
-        });
-      }
-    };
-
     let cursor = 0;
     const workerCount = Math.min(MAX_PARALLEL_STREAMS, perspectiveRuns.length);
     const workers = Array.from({ length: workerCount }, async () => {
@@ -1144,7 +1047,6 @@ export function useChatActions() {
     try {
       await Promise.all(workers);
       await runUnifiedSynthesis();
-      applyGuardrailFlagging();
     } finally {
       const cancelSet = activeRunSchedulerCancels.get(conversationId);
       if (cancelSet) {
@@ -1199,10 +1101,7 @@ export function useChatActions() {
     if (shouldAutoTitle) {
       conversationStore.updateConversationTitle(
         conversationId,
-        buildAutoConversationTitle(
-          content,
-          t(locale, "navigation.untitledChat"),
-        ),
+        buildAutoConversationTitle(content, t(locale, "navigation.untitledChat")),
       );
     }
 
@@ -1244,9 +1143,7 @@ export function useChatActions() {
       try {
         const currentConversation = useConversationStore
           .getState()
-          .conversations.find(
-            (conversation) => conversation.id === conversationId,
-          );
+          .conversations.find((conversation) => conversation.id === conversationId);
 
         serverConversationId = await ensureServerConversation(
           conversationId,
@@ -1267,11 +1164,8 @@ export function useChatActions() {
                 provider: getProviderFromModelId(slot.modelId),
               };
             })
-            .filter(
-              (
-                value,
-              ): value is { id: string; modelId: string; provider: string } =>
-                Boolean(value),
+            .filter((value): value is { id: string; modelId: string; provider: string } =>
+              Boolean(value),
             );
 
           await createTurnRecords(supabase, {
@@ -1293,9 +1187,9 @@ export function useChatActions() {
     }
 
     // Build message history for API
-    const conversation = useConversationStore
-      .getState()
-      .conversations.find((c) => c.id === conversationId);
+    const conversation = useConversationStore.getState().conversations.find(
+      (c) => c.id === conversationId,
+    );
     const historyMessages = (conversation?.messages ?? [])
       .filter(
         (m) =>
@@ -1398,9 +1292,7 @@ export function useChatActions() {
       try {
         const currentConversation = useConversationStore
           .getState()
-          .conversations.find(
-            (conversation) => conversation.id === conversationId,
-          );
+          .conversations.find((conversation) => conversation.id === conversationId);
 
         serverConversationId = await ensureServerConversation(
           conversationId,
@@ -1425,11 +1317,8 @@ export function useChatActions() {
                 provider: getProviderFromModelId(slot.modelId),
               };
             })
-            .filter(
-              (
-                value,
-              ): value is { id: string; modelId: string; provider: string } =>
-                Boolean(value),
+            .filter((value): value is { id: string; modelId: string; provider: string } =>
+              Boolean(value),
             );
 
           await createAssistantMessageWithRuns(supabase, {

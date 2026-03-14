@@ -102,19 +102,18 @@ export async function imageGenerateTool(
     if (!image.b64_json) continue;
 
     const content = Buffer.from(image.b64_json, "base64");
-    const digest = createHash("sha256")
-      .update(content)
-      .digest("hex")
-      .slice(0, 12);
+    const digest = createHash("sha256").update(content).digest("hex").slice(0, 12);
 
     const storagePath = `${context.workspaceId}/${context.projectId ?? "general"}/images/${Date.now()}-${index + 1}-${digest}.png`;
 
-    const { error: uploadError } = await db.storage
-      .from("artifacts")
-      .upload(storagePath, content, {
+    const { error: uploadError } = await db.storage.from("artifacts").upload(
+      storagePath,
+      content,
+      {
         contentType: "image/png",
         upsert: false,
-      });
+      },
+    );
 
     if (uploadError) {
       throw new Error(`Image upload failed: ${uploadError.message}`);

@@ -143,17 +143,12 @@ describe("rateLimit", () => {
       };
 
       mod.consumeRateLimitSlot("cleanup-rate-user", config);
-      const acquired = mod.acquireConcurrencySlot(
-        "cleanup-stream-user",
-        config,
-      );
+      const acquired = mod.acquireConcurrencySlot("cleanup-stream-user", config);
       expect(acquired.streamId).toBeTruthy();
       mod.releaseConcurrencySlot("cleanup-stream-user", acquired.streamId!);
 
       await vi.advanceTimersByTimeAsync(5 * 60 * 1000 + 1);
-      expect(mod.checkRateLimit("cleanup-rate-user", config).allowed).toBe(
-        true,
-      );
+      expect(mod.checkRateLimit("cleanup-rate-user", config).allowed).toBe(true);
     } finally {
       vi.runOnlyPendingTimers();
       vi.useRealTimers();

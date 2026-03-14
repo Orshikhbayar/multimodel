@@ -113,8 +113,7 @@ function getDefaultChatTitle(): string {
 }
 
 function getDefaultProjects(): Project[] {
-  const source =
-    getSeedLocale() === "mn" ? defaultProjectsMn : defaultProjectsEn;
+  const source = getSeedLocale() === "mn" ? defaultProjectsMn : defaultProjectsEn;
   return source.map((project) => ({ ...project }));
 }
 

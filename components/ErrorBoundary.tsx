@@ -90,9 +90,7 @@ export function ChatErrorBoundary({ children }: { children: ReactNode }) {
             <AlertTriangle className="h-8 w-8 text-muted-foreground" />
           </div>
           <div className="space-y-2 text-center">
-            <h2 className="text-xl font-semibold">
-              {t("errors.chatFailedLoad")}
-            </h2>
+            <h2 className="text-xl font-semibold">{t("errors.chatFailedLoad")}</h2>
             <p className="text-sm text-muted-foreground max-w-sm">
               {t("errors.chatFailedLoadDescription")}
             </p>

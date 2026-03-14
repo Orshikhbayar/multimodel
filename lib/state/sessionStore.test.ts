@@ -22,11 +22,7 @@ describe("sessionStore", () => {
       useSessionStore.getState().signOut();
     });
 
-    expect(useSessionStore.getState().isAuthenticated).toBe(
-      DEFAULT_SESSION.isAuthenticated,
-    );
-    expect(useSessionStore.getState().authToken).toBe(
-      DEFAULT_SESSION.authToken,
-    );
+    expect(useSessionStore.getState().isAuthenticated).toBe(DEFAULT_SESSION.isAuthenticated);
+    expect(useSessionStore.getState().authToken).toBe(DEFAULT_SESSION.authToken);
   });
 });

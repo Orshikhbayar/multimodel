@@ -60,10 +60,7 @@ function appendLineItems(
   });
 }
 
-function appendMetadata(
-  form: URLSearchParams,
-  metadata?: Record<string, string>,
-) {
+function appendMetadata(form: URLSearchParams, metadata?: Record<string, string>) {
   if (!metadata) return;
   for (const [key, value] of Object.entries(metadata)) {
     form.set(`metadata[${key}]`, value);
@@ -178,9 +175,7 @@ export function verifyStripeWebhookSignature(params: {
   }
 
   const elements = params.signatureHeader.split(",").map((part) => part.trim());
-  const timestamp = elements
-    .find((element) => element.startsWith("t="))
-    ?.slice(2);
+  const timestamp = elements.find((element) => element.startsWith("t="))?.slice(2);
 
   const signatures = elements
     .filter((element) => element.startsWith("v1="))
@@ -207,9 +202,7 @@ export function verifyStripeWebhookSignature(params: {
     .update(signedPayload, "utf8")
     .digest("hex");
 
-  return signatures.some((signature) =>
-    constantTimeEquals(signature, expected),
-  );
+  return signatures.some((signature) => constantTimeEquals(signature, expected));
 }
 
 export function parseStripeWebhookEvent(payload: string): StripeWebhookEvent {

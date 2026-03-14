@@ -3,8 +3,7 @@ import { NextResponse } from "next/server";
 function buildResponse() {
   return NextResponse.json(
     {
-      error:
-        "Legacy NextAuth route removed. Use /auth/login with Supabase Auth.",
+      error: "Legacy NextAuth route removed. Use /auth/login with Supabase Auth.",
     },
     { status: 410 },
   );

@@ -44,11 +44,7 @@ function collectArtifactIds(value: unknown): string[] {
     if (!isRecord(current)) return;
 
     for (const [key, child] of Object.entries(current)) {
-      if (
-        key === "artifact_id" &&
-        typeof child === "string" &&
-        child.length > 0
-      ) {
+      if (key === "artifact_id" && typeof child === "string" && child.length > 0) {
         ids.add(child);
       }
       walk(child);
@@ -59,9 +55,7 @@ function collectArtifactIds(value: unknown): string[] {
   return Array.from(ids);
 }
 
-function extractCitationLinks(
-  value: unknown,
-): Array<{ title?: string; url: string }> {
+function extractCitationLinks(value: unknown): Array<{ title?: string; url: string }> {
   if (!isRecord(value) || !Array.isArray(value.citations)) {
     return [];
   }
@@ -81,9 +75,7 @@ function extractCitationLinks(
   return links.slice(0, 10);
 }
 
-function mapRunStatus(
-  status: string,
-): "pending" | "running" | "completed" | "failed" {
+function mapRunStatus(status: string): "pending" | "running" | "completed" | "failed" {
   if (status === "running") return "running";
   if (status === "succeeded") return "completed";
   if (status === "cancelled" || status === "failed") return "failed";
@@ -91,11 +83,7 @@ function mapRunStatus(
 }
 
 async function signArtifactUrls(
-  supabase: ReturnType<typeof createSupabaseServerClient> extends Promise<
-    infer T
-  >
-    ? T
-    : never,
+  supabase: ReturnType<typeof createSupabaseServerClient> extends Promise<infer T> ? T : never,
   artifacts: Array<{
     id: string;
     artifact_type: string;
@@ -135,14 +123,12 @@ export async function POST(request: NextRequest) {
 
   const payload = (await request.json()) as AppendToolResultPayload;
   const conversationId =
-    typeof payload.conversation_id === "string" &&
-    payload.conversation_id.length > 0
+    typeof payload.conversation_id === "string" && payload.conversation_id.length > 0
       ? payload.conversation_id
       : null;
 
   const runId = typeof payload.run_id === "string" ? payload.run_id : null;
-  const artifactId =
-    typeof payload.artifact_id === "string" ? payload.artifact_id : null;
+  const artifactId = typeof payload.artifact_id === "string" ? payload.artifact_id : null;
 
   if (!conversationId) {
     return new Response(
@@ -291,13 +277,7 @@ export async function POST(request: NextRequest) {
       }
 
       for (const row of artifactRows ?? []) {
-        if (
-          !row?.id ||
-          !row?.storage_path ||
-          !row?.artifact_type ||
-          !row?.title
-        )
-          continue;
+        if (!row?.id || !row?.storage_path || !row?.artifact_type || !row?.title) continue;
         artifacts.push({
           id: row.id,
           artifact_type: row.artifact_type,
@@ -378,17 +358,13 @@ export async function POST(request: NextRequest) {
         result: output,
         error: run.error_message ?? undefined,
         startedAt: new Date(run.started_at).getTime(),
-        completedAt: run.completed_at
-          ? new Date(run.completed_at).getTime()
-          : undefined,
+        completedAt: run.completed_at ? new Date(run.completed_at).getTime() : undefined,
       },
     ];
   } else {
     const { data: artifact, error: artifactError } = await db
       .from("artifacts")
-      .select(
-        "id,workspace_id,project_id,artifact_type,title,mime_type,storage_path,created_at",
-      )
+      .select("id,workspace_id,project_id,artifact_type,title,mime_type,storage_path,created_at")
       .eq("id", artifactId)
       .maybeSingle();
 
@@ -414,10 +390,7 @@ export async function POST(request: NextRequest) {
 
     if (artifact.workspace_id !== conversation.workspace_id) {
       return new Response(
-        JSON.stringify({
-          error: "Artifact does not belong to this workspace",
-          requestId,
-        }),
+        JSON.stringify({ error: "Artifact does not belong to this workspace", requestId }),
         {
           status: 409,
           headers: { "Content-Type": "application/json" },
@@ -447,9 +420,7 @@ export async function POST(request: NextRequest) {
     content = [
       `Artifact attached: **${artifact.title}**`,
       `Type: ${artifact.artifact_type} (${artifact.mime_type})`,
-      signed?.download_url
-        ? `[Download artifact](${signed.download_url})`
-        : "Download link unavailable.",
+      signed?.download_url ? `[Download artifact](${signed.download_url})` : "Download link unavailable.",
     ].join("\n\n");
   }
 

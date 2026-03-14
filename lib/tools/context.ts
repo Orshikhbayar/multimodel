@@ -10,10 +10,7 @@ export async function resolveWorkspaceId(
   const db = supabase as unknown as {
     from: (table: string) => {
       select: (value: string) => {
-        eq: (
-          column: string,
-          filter: string,
-        ) => {
+        eq: (column: string, filter: string) => {
           maybeSingle: () => Promise<{
             data: Record<string, unknown> | null;
             error: { message: string } | null;
@@ -42,9 +39,7 @@ export async function resolveWorkspaceId(
       .maybeSingle();
 
     if (projectError) {
-      throw new Error(
-        `Failed to resolve workspace from project: ${projectError.message}`,
-      );
+      throw new Error(`Failed to resolve workspace from project: ${projectError.message}`);
     }
 
     const projectWorkspaceId =

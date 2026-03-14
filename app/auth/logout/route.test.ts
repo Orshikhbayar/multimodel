@@ -25,14 +25,10 @@ describe("auth logout route", () => {
   });
 
   it("handles GET logout and redirects", async () => {
-    const response = await GET(
-      new Request("http://localhost:3000/auth/logout"),
-    );
+    const response = await GET(new Request("http://localhost:3000/auth/logout"));
 
     expect(mockSignOut).toHaveBeenCalled();
     expect(response.status).toBe(307);
-    expect(response.headers.get("location")).toBe(
-      "http://localhost:3000/auth/login",
-    );
+    expect(response.headers.get("location")).toBe("http://localhost:3000/auth/login");
   });
 });

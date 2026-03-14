@@ -1,13 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { InteractionMode } from "@/lib/types";
-import {
-  getWorkflowPackById,
-  isWorkflowPackId,
-  type WorkflowPackId,
-} from "@/lib/workflows/packs";
-
-export type { WorkflowPackId };
 
 export type WorkflowPreset = "general" | "engineer" | "marketing";
 
@@ -52,8 +45,7 @@ export const MODE_OPTIONS: ModeOption[] = [
   {
     value: "expert",
     label: "Expert Review",
-    description:
-      "One model answers, critiques itself, then improves the result.",
+    description: "One model answers, critiques itself, then improves the result.",
     bestFor: "High-quality drafts where reasoning and self-checking matter.",
     outputStyle: "Draft, critique, then revised final output.",
   },
@@ -111,7 +103,6 @@ interface SettingsStoreState {
   mode: InteractionMode;
   instructions: string;
   workflowPreset: WorkflowPreset;
-  selectedWorkflowPackId: WorkflowPackId | null;
   onboardingCompleted: boolean;
 }
 
@@ -120,9 +111,7 @@ interface SettingsStoreActions {
   setInstructions: (text: string) => void;
   setWorkflowPreset: (preset: WorkflowPreset) => void;
   applyWorkflowPreset: (preset: WorkflowPreset) => void;
-  selectWorkflowPack: (packId: WorkflowPackId) => void;
-  clearWorkflowPackSelection: () => void;
-  completeOnboarding: (value?: WorkflowPreset | WorkflowPackId) => void;
+  completeOnboarding: (preset: WorkflowPreset) => void;
   dismissOnboarding: () => void;
   resetSettings: () => void;
 }
@@ -130,16 +119,6 @@ interface SettingsStoreActions {
 export type SettingsStore = SettingsStoreState & SettingsStoreActions;
 
 const DEFAULT_PRESET: WorkflowPreset = "general";
-const WORKFLOW_PACK_TO_PRESET: Record<WorkflowPackId, WorkflowPreset> = {
-  "importer-solo-seller": "engineer",
-  "online-seller": "marketing",
-  "procurement-tender": "engineer",
-};
-
-function isWorkflowPreset(value: unknown): value is WorkflowPreset {
-  return value === "general" || value === "engineer" || value === "marketing";
-}
-
 const presetById = Object.fromEntries(
   WORKFLOW_PRESETS.map((preset) => [preset.value, preset]),
 ) as Record<WorkflowPreset, WorkflowPresetOption>;
@@ -151,7 +130,6 @@ export const useSettingsStore = create<SettingsStore>()(
       mode: DEFAULT_PRESET_CONFIG.recommendedMode,
       instructions: DEFAULT_PRESET_CONFIG.instructions,
       workflowPreset: DEFAULT_PRESET,
-      selectedWorkflowPackId: null,
       onboardingCompleted: false,
 
       setMode: (mode) => set({ mode }),
@@ -165,47 +143,12 @@ export const useSettingsStore = create<SettingsStore>()(
           instructions: preset.instructions,
         });
       },
-      selectWorkflowPack: (packId) => {
-        const pack = getWorkflowPackById(packId);
-        const workflowPreset =
-          WORKFLOW_PACK_TO_PRESET[packId] ?? DEFAULT_PRESET;
+      completeOnboarding: (workflowPreset) => {
         const preset = presetById[workflowPreset] ?? DEFAULT_PRESET_CONFIG;
         set({
-          selectedWorkflowPackId: packId,
           workflowPreset,
-          mode: pack?.recommendedMode ?? preset.recommendedMode,
-          instructions: pack?.defaultInstructions ?? preset.instructions,
-        });
-      },
-      clearWorkflowPackSelection: () => set({ selectedWorkflowPackId: null }),
-      completeOnboarding: (value) => {
-        if (isWorkflowPreset(value)) {
-          const preset = presetById[value] ?? DEFAULT_PRESET_CONFIG;
-          set({
-            workflowPreset: value,
-            mode: preset.recommendedMode,
-            instructions: preset.instructions,
-            onboardingCompleted: true,
-          });
-          return;
-        }
-
-        if (isWorkflowPackId(value)) {
-          const pack = getWorkflowPackById(value);
-          const workflowPreset =
-            WORKFLOW_PACK_TO_PRESET[value] ?? DEFAULT_PRESET;
-          const preset = presetById[workflowPreset] ?? DEFAULT_PRESET_CONFIG;
-          set({
-            selectedWorkflowPackId: value,
-            workflowPreset,
-            mode: pack?.recommendedMode ?? preset.recommendedMode,
-            instructions: pack?.defaultInstructions ?? preset.instructions,
-            onboardingCompleted: true,
-          });
-          return;
-        }
-
-        set({
+          mode: preset.recommendedMode,
+          instructions: preset.instructions,
           onboardingCompleted: true,
         });
       },
@@ -215,43 +158,20 @@ export const useSettingsStore = create<SettingsStore>()(
           mode: DEFAULT_PRESET_CONFIG.recommendedMode,
           instructions: DEFAULT_PRESET_CONFIG.instructions,
           workflowPreset: DEFAULT_PRESET,
-          selectedWorkflowPackId: null,
           onboardingCompleted: false,
         }),
     }),
     {
       name: "multi-model-settings",
-      version: 3,
+      version: 2,
       storage: createJSONStorage(() => localStorage),
       migrate: (persisted) => {
         const state = (persisted as Partial<SettingsStore> | null) ?? {};
-        const workflowPreset = isWorkflowPreset(state.workflowPreset)
-          ? state.workflowPreset
-          : DEFAULT_PRESET;
-        const selectedWorkflowPackId = isWorkflowPackId(
-          state.selectedWorkflowPackId,
-        )
-          ? state.selectedWorkflowPackId
-          : null;
-        const selectedPackConfig = selectedWorkflowPackId
-          ? getWorkflowPackById(selectedWorkflowPackId)
-          : undefined;
-        const mappedPreset = selectedWorkflowPackId
-          ? WORKFLOW_PACK_TO_PRESET[selectedWorkflowPackId]
-          : workflowPreset;
-        const presetConfig = presetById[mappedPreset] ?? DEFAULT_PRESET_CONFIG;
-
         return {
-          mode:
-            state.mode ??
-            selectedPackConfig?.recommendedMode ??
-            presetConfig.recommendedMode,
+          mode: state.mode ?? DEFAULT_PRESET_CONFIG.recommendedMode,
           instructions:
-            state.instructions ??
-            selectedPackConfig?.defaultInstructions ??
-            presetConfig.instructions,
-          workflowPreset: mappedPreset,
-          selectedWorkflowPackId,
+            state.instructions ?? DEFAULT_PRESET_CONFIG.instructions,
+          workflowPreset: state.workflowPreset ?? DEFAULT_PRESET,
           onboardingCompleted: state.onboardingCompleted ?? false,
         };
       },

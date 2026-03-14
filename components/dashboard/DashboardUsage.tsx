@@ -22,9 +22,7 @@ export function DashboardUsage({
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-6 py-6">
       <div>
-        <p className="text-xs uppercase text-muted-foreground">
-          {t("billing.pageLabel")}
-        </p>
+        <p className="text-xs uppercase text-muted-foreground">{t("billing.pageLabel")}</p>
         <h1 className="text-2xl font-semibold">{t("billing.usage")}</h1>
       </div>
 
@@ -32,9 +30,7 @@ export function DashboardUsage({
         <div className="grid gap-4 md:grid-cols-3">
           <Card className="border-muted/60 bg-card/60">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-muted-foreground">
-                {t("billing.totalTokens")}
-              </CardTitle>
+              <CardTitle className="text-sm text-muted-foreground">{t("billing.totalTokens")}</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-semibold">
@@ -45,16 +41,11 @@ export function DashboardUsage({
 
           <Card className="border-muted/60 bg-card/60">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-muted-foreground">
-                {t("billing.cost")}
-              </CardTitle>
+              <CardTitle className="text-sm text-muted-foreground">{t("billing.cost")}</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-semibold">
-                $
-                {formatNumber(snapshot.totalCostUsd, {
-                  maximumFractionDigits: 2,
-                })}
+                ${formatNumber(snapshot.totalCostUsd, { maximumFractionDigits: 2 })}
               </p>
             </CardContent>
           </Card>

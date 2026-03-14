@@ -5,11 +5,7 @@ import {
   streamOpenAICompletion,
   streamWithCallbacks,
 } from "@/lib/api/openai";
-import {
-  buildDoneSseChunk,
-  buildSseChunk,
-  streamFromStrings,
-} from "@/test/utils/sse";
+import { buildDoneSseChunk, buildSseChunk, streamFromStrings } from "@/test/utils/sse";
 
 describe("openai api helpers", () => {
   it("maps internal model IDs", () => {
@@ -26,13 +22,7 @@ describe("openai api helpers", () => {
         ok: true,
         body: streamFromStrings([
           buildSseChunk({ choices: [{ delta: { content: "hello" } }] }),
-          buildSseChunk({
-            usage: {
-              prompt_tokens: 10,
-              completion_tokens: 20,
-              total_tokens: 30,
-            },
-          }),
+          buildSseChunk({ usage: { prompt_tokens: 10, completion_tokens: 20, total_tokens: 30 } }),
           buildDoneSseChunk(),
         ]),
       })),

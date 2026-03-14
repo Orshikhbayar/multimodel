@@ -258,7 +258,8 @@ const en = {
       "Models reply, then a single combined summary is produced.",
     modeCombinedBestFor:
       "One final answer that blends ideas from multiple models.",
-    modeCombinedOutput: "Per-model drafts plus one synthesized final response.",
+    modeCombinedOutput:
+      "Per-model drafts plus one synthesized final response.",
     modeExpertDescription:
       "One model answers, critiques itself, then improves the result.",
     modeExpertBestFor:
@@ -267,7 +268,8 @@ const en = {
     modeDebateDescription:
       "Models argue different sides before a final summary.",
     modeDebateBestFor: "Decisions, tradeoffs, and strategic choices.",
-    modeDebateOutput: "Contrasting viewpoints followed by a neutral summary.",
+    modeDebateOutput:
+      "Contrasting viewpoints followed by a neutral summary.",
     modeRoleDescription:
       "Runs scenario-style responses to stress test decisions.",
     modeRoleBestFor:
@@ -410,7 +412,8 @@ const en = {
     unlockMoreModels:
       "Unlock more models and higher limits with an upgraded plan.",
     recommendedPlan: "Recommended: {plan}",
-    higherCreditsMoreModels: "Higher included credits and more active models.",
+    higherCreditsMoreModels:
+      "Higher included credits and more active models.",
     notNow: "Not now",
     seeAllPlans: "See all plans",
     outOfCredits: "Out of credits",
@@ -434,7 +437,8 @@ const en = {
     includedCreditsResetMonthly: "Included credits reset monthly.",
     topUpBalance: "Top-up balance",
     topUpsNeverExpireShort: "Top-ups never expire.",
-    planFreeDescription: "Try the multi-model workspace with core features.",
+    planFreeDescription:
+      "Try the multi-model workspace with core features.",
     planPlusDescription: "For regular users who need higher limits.",
     planProDescription: "For power users who need more capacity.",
     planTeamDescription: "Collaborate across teams with shared context.",
@@ -514,10 +518,8 @@ const en = {
     createdDate: "Created {date}",
     archivedDate: "Archived {date}",
     archivedProjects: "Archived projects",
-    archivedReadOnly:
-      "{project} is archived. Start chats in an active project.",
-    noChatsInProject:
-      "No chats in this project yet. Start the first one below.",
+    archivedReadOnly: "{project} is archived. Start chats in an active project.",
+    noChatsInProject: "No chats in this project yet. Start the first one below.",
     noGeneralChats: "No general chats yet. Start one below.",
     selectProjectForChats: "Select a project to view chats.",
     nothingYet: "Nothing here yet",
@@ -532,7 +534,8 @@ const en = {
     chatFailedLoadDescription:
       "There was a problem loading this conversation. Try refreshing the page.",
     refreshPage: "Refresh page",
-    insufficientCredits: "Insufficient credits. Please top up or change plan.",
+    insufficientCredits:
+      "Insufficient credits. Please top up or change plan.",
     tokenQuotaExceeded:
       "Token quota exceeded. Please upgrade your plan or wait for reset.",
     billingUnavailable:
@@ -798,9 +801,9 @@ const mn: MessageSchema = {
       "Алдаа засвар ба хэрэгжилтэд чиглэсэн код төвтэй урсгал.",
     presetMarketingDescription:
       "Кампанит ажил, контентод чиглэсэн мессеж төвтэй урсгал.",
-    modeAutoDescription:
-      "Ихэнх prompt-д хамгийн тохиромжтой горимыг автоматаар сонгоно.",
-    modeAutoBestFor: "Тохиргоо нарийвчлахгүй өдөр тутмын хурдан хүсэлтүүдэд.",
+    modeAutoDescription: "Ихэнх prompt-д хамгийн тохиромжтой горимыг автоматаар сонгоно.",
+    modeAutoBestFor:
+      "Тохиргоо нарийвчлахгүй өдөр тутмын хурдан хүсэлтүүдэд.",
     modeAutoOutput: "Бэлтгэл бага шаардсан тэнцвэртэй хариу.",
     modeParallelDescription: "Идэвхтэй загвар бүр тусдаа хариулна.",
     modeParallelBestFor:
@@ -820,7 +823,8 @@ const mn: MessageSchema = {
     modeDebateDescription:
       "Эцсийн дүгнэлтээс өмнө загварууд өөр өөр тал дээр мэтгэлцэнэ.",
     modeDebateBestFor: "Шийдвэр, trade-off, стратегийн сонголтуудад.",
-    modeDebateOutput: "Эсрэг байр суурь болон дараах төвийг сахисан дүгнэлт.",
+    modeDebateOutput:
+      "Эсрэг байр суурь болон дараах төвийг сахисан дүгнэлт.",
     modeRoleDescription:
       "Шийдвэрийг шалгахын тулд scenario хэлбэрийн хариу ажиллуулна.",
     modeRoleBestFor:
@@ -896,7 +900,8 @@ const mn: MessageSchema = {
     images: "Зураг",
     imagesComingSoon:
       "Зураг үүсгэх боломж удахгүй ирнэ. Танай төлөвлөгөө хандалт болон үнийг тодорхойлно.",
-    imagesCredits: "Боломжтой болмогц зураг бүр таны кредитээс суутгагдана.",
+    imagesCredits:
+      "Боломжтой болмогц зураг бүр таны кредитээс суутгагдана.",
     currentCurrency: "Одоогийн валют: {currency}",
     usageStatistics: "Хэрэглээний статистик",
     currentBillingPeriod: "Одоогийн төлбөрийн мөчлөг",
@@ -990,7 +995,8 @@ const mn: MessageSchema = {
       "Олон загварын ажлын талбарыг үндсэн боломжуудтайгаар туршиж үз.",
     planPlusDescription: "Илүү өндөр хязгаар хэрэгтэй тогтмол хэрэглэгчдэд.",
     planProDescription: "Илүү өндөр хүчин чадал хэрэгтэй power хэрэглэгчдэд.",
-    planTeamDescription: "Хуваалцсан контексттэйгээр багаар хамтран ажиллахад.",
+    planTeamDescription:
+      "Хуваалцсан контексттэйгээр багаар хамтран ажиллахад.",
     highlight2ActiveModels: "2 идэвхтэй загвар",
     highlightCommunitySupport: "Олон нийтийн дэмжлэг",
     highlightBasicChatHistory: "Суурь чат түүх",

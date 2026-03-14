@@ -40,3 +40,4 @@ export function formatNumberByLocale(
 ): string {
   return new Intl.NumberFormat(toIntlLocale(locale), options).format(value);
 }
+

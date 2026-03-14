@@ -2,10 +2,9 @@ import { act } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("zustand/middleware", async () => {
-  const actual =
-    await vi.importActual<typeof import("zustand/middleware")>(
-      "zustand/middleware",
-    );
+  const actual = await vi.importActual<typeof import("zustand/middleware")>(
+    "zustand/middleware",
+  );
   return {
     ...actual,
     persist: (config: unknown) => config,
@@ -33,9 +32,7 @@ describe("conversationStore extra coverage", () => {
     let conversationId = "";
 
     act(() => {
-      conversationId = useConversationStore
-        .getState()
-        .createConversation("Title");
+      conversationId = useConversationStore.getState().createConversation("Title");
       useConversationStore.getState().addMessages(conversationId, [
         {
           id: "msg-1",
@@ -46,17 +43,15 @@ describe("conversationStore extra coverage", () => {
       ]);
     });
 
-    const beforeEditedAt =
-      useConversationStore.getState().conversations[0].messages[0].editedAt;
+    const beforeEditedAt = useConversationStore
+      .getState()
+      .conversations[0].messages[0].editedAt;
 
     act(() => {
-      useConversationStore
-        .getState()
-        .updateMessageContent(conversationId, "msg-1", "new");
+      useConversationStore.getState().updateMessageContent(conversationId, "msg-1", "new");
     });
 
-    const updated =
-      useConversationStore.getState().conversations[0].messages[0];
+    const updated = useConversationStore.getState().conversations[0].messages[0];
     expect(updated.content).toBe("new");
     expect(updated.editedAt).not.toBe(beforeEditedAt);
   });
@@ -65,30 +60,19 @@ describe("conversationStore extra coverage", () => {
     let conversationId = "";
 
     act(() => {
-      conversationId = useConversationStore
-        .getState()
-        .createConversation("Title");
+      conversationId = useConversationStore.getState().createConversation("Title");
       useConversationStore.getState().addMessages(conversationId, [
         { id: "u1", role: "user", content: "Q1", createdAt: Date.now() },
         { id: "a1", role: "assistant", content: "A1", createdAt: Date.now() },
         { id: "u2", role: "user", content: "Q2", createdAt: Date.now() },
       ]);
 
-      useConversationStore
-        .getState()
-        .replaceTurnAssistant(conversationId, "u1", [
-          {
-            id: "a1-new",
-            role: "assistant",
-            content: "A1-new",
-            createdAt: Date.now(),
-          },
-        ]);
+      useConversationStore.getState().replaceTurnAssistant(conversationId, "u1", [
+        { id: "a1-new", role: "assistant", content: "A1-new", createdAt: Date.now() },
+      ]);
     });
 
-    const ids = useConversationStore
-      .getState()
-      .conversations[0].messages.map((m) => m.id);
+    const ids = useConversationStore.getState().conversations[0].messages.map((m) => m.id);
     expect(ids).toEqual(["u1", "a1-new", "u2"]);
   });
 
@@ -96,9 +80,7 @@ describe("conversationStore extra coverage", () => {
     let conversationId = "";
 
     act(() => {
-      conversationId = useConversationStore
-        .getState()
-        .createConversation("Title");
+      conversationId = useConversationStore.getState().createConversation("Title");
       useConversationStore.getState().addMessages(conversationId, [
         {
           id: "assistant",
@@ -116,8 +98,7 @@ describe("conversationStore extra coverage", () => {
       useConversationStore.getState().interruptStreamingRuns(conversationId);
     });
 
-    const runs =
-      useConversationStore.getState().conversations[0].messages[0].runs!;
+    const runs = useConversationStore.getState().conversations[0].messages[0].runs!;
     expect(runs[0].status).toBe("done");
     expect(runs[0].interrupted).toBe(true);
     expect(runs[1].status).toBe("done");

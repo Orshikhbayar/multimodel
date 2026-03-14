@@ -84,11 +84,7 @@ export function ToolList({
 
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {tool.permissions.map((permission) => (
-                  <Badge
-                    key={`${tool.tool_name}-${permission}`}
-                    variant="outline"
-                    className="text-[10px]"
-                  >
+                  <Badge key={`${tool.tool_name}-${permission}`} variant="outline" className="text-[10px]">
                     {permission}
                   </Badge>
                 ))}
