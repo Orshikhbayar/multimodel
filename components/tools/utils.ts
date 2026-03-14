@@ -27,10 +27,12 @@ export function formatDuration(durationMs?: number | null): string {
   return `${(durationMs / 1000).toFixed(2)} s`;
 }
 
-export function formatCost(cost?: {
-  total_tokens?: number;
-  external_cost_usd?: number;
-} | null): string {
+export function formatCost(
+  cost?: {
+    total_tokens?: number;
+    external_cost_usd?: number;
+  } | null,
+): string {
   if (!cost) return "-";
 
   const parts: string[] = [];
@@ -57,7 +59,9 @@ export function schemaTypeIncludes(
   return schema.type.includes(expected);
 }
 
-export function isPlainObject(value: unknown): value is Record<string, unknown> {
+export function isPlainObject(
+  value: unknown,
+): value is Record<string, unknown> {
   if (typeof value !== "object" || value === null) return false;
   return !Array.isArray(value);
 }
@@ -78,7 +82,11 @@ export function extractArtifactIds(value: unknown): string[] {
     }
 
     for (const [key, child] of Object.entries(current)) {
-      if (key === "artifact_id" && typeof child === "string" && child.length > 0) {
+      if (
+        key === "artifact_id" &&
+        typeof child === "string" &&
+        child.length > 0
+      ) {
         ids.add(child);
       }
       walk(child);
@@ -89,18 +97,23 @@ export function extractArtifactIds(value: unknown): string[] {
   return Array.from(ids);
 }
 
-export function extractSourceLinks(value: unknown): Array<{ title?: string; url: string }> {
+export function extractSourceLinks(
+  value: unknown,
+): Array<{ title?: string; url: string }> {
   if (!isPlainObject(value)) return [];
 
   const citations = Array.isArray(value.citations) ? value.citations : [];
-  const links = citations.reduce<Array<{ title?: string; url: string }>>((acc, item) => {
-    if (!isPlainObject(item)) return acc;
-    const url = typeof item.url === "string" ? item.url : null;
-    if (!url) return acc;
-    const title = typeof item.title === "string" ? item.title : undefined;
-    acc.push({ title, url });
-    return acc;
-  }, []);
+  const links = citations.reduce<Array<{ title?: string; url: string }>>(
+    (acc, item) => {
+      if (!isPlainObject(item)) return acc;
+      const url = typeof item.url === "string" ? item.url : null;
+      if (!url) return acc;
+      const title = typeof item.title === "string" ? item.title : undefined;
+      acc.push({ title, url });
+      return acc;
+    },
+    [],
+  );
 
   return links.slice(0, 10);
 }

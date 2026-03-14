@@ -161,6 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Form validation and interaction (for future contact forms)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- Reserved for future contact form integration
 const validateEmail = (email) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return re.test(email);

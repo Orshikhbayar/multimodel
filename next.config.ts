@@ -63,24 +63,25 @@ const nextConfig: NextConfig = {
 const sentryWebpackPluginOptions = {
   // Suppresses source map uploading logs during build
   silent: true,
-  
+
   // Organization and project (configured via env vars)
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
-  
+
   // Upload source maps for better error tracking
   widenClientFileUpload: true,
-  
+
   // Automatically tree-shake Sentry logger statements to reduce bundle size
   disableLogger: true,
-  
+
   // Hide source maps from generated client bundles
   hideSourceMaps: true,
 };
 
 // Only wrap with Sentry if DSN is configured
-const hasSentryDsn = process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN;
+const hasSentryDsn =
+  process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN;
 
-export default hasSentryDsn 
+export default hasSentryDsn
   ? withSentryConfig(nextConfig, sentryWebpackPluginOptions)
   : nextConfig;

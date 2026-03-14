@@ -64,7 +64,8 @@ export function useChatStore() {
     void (async () => {
       try {
         const supabase = createSupabaseBrowserClient();
-        const resolvedWorkspaceId = workspaceId ?? (await ensureWorkspaceId(supabase));
+        const resolvedWorkspaceId =
+          workspaceId ?? (await ensureWorkspaceId(supabase));
         if (!workspaceId) {
           useWorkspaceStore.getState().setWorkspaceId(resolvedWorkspaceId);
         }
@@ -77,7 +78,10 @@ export function useChatStore() {
           projectId: createdConversation?.projectId,
         });
       } catch (error) {
-        console.error("[useChatStore] Failed to persist conversation create", error);
+        console.error(
+          "[useChatStore] Failed to persist conversation create",
+          error,
+        );
       }
     })();
 
@@ -96,7 +100,10 @@ export function useChatStore() {
         const supabase = createSupabaseBrowserClient();
         await updateConversationTitleRecord(supabase, { id, title });
       } catch (error) {
-        console.error("[useChatStore] Failed to persist conversation title", error);
+        console.error(
+          "[useChatStore] Failed to persist conversation title",
+          error,
+        );
       }
     })();
   };
@@ -113,7 +120,10 @@ export function useChatStore() {
         const supabase = createSupabaseBrowserClient();
         await deleteConversationRecord(supabase, id);
       } catch (error) {
-        console.error("[useChatStore] Failed to persist conversation delete", error);
+        console.error(
+          "[useChatStore] Failed to persist conversation delete",
+          error,
+        );
       }
     })();
   };
@@ -132,6 +142,7 @@ export function useChatStore() {
     mode: settingsStore.mode,
     instructions: settingsStore.instructions,
     workflowPreset: settingsStore.workflowPreset,
+    selectedWorkflowPackId: settingsStore.selectedWorkflowPackId,
     onboardingCompleted: settingsStore.onboardingCompleted,
 
     // Stream handles (now managed internally)
@@ -154,6 +165,8 @@ export function useChatStore() {
     setInstructions: settingsStore.setInstructions,
     setWorkflowPreset: settingsStore.setWorkflowPreset,
     applyWorkflowPreset: settingsStore.applyWorkflowPreset,
+    selectWorkflowPack: settingsStore.selectWorkflowPack,
+    clearWorkflowPackSelection: settingsStore.clearWorkflowPackSelection,
     completeOnboarding: settingsStore.completeOnboarding,
     dismissOnboarding: settingsStore.dismissOnboarding,
     resetSettings: () => {

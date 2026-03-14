@@ -12,7 +12,11 @@ function getSafeNext(rawNext: string | null) {
   return rawNext;
 }
 
-function redirectToLoginWithError(requestUrl: URL, next: string, errorCode: string) {
+function redirectToLoginWithError(
+  requestUrl: URL,
+  next: string,
+  errorCode: string,
+) {
   const loginUrl = new URL("/auth/login", requestUrl.origin);
   loginUrl.searchParams.set("error", errorCode);
   loginUrl.searchParams.set("next", next);
@@ -26,10 +30,15 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await createSupabaseServerClient();
-    const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+    const { error: exchangeError } =
+      await supabase.auth.exchangeCodeForSession(code);
 
     if (exchangeError) {
-      return redirectToLoginWithError(requestUrl, next, "oauth_callback_failed");
+      return redirectToLoginWithError(
+        requestUrl,
+        next,
+        "oauth_callback_failed",
+      );
     }
 
     const {
@@ -42,7 +51,11 @@ export async function GET(request: Request) {
 
       if (oauthProvider && !avatarUrl) {
         await supabase.auth.signOut();
-        return redirectToLoginWithError(requestUrl, next, "oauth_avatar_required");
+        return redirectToLoginWithError(
+          requestUrl,
+          next,
+          "oauth_avatar_required",
+        );
       }
     }
   }

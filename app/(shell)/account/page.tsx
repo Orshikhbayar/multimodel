@@ -71,7 +71,9 @@ function AccountPageContent() {
           }
         >
           <TabsList>
-            <TabsTrigger value="settings">{t("account.settingsTab")}</TabsTrigger>
+            <TabsTrigger value="settings">
+              {t("account.settingsTab")}
+            </TabsTrigger>
             <TabsTrigger value="billing">{t("account.billingTab")}</TabsTrigger>
           </TabsList>
 
@@ -79,7 +81,9 @@ function AccountPageContent() {
             <Card key={user.id}>
               <CardHeader>
                 <CardTitle>{t("account.profile")}</CardTitle>
-                <CardDescription>{t("account.updateLocalDetails")}</CardDescription>
+                <CardDescription>
+                  {t("account.updateLocalDetails")}
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
@@ -128,7 +132,9 @@ function AccountPageContent() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-3">
-                  <div className="text-sm font-medium">{t("account.language")}</div>
+                  <div className="text-sm font-medium">
+                    {t("account.language")}
+                  </div>
                   <RadioGroup
                     value={user.locale}
                     onValueChange={(value) => updateLocale(value)}
@@ -151,7 +157,9 @@ function AccountPageContent() {
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <div className="text-sm font-medium">{t("account.theme")}</div>
+                    <div className="text-sm font-medium">
+                      {t("account.theme")}
+                    </div>
                     <div className="flex flex-wrap gap-2">
                       {(["light", "dark", "system"] as const).map((value) => (
                         <Button
@@ -180,7 +188,9 @@ function AccountPageContent() {
                   </div>
                   <div className="flex items-center justify-between rounded-lg border p-3">
                     <div>
-                      <p className="text-sm font-medium">{t("account.reduceMotion")}</p>
+                      <p className="text-sm font-medium">
+                        {t("account.reduceMotion")}
+                      </p>
                       <p className="text-xs text-muted-foreground">
                         {t("account.minimizeAnimations")}
                       </p>
@@ -202,13 +212,17 @@ function AccountPageContent() {
             <Card>
               <CardHeader>
                 <CardTitle>{t("account.currentPlan")}</CardTitle>
-                <CardDescription>{t("account.mockedBillingState")}</CardDescription>
+                <CardDescription>
+                  {t("account.mockedBillingState")}
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium">
-                      {t("account.planSuffix", { plan: PLAN_LABELS[user.plan] })}
+                      {t("account.planSuffix", {
+                        plan: PLAN_LABELS[user.plan],
+                      })}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {t("account.renewsMonthly")}
@@ -218,7 +232,9 @@ function AccountPageContent() {
                 </div>
                 <div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">{t("account.creditsUsed")}</span>
+                    <span className="text-muted-foreground">
+                      {t("account.creditsUsed")}
+                    </span>
                     <span className="font-medium">
                       {usage.usedCredits} / {usage.totalCredits}
                     </span>
@@ -239,7 +255,9 @@ function AccountPageContent() {
             <Card>
               <CardHeader>
                 <CardTitle>{t("account.upgradeOptions")}</CardTitle>
-                <CardDescription>{t("account.choosePlanWorkflow")}</CardDescription>
+                <CardDescription>
+                  {t("account.choosePlanWorkflow")}
+                </CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4 lg:grid-cols-3">
                 {PLAN_DETAILS.map((plan) => {
@@ -285,7 +303,9 @@ function AccountPageContent() {
                         <div className="flex items-center justify-between">
                           <p className="text-base font-semibold">{plan.name}</p>
                           {isCurrent ? (
-                            <Badge variant="outline">{t("common.current")}</Badge>
+                            <Badge variant="outline">
+                              {t("common.current")}
+                            </Badge>
                           ) : null}
                         </div>
                         <p className="text-sm text-muted-foreground">
@@ -307,7 +327,9 @@ function AccountPageContent() {
                           choosePlan(plan.id);
                         }}
                       >
-                        {isCurrent ? t("billing.currentPlan") : t("account.choosePlan")}
+                        {isCurrent
+                          ? t("billing.currentPlan")
+                          : t("account.choosePlan")}
                       </Button>
                     </div>
                   );

@@ -46,12 +46,17 @@ export function DashboardBilling() {
     <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-6 py-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-xs uppercase text-muted-foreground">{t("billing.pageLabel")}</p>
+          <p className="text-xs uppercase text-muted-foreground">
+            {t("billing.pageLabel")}
+          </p>
           <h1 className="text-2xl font-semibold">{t("billing.pageTitle")}</h1>
           <p className="text-sm text-muted-foreground">
-            Plan: <span className="font-medium uppercase">{currentPlanId}</span> ·{" "}
+            Plan: <span className="font-medium uppercase">{currentPlanId}</span>{" "}
+            ·{" "}
             {t("billing.remaining", {
-              credits: formatNumber(includedCreditsRemaining + topUpCreditsBalance),
+              credits: formatNumber(
+                includedCreditsRemaining + topUpCreditsBalance,
+              ),
             })}
           </p>
         </div>
@@ -60,7 +65,9 @@ export function DashboardBilling() {
             <Link href="/dashboard/usage">{t("billing.usage")}</Link>
           </Button>
           <Button asChild variant="outline" size="sm">
-            <Link href="/dashboard/plans">{t("billing.managePaymentMethod")}</Link>
+            <Link href="/dashboard/plans">
+              {t("billing.managePaymentMethod")}
+            </Link>
           </Button>
         </div>
       </div>
@@ -74,10 +81,15 @@ export function DashboardBilling() {
           </CardHeader>
           <CardContent className="space-y-3">
             {topUps.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t("billing.noTopUpsYet")}</p>
+              <p className="text-sm text-muted-foreground">
+                {t("billing.noTopUpsYet")}
+              </p>
             ) : (
               topUps.slice(0, 5).map((tx) => (
-                <div key={tx.id} className="flex items-center justify-between text-sm">
+                <div
+                  key={tx.id}
+                  className="flex items-center justify-between text-sm"
+                >
                   <div>
                     <p className="font-medium">{t("billing.topUpCredits")}</p>
                     <p className="text-xs text-muted-foreground">
@@ -99,12 +111,19 @@ export function DashboardBilling() {
           </CardHeader>
           <CardContent className="space-y-3">
             {invoices.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t("billing.noInvoicesYet")}</p>
+              <p className="text-sm text-muted-foreground">
+                {t("billing.noInvoicesYet")}
+              </p>
             ) : (
               invoices.slice(0, 5).map((tx) => (
-                <div key={tx.id} className="flex items-center justify-between text-sm">
+                <div
+                  key={tx.id}
+                  className="flex items-center justify-between text-sm"
+                >
                   <div>
-                    <p className="font-medium">{tx.note ?? t("billing.subscription")}</p>
+                    <p className="font-medium">
+                      {tx.note ?? t("billing.subscription")}
+                    </p>
                     <p className="text-xs text-muted-foreground">
                       {formatDate(new Date(tx.createdAtISO))}
                     </p>
@@ -137,7 +156,9 @@ export function DashboardBilling() {
         <CardContent className="space-y-2 text-sm text-muted-foreground">
           <p>{t("billing.imagesComingSoon")}</p>
           <p>{t("billing.imagesCredits")}</p>
-          <div className="text-xs">{t("billing.currentCurrency", { currency })}</div>
+          <div className="text-xs">
+            {t("billing.currentCurrency", { currency })}
+          </div>
         </CardContent>
       </Card>
       <TopUpModal />

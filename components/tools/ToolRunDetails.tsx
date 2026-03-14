@@ -41,7 +41,9 @@ export function ToolRunDetails({
 
   const sources = extractSourceLinks(run.output_payload_redacted);
   const artifactIds = extractArtifactIds(run.output_payload_redacted);
-  const matchedArtifacts = artifacts.filter((artifact) => artifactIds.includes(artifact.id));
+  const matchedArtifacts = artifacts.filter((artifact) =>
+    artifactIds.includes(artifact.id),
+  );
 
   return (
     <div className="space-y-3 rounded-xl border border-border/70 bg-muted/20 p-3">
@@ -121,7 +123,12 @@ export function ToolRunDetails({
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <Button type="button" size="sm" variant="default" onClick={() => onRerun(run)}>
+        <Button
+          type="button"
+          size="sm"
+          variant="default"
+          onClick={() => onRerun(run)}
+        >
           <Play className="mr-1 h-3.5 w-3.5" />
           Re-run
         </Button>

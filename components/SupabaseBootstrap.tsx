@@ -23,7 +23,10 @@ function getConversationActivityTimestamp(conversation: Conversation) {
   );
 }
 
-function mergeConversation(server: Conversation, local?: Conversation): Conversation {
+function mergeConversation(
+  server: Conversation,
+  local?: Conversation,
+): Conversation {
   if (!local) {
     return server;
   }
@@ -47,8 +50,12 @@ function mergeConversations(
   serverConversations: Conversation[],
   localConversations: Conversation[],
 ) {
-  const localById = new Map(localConversations.map((conversation) => [conversation.id, conversation]));
-  const serverIds = new Set(serverConversations.map((conversation) => conversation.id));
+  const localById = new Map(
+    localConversations.map((conversation) => [conversation.id, conversation]),
+  );
+  const serverIds = new Set(
+    serverConversations.map((conversation) => conversation.id),
+  );
 
   const merged = serverConversations.map((conversation) =>
     mergeConversation(conversation, localById.get(conversation.id)),
@@ -125,10 +132,7 @@ export function SupabaseBootstrap() {
           const next = `${window.location.pathname}${window.location.search}`;
           const loginUrl = new URL("/auth/login", window.location.origin);
           loginUrl.searchParams.set("error", "oauth_avatar_required");
-          loginUrl.searchParams.set(
-            "next",
-            next.startsWith("/") ? next : "/",
-          );
+          loginUrl.searchParams.set("next", next.startsWith("/") ? next : "/");
           window.location.assign(loginUrl.toString());
         }
 

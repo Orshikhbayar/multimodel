@@ -76,7 +76,10 @@ export async function checkUserQuota(
       throw error;
     }
 
-    const used = (data ?? []).reduce((sum, row) => sum + (row.tokens_total ?? 0), 0);
+    const used = (data ?? []).reduce(
+      (sum, row) => sum + (row.tokens_total ?? 0),
+      0,
+    );
     const remaining = Math.max(0, config.dailyTokenLimit - used);
 
     return {
@@ -107,7 +110,9 @@ export interface RecordUsageParams {
   completionTokens: number;
 }
 
-export async function recordUserUsage(params: RecordUsageParams): Promise<void> {
+export async function recordUserUsage(
+  params: RecordUsageParams,
+): Promise<void> {
   const {
     userId,
     runId,
@@ -120,7 +125,8 @@ export async function recordUserUsage(params: RecordUsageParams): Promise<void> 
   const totalTokens = promptTokens + completionTokens;
   const estimatedCostUsd = calculateCost(model, promptTokens, completionTokens);
 
-  const runReferenceId = runId ?? `usage:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
+  const runReferenceId =
+    runId ?? `usage:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
 
   try {
     const admin = createSupabaseAdminClient();

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 function createTableMock() {
-  const table: Record<string, any> = {
+  const table: Record<string, (...args: unknown[]) => unknown> = {
     select: vi.fn(() => table),
     eq: vi.fn(() => table),
     in: vi.fn(() => table),
@@ -14,11 +14,12 @@ function createTableMock() {
   return table;
 }
 
-const { mockCreateSupabaseAdminClient, mockVerifySignature, mockParseEvent } = vi.hoisted(() => ({
-  mockCreateSupabaseAdminClient: vi.fn(),
-  mockVerifySignature: vi.fn(() => true),
-  mockParseEvent: vi.fn(),
-}));
+const { mockCreateSupabaseAdminClient, mockVerifySignature, mockParseEvent } =
+  vi.hoisted(() => ({
+    mockCreateSupabaseAdminClient: vi.fn(),
+    mockVerifySignature: vi.fn(() => true),
+    mockParseEvent: vi.fn(),
+  }));
 
 vi.mock("@/lib/supabase/admin", () => ({
   createSupabaseAdminClient: mockCreateSupabaseAdminClient,

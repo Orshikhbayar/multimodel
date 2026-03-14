@@ -22,7 +22,8 @@ const SECRET_PATTERNS: Array<{ type: string; regex: RegExp }> = [
   },
   {
     type: "jwt",
-    regex: /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9._-]{10,}\.[A-Za-z0-9._-]{10,}\b/g,
+    regex:
+      /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9._-]{10,}\.[A-Za-z0-9._-]{10,}\b/g,
   },
   {
     type: "bearer_token",
@@ -30,7 +31,8 @@ const SECRET_PATTERNS: Array<{ type: string; regex: RegExp }> = [
   },
   {
     type: "generic_api_key",
-    regex: /\b(?:api[_-]?key|token|secret)\s*[:=]\s*['\"]?[A-Za-z0-9._-]{16,}['\"]?/gi,
+    regex:
+      /\b(?:api[_-]?key|token|secret)\s*[:=]\s*['\"]?[A-Za-z0-9._-]{16,}['\"]?/gi,
   },
 ];
 

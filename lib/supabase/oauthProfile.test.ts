@@ -5,10 +5,9 @@ import {
   getOAuthProviderRequiringAvatar,
 } from "@/lib/supabase/oauthProfile";
 
-function buildUser(payload: Partial<User>): Pick<
-  User,
-  "app_metadata" | "user_metadata" | "identities"
-> {
+function buildUser(
+  payload: Partial<User>,
+): Pick<User, "app_metadata" | "user_metadata" | "identities"> {
   return {
     app_metadata: {},
     user_metadata: {},
@@ -44,10 +43,16 @@ describe("oauthProfile helpers", () => {
       app_metadata: { providers: ["google"] },
       identities: [
         {
+          id: "id-1",
+          user_id: "u1",
+          identity_id: "gid-1",
           provider: "google",
           identity_data: {
             avatar_url: "https://avatars.githubusercontent.com/u/42?v=4",
           },
+          created_at: "2025-01-01T00:00:00Z",
+          last_sign_in_at: "2025-01-01T00:00:00Z",
+          updated_at: "2025-01-01T00:00:00Z",
         },
       ] as User["identities"],
     });
@@ -65,10 +70,16 @@ describe("oauthProfile helpers", () => {
       },
       identities: [
         {
+          id: "id-2",
+          user_id: "u1",
+          identity_id: "gid-2",
           provider: "google",
           identity_data: {
             picture: "https://lh3.googleusercontent.com/fresh.png",
           },
+          created_at: "2025-01-01T00:00:00Z",
+          last_sign_in_at: "2025-01-01T00:00:00Z",
+          updated_at: "2025-01-01T00:00:00Z",
         },
       ] as User["identities"],
     });

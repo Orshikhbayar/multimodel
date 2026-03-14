@@ -4,6 +4,7 @@
  * For production with multiple instances, use Redis or similar
  */
 import { isUnlimitedTesterEmail } from "@/lib/testerAccess";
+import { debug as logDebug } from "@/lib/logger";
 
 // ============================================
 // Types
@@ -220,7 +221,8 @@ export function releaseConcurrencySlot(userId: string, streamId: string): void {
     entry.activeStreams = Math.max(0, entry.activeStreams - 1);
 
     if (DEBUG) {
-      console.log(`[RateLimit] User ${userId}: stream RELEASED`, {
+      logDebug(`[RateLimit] User ${userId}: stream RELEASED`, {
+        userId,
         streamId,
         activeStreams: entry.activeStreams,
       });
@@ -286,7 +288,8 @@ export function checkStreamPermission(
   const rateResult = checkRateLimit(userId, config);
 
   if (DEBUG) {
-    console.log(`[RateLimit] User ${userId}: rate check`, {
+    logDebug(`[RateLimit] User ${userId}: rate check`, {
+      userId,
       allowed: rateResult.allowed,
       remaining: rateResult.remaining,
       resetIn: rateResult.resetIn,
@@ -310,7 +313,8 @@ export function checkStreamPermission(
   const concurrencyStatus = getConcurrencyStatus(userId, config);
 
   if (DEBUG) {
-    console.log(`[RateLimit] User ${userId}: concurrency check`, {
+    logDebug(`[RateLimit] User ${userId}: concurrency check`, {
+      userId,
       active: concurrencyStatus.active,
       limit: concurrencyStatus.limit,
     });
@@ -334,7 +338,8 @@ export function checkStreamPermission(
   const concurrencyResult = acquireConcurrencySlot(userId, config);
 
   if (DEBUG) {
-    console.log(`[RateLimit] User ${userId}: stream ALLOWED`, {
+    logDebug(`[RateLimit] User ${userId}: stream ALLOWED`, {
+      userId,
       streamId: concurrencyResult.streamId,
       activeStreams: concurrencyResult.active,
     });
@@ -357,7 +362,7 @@ export function resetAllLimits(): void {
   rateLimitStore.clear();
   concurrencyStore.clear();
   if (DEBUG) {
-    console.log("[RateLimit] All limits reset");
+    logDebug("[RateLimit] All limits reset");
   }
 }
 
@@ -368,6 +373,6 @@ export function resetUserLimits(userId: string): void {
   rateLimitStore.delete(userId);
   concurrencyStore.delete(userId);
   if (DEBUG) {
-    console.log(`[RateLimit] Limits reset for user ${userId}`);
+    logDebug(`[RateLimit] Limits reset for user ${userId}`, { userId });
   }
 }

@@ -111,7 +111,9 @@ function stripGitPrefix(path: string): string {
 
 function wildcardMatch(pattern: string, value: string): boolean {
   const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, "\\$&");
-  const regex = new RegExp(`^${escaped.replace(/\*/g, ".*").replace(/\?/g, ".")}$`);
+  const regex = new RegExp(
+    `^${escaped.replace(/\*/g, ".*").replace(/\?/g, ".")}$`,
+  );
   return regex.test(value);
 }
 
@@ -266,7 +268,9 @@ function getDiffStats(diff: string): {
   for (const line of lines) {
     if (line.startsWith("diff --git")) {
       files += 1;
-      if (/package-lock\.json|pnpm-lock\.yaml|yarn\.lock|Cargo\.lock/.test(line)) {
+      if (
+        /package-lock\.json|pnpm-lock\.yaml|yarn\.lock|Cargo\.lock/.test(line)
+      ) {
         touchesLockfile = true;
       }
       continue;
@@ -291,7 +295,9 @@ function getIntegrationToken(integration: IntegrationRecord): string {
 
 function requireApproval(approved: boolean, note?: string): void {
   if (!approved) {
-    throw new Error("Write action requires explicit approved=true confirmation");
+    throw new Error(
+      "Write action requires explicit approved=true confirmation",
+    );
   }
 
   if (!note || note.trim().length < 6) {
@@ -380,7 +386,10 @@ async function indexRepo(
 
   const tree = await githubRequest<{
     tree: Array<{ path: string; type: string; sha: string; size?: number }>;
-  }>(token, `/repos/${repo.owner}/${repo.name}/git/trees/${branch}?recursive=1`);
+  }>(
+    token,
+    `/repos/${repo.owner}/${repo.name}/git/trees/${branch}?recursive=1`,
+  );
 
   const files = tree.tree
     .filter((entry) => entry.type === "blob")
@@ -431,11 +440,16 @@ async function loadFileContent(
     content: string;
     sha: string;
     encoding: string;
-  }>(token, `/repos/${owner}/${name}/contents/${encodeURIComponent(path)}?ref=${branch}`);
+  }>(
+    token,
+    `/repos/${owner}/${name}/contents/${encodeURIComponent(path)}?ref=${branch}`,
+  );
 
   const decoded =
     response.encoding === "base64"
-      ? Buffer.from(response.content.replace(/\n/g, ""), "base64").toString("utf8")
+      ? Buffer.from(response.content.replace(/\n/g, ""), "base64").toString(
+          "utf8",
+        )
       : response.content;
 
   return {
@@ -539,7 +553,9 @@ export async function githubConnectRepoTool(
     .single();
 
   if (repoError || !repo?.id) {
-    throw new Error(`Failed to upsert repo: ${repoError?.message ?? "unknown"}`);
+    throw new Error(
+      `Failed to upsert repo: ${repoError?.message ?? "unknown"}`,
+    );
   }
 
   return {
@@ -595,7 +611,8 @@ export async function repoListFilesTool(
   const files = (rows ?? [])
     .filter((row: any) => {
       if (input.path && !String(row.path).startsWith(input.path)) return false;
-      if (input.glob && !wildcardMatch(input.glob, String(row.path))) return false;
+      if (input.glob && !wildcardMatch(input.glob, String(row.path)))
+        return false;
       return true;
     })
     .map((row: any) => ({
@@ -623,11 +640,24 @@ export async function repoReadFileTool(
   const { repo, token } = await getRepoAndIntegration(context, input.repo_id);
   const branch = input.branch ?? repo.default_branch;
 
-  const file = await loadFileContent(token, repo.owner, repo.name, branch, input.path);
+  const file = await loadFileContent(
+    token,
+    repo.owner,
+    repo.name,
+    branch,
+    input.path,
+  );
 
   const safeContent = redactSecretsInText(file.content);
 
-  await upsertCachedFile(context, repo, branch, input.path, file.sha, safeContent);
+  await upsertCachedFile(
+    context,
+    repo,
+    branch,
+    input.path,
+    file.sha,
+    safeContent,
+  );
 
   return {
     path: input.path,
@@ -731,11 +761,15 @@ export async function proposePatchTool(
   }
 
   if (stats.files > 20 || stats.additions + stats.deletions > 1000) {
-    warnings.push("Large diff detected; review in smaller batches before apply.");
+    warnings.push(
+      "Large diff detected; review in smaller batches before apply.",
+    );
   }
 
   if (stats.touchesLockfile) {
-    warnings.push("Diff touches lockfiles; verify dependency integrity and provenance.");
+    warnings.push(
+      "Diff touches lockfiles; verify dependency integrity and provenance.",
+    );
   }
 
   const secretMatches = detectSecretsInText(input.diff_unified);
@@ -774,7 +808,9 @@ export async function applyPatchTool(
   const protectedBranches = repo.protected_branches ?? ["main", "master"];
 
   if (protectedBranches.includes(input.branch)) {
-    throw new Error(`Cannot apply patch directly to protected branch '${input.branch}'`);
+    throw new Error(
+      `Cannot apply patch directly to protected branch '${input.branch}'`,
+    );
   }
 
   const diffSecrets = detectSecretsInText(input.diff_unified);
@@ -808,17 +844,21 @@ export async function applyPatchTool(
         patch.oldPath,
       );
 
-      await githubRequest(token, `/repos/${repo.owner}/${repo.name}/contents/${encodeURIComponent(patch.oldPath)}`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
+      await githubRequest(
+        token,
+        `/repos/${repo.owner}/${repo.name}/contents/${encodeURIComponent(patch.oldPath)}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message: input.commit_message,
+            sha: existing.sha,
+            branch: input.branch,
+          }),
         },
-        body: JSON.stringify({
-          message: input.commit_message,
-          sha: existing.sha,
-          branch: input.branch,
-        }),
-      });
+      );
 
       commits.push({
         path: patch.oldPath,
@@ -829,7 +869,13 @@ export async function applyPatchTool(
 
     const original = patch.isNewFile
       ? { content: "", sha: undefined as string | undefined }
-      : await loadFileContent(token, repo.owner, repo.name, input.branch, patch.oldPath);
+      : await loadFileContent(
+          token,
+          repo.owner,
+          repo.name,
+          input.branch,
+          patch.oldPath,
+        );
 
     const nextContent = patch.isNewFile
       ? applyPatchToContent("", patch)

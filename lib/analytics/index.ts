@@ -14,10 +14,43 @@ type EventName =
   | "api_request_completed"
   | "api_request_failed"
   | "login"
-  | "logout";
+  | "logout"
+  | "onboarding_started"
+  | "workflow_pack_selected"
+  | "guided_input_completed"
+  | "first_output_generated"
+  | "asset_saved"
+  | "template_created"
+  | "template_updated"
+  | "template_version_restored"
+  | "template_favorited"
+  | "template_unfavorited"
+  | "template_search_performed"
+  | "template_applied"
+  | "autopilot_schedule_created"
+  | "autopilot_schedule_updated"
+  | "autopilot_schedule_paused"
+  | "autopilot_run_queued"
+  | "autopilot_run_started"
+  | "autopilot_run_succeeded"
+  | "autopilot_run_failed"
+  | "autopilot_run_deduplicated"
+  | "guardrail_flagged"
+  | "safe_template_suggested"
+  | "weekly_active_workspace";
+
+type EventPropertyValue =
+  | string
+  | number
+  | boolean
+  | null
+  | string[]
+  | number[]
+  | boolean[]
+  | Record<string, unknown>;
 
 interface EventProperties {
-  [key: string]: string | number | boolean | undefined;
+  [key: string]: EventPropertyValue | undefined;
 }
 
 interface ApiUsageMetrics {
@@ -32,10 +65,40 @@ interface ApiUsageMetrics {
 class AnalyticsService {
   private enabled: boolean;
   private debugMode: boolean;
+  private readonly endpoint: string;
+  private sessionId: string | null;
 
   constructor() {
     this.enabled = true;
     this.debugMode = process.env.NEXT_PUBLIC_DEBUG === "true";
+    this.endpoint = "/api/events";
+    this.sessionId = null;
+  }
+
+  private getSessionId(): string {
+    if (this.sessionId) return this.sessionId;
+    if (typeof window === "undefined") {
+      this.sessionId = "server-session";
+      return this.sessionId;
+    }
+
+    try {
+      const existing = window.localStorage.getItem("multi-model-session-id");
+      if (existing && existing.trim().length > 0) {
+        this.sessionId = existing;
+        return this.sessionId;
+      }
+      const next =
+        typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+          ? crypto.randomUUID()
+          : `session-${Date.now()}`;
+      window.localStorage.setItem("multi-model-session-id", next);
+      this.sessionId = next;
+      return this.sessionId;
+    } catch {
+      this.sessionId = `session-${Date.now()}`;
+      return this.sessionId;
+    }
   }
 
   /**
@@ -47,6 +110,9 @@ class AnalyticsService {
     const payload = {
       event,
       properties: {
+        event_version: 1,
+        source: "web",
+        session_id: this.getSessionId(),
         ...properties,
         timestamp: Date.now(),
       },
@@ -56,8 +122,16 @@ class AnalyticsService {
       console.log("[Analytics]", payload);
     }
 
-    // TODO: Send to analytics provider
-    // e.g., posthog.capture(event, properties);
+    if (typeof window !== "undefined") {
+      void fetch(this.endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        keepalive: true,
+      }).catch(() => {
+        // Intentionally swallow analytics transport errors.
+      });
+    }
   }
 
   /**

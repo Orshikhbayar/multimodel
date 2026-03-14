@@ -22,7 +22,8 @@ describe("supabase browser client", () => {
   });
 
   it("creates and memoizes a browser client", async () => {
-    const { createSupabaseBrowserClient } = await import("@/lib/supabase/client");
+    const { createSupabaseBrowserClient } =
+      await import("@/lib/supabase/client");
 
     const first = createSupabaseBrowserClient();
     const second = createSupabaseBrowserClient();

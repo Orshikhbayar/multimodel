@@ -11,6 +11,7 @@ export {
   useSettingsStore,
   type SettingsStore,
   type WorkflowPreset,
+  type WorkflowPackId,
   type ModeOption,
   type WorkflowPresetOption,
   MODE_OPTIONS,

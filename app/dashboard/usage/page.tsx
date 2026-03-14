@@ -1,4 +1,6 @@
 import { getUsageRecords, getUsageSummary } from "@/lib/actions/usage";
+
+export const dynamic = "force-dynamic";
 import {
   DashboardUsage,
   type DashboardUsageSnapshot,

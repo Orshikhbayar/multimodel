@@ -148,12 +148,16 @@ async function parsePdf(buffer: Buffer): Promise<{
   pages?: number;
 }> {
   const pdfModule = await import("pdf-parse");
-  const pdfParse = (pdfModule as unknown as { default?: any }).default ?? pdfModule;
+  const pdfParse =
+    (pdfModule as unknown as { default?: any }).default ?? pdfModule;
   const parsed = await pdfParse(buffer);
   const rawText = String(parsed.text ?? "");
   const warnings: string[] = [];
 
-  const pageTexts = rawText.split("\f").map((entry) => entry.trim()).filter(Boolean);
+  const pageTexts = rawText
+    .split("\f")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
   const segments =
     pageTexts.length > 0
       ? pageTexts.map((text, index) => ({
@@ -250,14 +254,19 @@ async function parseXlsx(buffer: Buffer): Promise<{
     const sheet = workbook.Sheets[sheetName];
     if (!sheet) continue;
 
-    const rows = XLSX.utils.sheet_to_json<Array<string | number | null>>(sheet, {
-      header: 1,
-      blankrows: false,
-    });
+    const rows = XLSX.utils.sheet_to_json<Array<string | number | null>>(
+      sheet,
+      {
+        header: 1,
+        blankrows: false,
+      },
+    );
 
     rows.forEach((row, index) => {
       const text = row
-        .map((value) => (value === null || value === undefined ? "" : String(value)))
+        .map((value) =>
+          value === null || value === undefined ? "" : String(value),
+        )
         .join(" | ")
         .trim();
 
@@ -400,8 +409,7 @@ async function resolveFilePayload(
     }
 
     const bucket = input.options?.bucket ?? "uploads";
-    const { data: blob, error: downloadError } = await db
-      .storage
+    const { data: blob, error: downloadError } = await db.storage
       .from(bucket)
       .download(fileRow.storage_path);
 
@@ -426,8 +434,7 @@ async function resolveFilePayload(
   const storagePath = input.storage_path as string;
   const bucket = input.options?.bucket ?? "uploads";
 
-  const { data: blob, error: downloadError } = await db
-    .storage
+  const { data: blob, error: downloadError } = await db.storage
     .from(bucket)
     .download(storagePath);
 
@@ -491,7 +498,8 @@ export async function fileIngestTool(
   const text = parsed.text.trim();
   const contentHash = hashText(text || resolved.buffer.toString("base64"));
   const chunks = splitWithReference(parsed.segments, contentHash);
-  const wordCount = text.length > 0 ? text.split(/\s+/).filter(Boolean).length : 0;
+  const wordCount =
+    text.length > 0 ? text.split(/\s+/).filter(Boolean).length : 0;
 
   const db = context.supabase as any;
 
@@ -516,7 +524,9 @@ export async function fileIngestTool(
       .single();
 
     if (error || !updated?.id) {
-      throw new Error(`Failed to update file ingest: ${error?.message ?? "unknown"}`);
+      throw new Error(
+        `Failed to update file ingest: ${error?.message ?? "unknown"}`,
+      );
     }
   } else {
     const { data: inserted, error } = await db
@@ -545,7 +555,9 @@ export async function fileIngestTool(
       .single();
 
     if (error || !inserted?.id) {
-      throw new Error(`Failed to create file ingest row: ${error?.message ?? "unknown"}`);
+      throw new Error(
+        `Failed to create file ingest row: ${error?.message ?? "unknown"}`,
+      );
     }
 
     fileId = inserted.id;
@@ -555,7 +567,10 @@ export async function fileIngestTool(
     throw new Error("File ingest failed to resolve file id");
   }
 
-  const { error: deleteChunksError } = await db.from("file_chunks").delete().eq("file_id", fileId);
+  const { error: deleteChunksError } = await db
+    .from("file_chunks")
+    .delete()
+    .eq("file_id", fileId);
   if (deleteChunksError) {
     throw new Error(`Failed to clear old chunks: ${deleteChunksError.message}`);
   }
@@ -605,9 +620,9 @@ export async function fileSearchTool(
     .split(/[^a-z0-9]+/)
     .filter((entry) => entry.length >= 2);
 
-  let chunkQuery = db.from("file_chunks").select(
-    "file_id,chunk_id,chunk_text,reference,project_id,workspace_id",
-  );
+  let chunkQuery = db
+    .from("file_chunks")
+    .select("file_id,chunk_id,chunk_text,reference,project_id,workspace_id");
 
   if (scope === "project") {
     chunkQuery = chunkQuery.eq("project_id", context.projectId);
@@ -623,7 +638,9 @@ export async function fileSearchTool(
     throw new Error(`Failed to search file chunks: ${chunksError.message}`);
   }
 
-  const fileTypeFilter = new Set((input.filters?.file_type ?? []).map((entry) => entry.toLowerCase()));
+  const fileTypeFilter = new Set(
+    (input.filters?.file_type ?? []).map((entry) => entry.toLowerCase()),
+  );
 
   let filesById = new Map<
     string,
@@ -659,8 +676,12 @@ export async function fileSearchTool(
     );
   }
 
-  const from = input.filters?.date_range?.from ? new Date(input.filters.date_range.from) : null;
-  const to = input.filters?.date_range?.to ? new Date(input.filters.date_range.to) : null;
+  const from = input.filters?.date_range?.from
+    ? new Date(input.filters.date_range.from)
+    : null;
+  const to = input.filters?.date_range?.to
+    ? new Date(input.filters.date_range.to)
+    : null;
 
   const scored = (chunks ?? [])
     .map((chunk: any) => {
@@ -675,11 +696,18 @@ export async function fileSearchTool(
         return null;
       }
 
-      if (scope === "project" && context.projectId && meta.project_id !== context.projectId) {
+      if (
+        scope === "project" &&
+        context.projectId &&
+        meta.project_id !== context.projectId
+      ) {
         return null;
       }
 
-      if (fileTypeFilter.size > 0 && !fileTypeFilter.has(String(meta.file_type).toLowerCase())) {
+      if (
+        fileTypeFilter.size > 0 &&
+        !fileTypeFilter.has(String(meta.file_type).toLowerCase())
+      ) {
         return null;
       }
 

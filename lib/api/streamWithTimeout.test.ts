@@ -33,19 +33,26 @@ describe("streamWithTimeout", () => {
   });
 
   it("maps timeout errors to timeout status", () => {
-    const mapped = getStreamStatusFromError(new StreamTimeoutError("connect", 50));
+    const mapped = getStreamStatusFromError(
+      new StreamTimeoutError("connect", 50),
+    );
     expect(mapped.status).toBe("timeout");
     expect(mapped.message).toContain("timeout");
   });
 
   it("maps abort-like errors to cancelled status", () => {
-    const mapped = getStreamStatusFromError(new Error("request abort by client"));
+    const mapped = getStreamStatusFromError(
+      new Error("request abort by client"),
+    );
     expect(mapped.status).toBe("cancelled");
   });
 
   it("creates an abort controller that follows client signal", () => {
     const client = new AbortController();
-    const { controller, cleanup } = createStreamAbortController(client.signal, 1000);
+    const { controller, cleanup } = createStreamAbortController(
+      client.signal,
+      1000,
+    );
 
     client.abort("client_cancelled");
     expect(controller.signal.aborted).toBe(true);
@@ -66,7 +73,10 @@ describe("streamWithTimeout", () => {
   it("aborts when internal timeout expires", async () => {
     vi.useFakeTimers();
     try {
-      const { controller, cleanup } = createStreamAbortController(undefined, 100);
+      const { controller, cleanup } = createStreamAbortController(
+        undefined,
+        100,
+      );
       await vi.advanceTimersByTimeAsync(100);
       expect(controller.signal.aborted).toBe(true);
       expect(controller.signal.reason).toBeInstanceOf(StreamTimeoutError);

@@ -146,7 +146,9 @@ export function AITeamDrawer({ open, onOpenChange }: DrawerProps) {
                         <div className="flex items-center gap-2">
                           <p className="text-sm font-semibold">{slot.label}</p>
                           {isActive ? (
-                            <Badge variant="secondary">{t("common.active")}</Badge>
+                            <Badge variant="secondary">
+                              {t("common.active")}
+                            </Badge>
                           ) : null}
                         </div>
                         <p className="text-xs text-muted-foreground">
@@ -244,7 +246,9 @@ export function AITeamDrawer({ open, onOpenChange }: DrawerProps) {
           </div>
 
           <div className="space-y-2">
-            <h4 className="text-sm font-semibold">{t("settings.sharedInstructions")}</h4>
+            <h4 className="text-sm font-semibold">
+              {t("settings.sharedInstructions")}
+            </h4>
             <Textarea
               value={draftInstructions}
               onChange={(event) => setDraftInstructions(event.target.value)}

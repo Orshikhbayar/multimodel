@@ -100,7 +100,9 @@ export async function getUsageRecords(
     const supabase = await createSupabaseServerClient();
     let query = supabase
       .from("model_runs")
-      .select("id, model, provider, input_tokens, output_tokens, cost_usd, created_at")
+      .select(
+        "id, model, provider, input_tokens, output_tokens, cost_usd, created_at",
+      )
       .order("created_at", { ascending: false })
       .range(offset, offset + Math.max(1, limit) - 1);
 

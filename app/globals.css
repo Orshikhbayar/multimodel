@@ -49,8 +49,7 @@
     --motion-hover-ease: cubic-bezier(0.2, 0, 0, 1);
     --motion-hover-lift: translateY(-1px) scale(1.01);
     --motion-hover-lift-sm: translateY(-0.5px) scale(1.006);
-    --motion-hover-shadow:
-      0 14px 26px -18px hsl(var(--foreground) / 0.38);
+    --motion-hover-shadow: 0 14px 26px -18px hsl(var(--foreground) / 0.38);
     --radius: 1rem;
   }
 
@@ -96,8 +95,7 @@
     --code-token-class: 40 58% 75%;
     --code-token-operator: 210 16% 76%;
     --code-token-property: 184 56% 66%;
-    --motion-hover-shadow:
-      0 14px 24px -18px hsl(220 50% 2% / 0.9);
+    --motion-hover-shadow: 0 14px 24px -18px hsl(220 50% 2% / 0.9);
   }
 
   * {
@@ -106,11 +104,7 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family:
-      "Avenir Next",
-      "Segoe UI",
-      "Helvetica Neue",
-      sans-serif;
+    font-family: "Avenir Next", "Segoe UI", "Helvetica Neue", sans-serif;
     font-feature-settings:
       "rlig" 1,
       "calt" 1;
@@ -140,11 +134,7 @@
   h4,
   h5,
   h6 {
-    font-family:
-      "Avenir Next",
-      "Segoe UI",
-      "Helvetica Neue",
-      sans-serif;
+    font-family: "Avenir Next", "Segoe UI", "Helvetica Neue", sans-serif;
     letter-spacing: -0.015em;
   }
 
@@ -152,11 +142,7 @@
   kbd,
   pre,
   samp {
-    font-family:
-      "SF Mono",
-      "SFMono-Regular",
-      Menlo,
-      monospace;
+    font-family: "SF Mono", "SFMono-Regular", Menlo, monospace;
   }
 }
 
@@ -234,12 +220,16 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .ui-hover-lift:not(.ui-no-lift):not(:disabled):not([aria-disabled="true"]):hover {
+  .ui-hover-lift:not(.ui-no-lift):not(:disabled):not(
+      [aria-disabled="true"]
+    ):hover {
     transform: var(--motion-hover-lift);
     box-shadow: var(--motion-hover-shadow);
   }
 
-  .ui-hover-lift-sm:not(.ui-no-lift):not(:disabled):not([aria-disabled="true"]):hover {
+  .ui-hover-lift-sm:not(.ui-no-lift):not(:disabled):not(
+      [aria-disabled="true"]
+    ):hover {
     transform: var(--motion-hover-lift-sm);
     box-shadow: var(--motion-hover-shadow);
   }
@@ -389,14 +379,8 @@ html[data-reduce-motion="true"] .surface-enter {
   font-size: 0.75rem;
   line-height: 1.6;
   font-family:
-    ui-monospace,
-    SFMono-Regular,
-    Menlo,
-    Monaco,
-    Consolas,
-    "Liberation Mono",
-    "Courier New",
-    monospace;
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
   white-space: pre;
 }
 
@@ -619,11 +603,15 @@ html[data-reduce-motion="true"] .surface-enter {
   }
 }
 
-html[data-reduce-motion="true"] .unified-flow--active .unified-flow__rail::after,
+html[data-reduce-motion="true"]
+  .unified-flow--active
+  .unified-flow__rail::after,
 html[data-reduce-motion="true"]
   .unified-flow--active
   .unified-flow__center-line::after,
-html[data-reduce-motion="true"] .unified-flow--active .unified-flow__stem::after {
+html[data-reduce-motion="true"]
+  .unified-flow--active
+  .unified-flow__stem::after {
   animation: none;
   opacity: 0.35;
 }

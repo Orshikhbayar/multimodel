@@ -18,7 +18,10 @@ export default function SupportPage() {
     return (
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-background py-6">
         <ContentColumn className="space-y-6">
-          <PageHeader label={t("support.label")} title={t("support.thanksTitle")} />
+          <PageHeader
+            label={t("support.label")}
+            title={t("support.thanksTitle")}
+          />
           <Card>
             <CardContent className="py-6 text-sm text-muted-foreground">
               {t("support.savedLocally")}
@@ -32,12 +35,18 @@ export default function SupportPage() {
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-background py-6">
       <ContentColumn className="space-y-6">
-        <PageHeader label={t("support.label")} title={t("support.reportTitle")} />
+        <PageHeader
+          label={t("support.label")}
+          title={t("support.reportTitle")}
+        />
         <Card>
           <CardContent className="space-y-4 py-6">
             <div className="space-y-2">
               <Label htmlFor="summary">{t("support.summary")}</Label>
-              <Input id="summary" placeholder={t("support.summaryPlaceholder")} />
+              <Input
+                id="summary"
+                placeholder={t("support.summaryPlaceholder")}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="details">{t("support.details")}</Label>

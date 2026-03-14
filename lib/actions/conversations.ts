@@ -107,12 +107,16 @@ function mapRun(row: {
     status: mapDbRunStatusToApp(row.status),
     text: row.output_text ?? "",
     interrupted: row.interrupted,
-    sources: (Array.isArray(row.sources) ? row.sources : undefined) as Run["sources"],
+    sources: (Array.isArray(row.sources)
+      ? row.sources
+      : undefined) as Run["sources"],
     disagreements: (Array.isArray(row.disagreements)
       ? row.disagreements
       : undefined) as Run["disagreements"],
     tokens:
-      row.input_tokens !== null || row.output_tokens !== null || row.total_tokens !== null
+      row.input_tokens !== null ||
+      row.output_tokens !== null ||
+      row.total_tokens !== null
         ? {
             prompt,
             completion,
@@ -197,21 +201,25 @@ export async function getConversations(): Promise<Conversation[]> {
 
   const conversationIds = conversations.map((conversation) => conversation.id);
 
-  const [{ data: messages, error: messageError }, { data: runs, error: runError }] =
-    await Promise.all([
-      supabase
-        .from("messages")
-        .select("id,conversation_id,role,content,created_at,edited_at,attachments,tool_calls")
-        .in("conversation_id", conversationIds)
-        .order("created_at", { ascending: true }),
-      supabase
-        .from("model_runs")
-        .select(
-          "id,message_id,conversation_id,model,status,slot_id,output_text,interrupted,sources,disagreements,input_tokens,output_tokens,total_tokens,latency_ms,error_text,error_code,created_at",
-        )
-        .in("conversation_id", conversationIds)
-        .order("created_at", { ascending: true }),
-    ]);
+  const [
+    { data: messages, error: messageError },
+    { data: runs, error: runError },
+  ] = await Promise.all([
+    supabase
+      .from("messages")
+      .select(
+        "id,conversation_id,role,content,created_at,edited_at,attachments,tool_calls",
+      )
+      .in("conversation_id", conversationIds)
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("model_runs")
+      .select(
+        "id,message_id,conversation_id,model,status,slot_id,output_text,interrupted,sources,disagreements,input_tokens,output_tokens,total_tokens,latency_ms,error_text,error_code,created_at",
+      )
+      .in("conversation_id", conversationIds)
+      .order("created_at", { ascending: true }),
+  ]);
 
   if (messageError) {
     throw messageError;
@@ -288,7 +296,10 @@ export async function getConversation(
   }
 
   const conversations = await getConversations();
-  return conversations.find((conversation) => conversation.id === conversationId) ?? null;
+  return (
+    conversations.find((conversation) => conversation.id === conversationId) ??
+    null
+  );
 }
 
 export async function createConversation(
@@ -324,11 +335,12 @@ export async function createConversation(
     }
   }
 
-  const insertConversation: Database["public"]["Tables"]["conversations"]["Insert"] = {
-    workspace_id: workspaceId,
-    title,
-    project_id: projectId ?? null,
-  };
+  const insertConversation: Database["public"]["Tables"]["conversations"]["Insert"] =
+    {
+      workspace_id: workspaceId,
+      title,
+      project_id: projectId ?? null,
+    };
   const { data, error } = await supabase
     .from("conversations")
     .insert(insertConversation)

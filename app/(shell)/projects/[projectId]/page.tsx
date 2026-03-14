@@ -19,7 +19,9 @@ export default function ProjectOverviewPage() {
     return (
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-background px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto w-full max-w-3xl space-y-3">
-          <h1 className="text-xl font-semibold tracking-tight">Project not found</h1>
+          <h1 className="text-xl font-semibold tracking-tight">
+            Project not found
+          </h1>
           <p className="text-sm text-muted-foreground">
             This project does not exist in the current workspace.
           </p>
@@ -40,7 +42,9 @@ export default function ProjectOverviewPage() {
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Project
         </p>
-        <h1 className="text-2xl font-semibold tracking-tight">{project.name}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {project.name}
+        </h1>
         <p className="text-sm text-muted-foreground">
           {project.description ?? "No description yet."}
         </p>

@@ -130,23 +130,25 @@ export async function hydrateWorkspaceConversations(
 
   const conversationIds = conversations.map((conversation) => conversation.id);
 
-  const [{ data: messages, error: messagesError }, { data: modelRuns, error: modelRunsError }] =
-    await Promise.all([
-      client
-        .from("messages")
-        .select(
-          "id, conversation_id, role, content, created_at, edited_at, attachments, tool_calls",
-        )
-        .in("conversation_id", conversationIds)
-        .order("created_at", { ascending: true }),
-      client
-        .from("model_runs")
-        .select(
-          "id, message_id, conversation_id, model, status, output_text, input_tokens, output_tokens, latency_ms, error_text, cost_usd, created_at",
-        )
-        .in("conversation_id", conversationIds)
-        .order("created_at", { ascending: true }),
-    ]);
+  const [
+    { data: messages, error: messagesError },
+    { data: modelRuns, error: modelRunsError },
+  ] = await Promise.all([
+    client
+      .from("messages")
+      .select(
+        "id, conversation_id, role, content, created_at, edited_at, attachments, tool_calls",
+      )
+      .in("conversation_id", conversationIds)
+      .order("created_at", { ascending: true }),
+    client
+      .from("model_runs")
+      .select(
+        "id, message_id, conversation_id, model, status, output_text, input_tokens, output_tokens, latency_ms, error_text, cost_usd, created_at",
+      )
+      .in("conversation_id", conversationIds)
+      .order("created_at", { ascending: true }),
+  ]);
 
   if (messagesError) {
     throw messagesError;
@@ -229,10 +231,9 @@ export async function upsertConversation(
     row.project_id = payload.projectId;
   }
 
-  const { error } = await client.from("conversations").upsert(
-    row,
-    { onConflict: "id" },
-  );
+  const { error } = await client
+    .from("conversations")
+    .upsert(row, { onConflict: "id" });
 
   if (error) {
     throw error;
@@ -295,12 +296,14 @@ export async function createTurnRecords(
     throw userMessageError;
   }
 
-  const { error: assistantMessageError } = await client.from("messages").insert({
-    id: payload.assistantMessageId,
-    conversation_id: payload.conversationId,
-    role: "assistant",
-    content: "",
-  });
+  const { error: assistantMessageError } = await client
+    .from("messages")
+    .insert({
+      id: payload.assistantMessageId,
+      conversation_id: payload.conversationId,
+      role: "assistant",
+      content: "",
+    });
 
   if (assistantMessageError) {
     throw assistantMessageError;
@@ -339,12 +342,14 @@ export async function createAssistantMessageWithRuns(
     }>;
   },
 ) {
-  const { error: assistantMessageError } = await client.from("messages").insert({
-    id: payload.assistantMessageId,
-    conversation_id: payload.conversationId,
-    role: "assistant",
-    content: "",
-  });
+  const { error: assistantMessageError } = await client
+    .from("messages")
+    .insert({
+      id: payload.assistantMessageId,
+      conversation_id: payload.conversationId,
+      role: "assistant",
+      content: "",
+    });
 
   if (assistantMessageError) {
     throw assistantMessageError;

@@ -41,18 +41,18 @@ function getAppUrl() {
 
 export async function POST(request: Request) {
   if (!isStripeConfigured()) {
-    return new Response(
-      JSON.stringify({ error: "Stripe is not configured" }),
-      { status: 503, headers: { "Content-Type": "application/json" } },
-    );
+    return new Response(JSON.stringify({ error: "Stripe is not configured" }), {
+      status: 503,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   const session = await auth();
   if (!session?.user?.id) {
-    return new Response(
-      JSON.stringify({ error: "Authentication required" }),
-      { status: 401, headers: { "Content-Type": "application/json" } },
-    );
+    return new Response(JSON.stringify({ error: "Authentication required" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   const body = (await request.json()) as RequestBody;
@@ -120,8 +120,10 @@ export async function POST(request: Request) {
   }
 
   const baseUrl = getAppUrl();
-  const successUrl = body.successUrl ?? `${baseUrl}/dashboard/billing?checkout=success`;
-  const cancelUrl = body.cancelUrl ?? `${baseUrl}/dashboard/plans?checkout=cancelled`;
+  const successUrl =
+    body.successUrl ?? `${baseUrl}/dashboard/billing?checkout=success`;
+  const cancelUrl =
+    body.cancelUrl ?? `${baseUrl}/dashboard/plans?checkout=cancelled`;
 
   const checkout = await createStripeCheckoutSession({
     mode: "subscription",
@@ -137,8 +139,8 @@ export async function POST(request: Request) {
     },
   });
 
-  return new Response(
-    JSON.stringify({ id: checkout.id, url: checkout.url }),
-    { status: 200, headers: { "Content-Type": "application/json" } },
-  );
+  return new Response(JSON.stringify({ id: checkout.id, url: checkout.url }), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
 }

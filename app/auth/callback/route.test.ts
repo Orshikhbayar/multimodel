@@ -28,12 +28,16 @@ describe("auth callback route", () => {
 
   it("exchanges code and redirects to safe next path", async () => {
     const response = await GET(
-      new Request("http://localhost:3000/auth/callback?code=abc&next=/projects"),
+      new Request(
+        "http://localhost:3000/auth/callback?code=abc&next=/projects",
+      ),
     );
 
     expect(mockExchange).toHaveBeenCalledWith("abc");
     expect(response.status).toBe(307);
-    expect(response.headers.get("location")).toBe("http://localhost:3000/projects");
+    expect(response.headers.get("location")).toBe(
+      "http://localhost:3000/projects",
+    );
   });
 
   it("sanitizes invalid next URL", async () => {
@@ -57,7 +61,9 @@ describe("auth callback route", () => {
     });
 
     const response = await GET(
-      new Request("http://localhost:3000/auth/callback?code=abc&next=/projects"),
+      new Request(
+        "http://localhost:3000/auth/callback?code=abc&next=/projects",
+      ),
     );
 
     expect(mockSignOut).toHaveBeenCalledTimes(1);

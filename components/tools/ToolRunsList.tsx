@@ -6,7 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { ToolRunSummary } from "@/components/tools/types";
 import { cn } from "@/lib/utils";
-import { formatCost, formatDateTime, formatDuration } from "@/components/tools/utils";
+import {
+  formatCost,
+  formatDateTime,
+  formatDuration,
+} from "@/components/tools/utils";
 
 interface ToolRunsListProps {
   runs: ToolRunSummary[];
@@ -16,7 +20,9 @@ interface ToolRunsListProps {
   onRefresh: () => void;
 }
 
-function statusBadgeVariant(status: string): "secondary" | "destructive" | "outline" {
+function statusBadgeVariant(
+  status: string,
+): "secondary" | "destructive" | "outline" {
   if (status === "succeeded") return "secondary";
   if (status === "failed" || status === "cancelled") return "destructive";
   return "outline";
@@ -32,8 +38,16 @@ export function ToolRunsList({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <p className="text-xs text-muted-foreground">Recent tool runs for this scope</p>
-        <Button type="button" size="sm" variant="outline" onClick={onRefresh} disabled={loading}>
+        <p className="text-xs text-muted-foreground">
+          Recent tool runs for this scope
+        </p>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={onRefresh}
+          disabled={loading}
+        >
           <RotateCw className="mr-1 h-3.5 w-3.5" />
           Refresh
         </Button>
@@ -61,7 +75,9 @@ export function ToolRunsList({
             <div className="text-sm font-medium">{run.tool_name}</div>
             <Badge variant={statusBadgeVariant(run.status)}>{run.status}</Badge>
           </div>
-          <div className="mt-1 text-[11px] text-muted-foreground">v{run.tool_version}</div>
+          <div className="mt-1 text-[11px] text-muted-foreground">
+            v{run.tool_version}
+          </div>
           <div className="mt-2 grid grid-cols-1 gap-1 text-[11px] text-muted-foreground sm:grid-cols-3">
             <span>{formatDateTime(run.started_at)}</span>
             <span>{formatDuration(run.duration_ms)}</span>

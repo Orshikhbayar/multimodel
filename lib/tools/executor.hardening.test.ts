@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { hashCanonicalJson } from "@/lib/tools/hash";
-import type { ToolDefinition, ToolExecutionContext, ToolExecutionRequest } from "@/lib/tools/types";
+import type {
+  ToolDefinition,
+  ToolExecutionContext,
+  ToolExecutionRequest,
+} from "@/lib/tools/types";
 
 const mocks = vi.hoisted(() => ({
   initializeToolDefinitions: vi.fn(),
@@ -21,7 +25,10 @@ const mocks = vi.hoisted(() => ({
   })),
   releaseToolConcurrency: vi.fn(),
   validateAgainstSchema: vi.fn(() => ({ valid: true, errors: [] as string[] })),
-  startToolAudit: vi.fn(async () => ({ runId: "run-new", startedAt: Date.now() })),
+  startToolAudit: vi.fn(async () => ({
+    runId: "run-new",
+    startedAt: Date.now(),
+  })),
   completeToolAudit: vi.fn(async () => {}),
   failToolAudit: vi.fn(async () => {}),
 }));
@@ -96,7 +103,9 @@ function createToolRunsSupabase(rows: Array<Record<string, unknown>>) {
             }),
             maybeSingle: vi.fn(async () => {
               const match = rows.find((row) =>
-                Object.entries(filters).every(([key, value]) => row[key] === value),
+                Object.entries(filters).every(
+                  ([key, value]) => row[key] === value,
+                ),
               );
               return { data: match ?? null, error: null };
             }),
@@ -184,7 +193,9 @@ describe("executeToolRequest hardening", () => {
     } catch (error) {
       const typed = error as ToolExecutionError;
       expect(typed.details?.confirmation_token).toEqual(expect.any(String));
-      expect(String(typed.details?.confirmation_token).length).toBeGreaterThanOrEqual(6);
+      expect(
+        String(typed.details?.confirmation_token).length,
+      ).toBeGreaterThanOrEqual(6);
     }
 
     expect(mocks.startToolAudit).not.toHaveBeenCalled();

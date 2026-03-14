@@ -60,18 +60,36 @@ const MODEL_RETAIL_CENTS_PER_1M: Record<
   "openai/gpt-5.1": { inputCentsPer1m: 1600, outputCentsPer1m: 4800 },
   "openai/gpt-4o": { inputCentsPer1m: 250, outputCentsPer1m: 1000 },
   "openai/gpt-4o-mini": { inputCentsPer1m: 15, outputCentsPer1m: 60 },
-  "anthropic/claude-sonnet-4": { inputCentsPer1m: 1200, outputCentsPer1m: 3600 },
-  "anthropic/claude-opus-4.1": { inputCentsPer1m: 1850, outputCentsPer1m: 5550 },
+  "anthropic/claude-sonnet-4": {
+    inputCentsPer1m: 1200,
+    outputCentsPer1m: 3600,
+  },
+  "anthropic/claude-opus-4.1": {
+    inputCentsPer1m: 1850,
+    outputCentsPer1m: 5550,
+  },
   "anthropic/claude-3.5": { inputCentsPer1m: 1150, outputCentsPer1m: 3450 },
   "anthropic/claude-opus-4": { inputCentsPer1m: 1800, outputCentsPer1m: 5400 },
-  "google/gemini-3-flash-preview": { inputCentsPer1m: 650, outputCentsPer1m: 1950 },
-  "google/gemini-3-pro-preview": { inputCentsPer1m: 1400, outputCentsPer1m: 4200 },
-  "google/gemini-3-pro-image-preview": { inputCentsPer1m: 2000, outputCentsPer1m: 6000 },
+  "google/gemini-3-flash-preview": {
+    inputCentsPer1m: 650,
+    outputCentsPer1m: 1950,
+  },
+  "google/gemini-3-pro-preview": {
+    inputCentsPer1m: 1400,
+    outputCentsPer1m: 4200,
+  },
+  "google/gemini-3-pro-image-preview": {
+    inputCentsPer1m: 2000,
+    outputCentsPer1m: 6000,
+  },
   "google/gemini-2.5-flash": { inputCentsPer1m: 500, outputCentsPer1m: 1500 },
   "google/gemini-2.0": { inputCentsPer1m: 1250, outputCentsPer1m: 3750 },
   "xai/grok-4": { inputCentsPer1m: 1350, outputCentsPer1m: 4050 },
   "xai/grok-3": { inputCentsPer1m: 1100, outputCentsPer1m: 3300 },
-  "deepseek/deepseek-reasoner": { inputCentsPer1m: 900, outputCentsPer1m: 2700 },
+  "deepseek/deepseek-reasoner": {
+    inputCentsPer1m: 900,
+    outputCentsPer1m: 2700,
+  },
   "deepseek/deepseek-chat": { inputCentsPer1m: 600, outputCentsPer1m: 1800 },
   default: { inputCentsPer1m: 15, outputCentsPer1m: 60 },
 };
@@ -81,7 +99,12 @@ const BILLING_DISABLED =
   !process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 function normalizePlanId(value: string): PlanId {
-  if (value === "free" || value === "plus" || value === "pro" || value === "team") {
+  if (
+    value === "free" ||
+    value === "plus" ||
+    value === "pro" ||
+    value === "team"
+  ) {
     return value;
   }
   return "free";
@@ -102,7 +125,9 @@ function addUtcMonths(date: Date, months: number): Date {
 }
 
 function startOfUtcDay(date: Date): Date {
-  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  return new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
+  );
 }
 
 function startOfNextUtcDay(date: Date): Date {
@@ -242,9 +267,12 @@ async function ensureBillingProfile(sessionUser: BillingSessionUser) {
     .maybeSingle();
 
   if (existingError) {
-    throw new SupabaseBillingUnavailableError("Failed to read billing profile", {
-      cause: existingError,
-    });
+    throw new SupabaseBillingUnavailableError(
+      "Failed to read billing profile",
+      {
+        cause: existingError,
+      },
+    );
   }
 
   if (existing) {
@@ -264,7 +292,9 @@ async function ensureBillingProfile(sessionUser: BillingSessionUser) {
       billing_currency: "USD",
       period_start_at: now.toISOString(),
       period_end_at: addUtcMonths(now, 1).toISOString(),
-      included_credits_cents: Math.round(freePlan.includedMonthlyCredits.USD * 100),
+      included_credits_cents: Math.round(
+        freePlan.includedMonthlyCredits.USD * 100,
+      ),
       top_up_credits_cents: 0,
       bonus_credits_cents: 0,
     })
@@ -272,9 +302,12 @@ async function ensureBillingProfile(sessionUser: BillingSessionUser) {
     .single();
 
   if (createError || !created) {
-    throw new SupabaseBillingUnavailableError("Failed to create billing profile", {
-      cause: createError,
-    });
+    throw new SupabaseBillingUnavailableError(
+      "Failed to create billing profile",
+      {
+        cause: createError,
+      },
+    );
   }
 
   return created;
@@ -283,7 +316,8 @@ async function ensureBillingProfile(sessionUser: BillingSessionUser) {
 async function ensureAllowance(profile: ProfileRow) {
   const admin = createSupabaseAdminClient();
   const includedValueUsdInt = Math.round(
-    getPlanById(normalizePlanId(profile.plan_id)).includedMonthlyCredits.USD * 100,
+    getPlanById(normalizePlanId(profile.plan_id)).includedMonthlyCredits.USD *
+      100,
   );
 
   const { error } = await admin.from("subscription_allowances").upsert(
@@ -321,7 +355,9 @@ async function resetBillingPeriodIfNeeded(profile: ProfileRow) {
 
   const periodStartAt = now;
   const periodEndAt = addUtcMonths(now, 1);
-  const includedCreditsCents = Math.round(plan.includedMonthlyCredits.USD * 100);
+  const includedCreditsCents = Math.round(
+    plan.includedMonthlyCredits.USD * 100,
+  );
 
   const { data: updated, error } = await admin
     .from("profiles")
@@ -335,9 +371,12 @@ async function resetBillingPeriodIfNeeded(profile: ProfileRow) {
     .single();
 
   if (error || !updated) {
-    throw new SupabaseBillingUnavailableError("Failed to reset billing period", {
-      cause: error,
-    });
+    throw new SupabaseBillingUnavailableError(
+      "Failed to reset billing period",
+      {
+        cause: error,
+      },
+    );
   }
 
   await ensureAllowance(updated);
@@ -354,9 +393,12 @@ async function getModelRetailRate(modelId: string) {
     .maybeSingle();
 
   if (error) {
-    throw new SupabaseBillingUnavailableError("Failed to read model retail rate", {
-      cause: error,
-    });
+    throw new SupabaseBillingUnavailableError(
+      "Failed to read model retail rate",
+      {
+        cause: error,
+      },
+    );
   }
 
   if (data) {
@@ -366,7 +408,9 @@ async function getModelRetailRate(modelId: string) {
     };
   }
 
-  return MODEL_RETAIL_CENTS_PER_1M[modelId] ?? MODEL_RETAIL_CENTS_PER_1M.default;
+  return (
+    MODEL_RETAIL_CENTS_PER_1M[modelId] ?? MODEL_RETAIL_CENTS_PER_1M.default
+  );
 }
 
 export async function calculateUsageValueUsdInt(params: {
@@ -379,13 +423,16 @@ export async function calculateUsageValueUsdInt(params: {
   }
 
   const rate = await getModelRetailRate(params.modelId);
-  const raw = params.tokensIn * rate.inputCentsPer1m + params.tokensOut * rate.outputCentsPer1m;
+  const raw =
+    params.tokensIn * rate.inputCentsPer1m +
+    params.tokensOut * rate.outputCentsPer1m;
   return Math.max(1, Math.ceil(raw / 1_000_000));
 }
 
 function sortByCheapestModel(modelIds: string[]) {
   const score = (modelId: string) => {
-    const rate = MODEL_RETAIL_CENTS_PER_1M[modelId] ?? MODEL_RETAIL_CENTS_PER_1M.default;
+    const rate =
+      MODEL_RETAIL_CENTS_PER_1M[modelId] ?? MODEL_RETAIL_CENTS_PER_1M.default;
     return rate.inputCentsPer1m + rate.outputCentsPer1m;
   };
   return [...modelIds].sort((a, b) => score(a) - score(b));
@@ -419,7 +466,9 @@ export function resolveAutoModelRouting(params: {
     };
   }
 
-  const preferred = AUTO_ROUTE_PRIORITY.find((id) => plan.allowedModelIds.includes(id));
+  const preferred = AUTO_ROUTE_PRIORITY.find((id) =>
+    plan.allowedModelIds.includes(id),
+  );
   if (preferred && preferred !== params.requestedModelId) {
     return {
       modelId: preferred,
@@ -435,18 +484,19 @@ export function resolveAutoModelRouting(params: {
   };
 }
 
-async function checkTokenQuota(params: {
-  userId: string;
-  planId: PlanId;
-}) {
+async function checkTokenQuota(params: { userId: string; planId: PlanId }) {
   const plan = getPlanById(params.planId);
   const admin = createSupabaseAdminClient();
 
   const now = new Date();
   const dayStart = startOfUtcDay(now).toISOString();
   const nextDay = startOfNextUtcDay(now).toISOString();
-  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
-  const nextMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)).toISOString();
+  const monthStart = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
+  ).toISOString();
+  const nextMonth = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1),
+  ).toISOString();
 
   const [dailyRows, monthlyRows] = await Promise.all([
     admin
@@ -471,7 +521,10 @@ async function checkTokenQuota(params: {
     });
   }
 
-  const dailyUsed = (dailyRows.data ?? []).reduce((sum, row) => sum + safeNumber(row.tokens_total), 0);
+  const dailyUsed = (dailyRows.data ?? []).reduce(
+    (sum, row) => sum + safeNumber(row.tokens_total),
+    0,
+  );
   const monthlyUsed = (monthlyRows.data ?? []).reduce(
     (sum, row) => sum + safeNumber(row.tokens_total),
     0,
@@ -504,35 +557,36 @@ async function checkAutoPolicy(params: {
   const dayStart = startOfUtcDay(now).toISOString();
   const nextDay = startOfNextUtcDay(now).toISOString();
 
-  const [lastMinuteRuns, activeHolds, todayAutoUsage, todayAutoReserved] = await Promise.all([
-    admin
-      .from("usage_runs")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", params.userId)
-      .eq("mode", "smart")
-      .gte("created_at", minuteAgo),
-    admin
-      .from("usage_holds")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", params.userId)
-      .eq("mode", "smart")
-      .eq("status", "active"),
-    admin
-      .from("usage_runs")
-      .select("usage_value_usd_int")
-      .eq("user_id", params.userId)
-      .eq("billing_bucket", "included_auto")
-      .gte("created_at", dayStart)
-      .lt("created_at", nextDay),
-    admin
-      .from("usage_holds")
-      .select("auto_reserved_value_usd_int")
-      .eq("user_id", params.userId)
-      .eq("mode", "smart")
-      .eq("status", "active")
-      .gte("created_at", dayStart)
-      .lt("created_at", nextDay),
-  ]);
+  const [lastMinuteRuns, activeHolds, todayAutoUsage, todayAutoReserved] =
+    await Promise.all([
+      admin
+        .from("usage_runs")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", params.userId)
+        .eq("mode", "smart")
+        .gte("created_at", minuteAgo),
+      admin
+        .from("usage_holds")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", params.userId)
+        .eq("mode", "smart")
+        .eq("status", "active"),
+      admin
+        .from("usage_runs")
+        .select("usage_value_usd_int")
+        .eq("user_id", params.userId)
+        .eq("billing_bucket", "included_auto")
+        .gte("created_at", dayStart)
+        .lt("created_at", nextDay),
+      admin
+        .from("usage_holds")
+        .select("auto_reserved_value_usd_int")
+        .eq("user_id", params.userId)
+        .eq("mode", "smart")
+        .eq("status", "active")
+        .gte("created_at", dayStart)
+        .lt("created_at", nextDay),
+    ]);
 
   const policyError =
     lastMinuteRuns.error ??
@@ -564,7 +618,10 @@ async function checkAutoPolicy(params: {
     0,
   );
 
-  if (usedAutoValue + reservedAutoValue + params.estimatedValueUsdInt > policy.maxDailyIncludedAutoValueUsdInt) {
+  if (
+    usedAutoValue + reservedAutoValue + params.estimatedValueUsdInt >
+    policy.maxDailyIncludedAutoValueUsdInt
+  ) {
     return { allowed: false as const, reason: "daily_included_auto_value" };
   }
 
@@ -611,10 +668,14 @@ export async function startUsageRunMetering(params: {
     const planId = normalizePlanId(profile.plan_id);
     const plan = getPlanById(planId);
 
-    if (params.mode !== "smart" && !plan.allowedModelIds.includes(params.requestedModelId)) {
+    if (
+      params.mode !== "smart" &&
+      !plan.allowedModelIds.includes(params.requestedModelId)
+    ) {
       const requiredPlan =
-        PLANS.find((candidate) => candidate.allowedModelIds.includes(params.requestedModelId))?.id ??
-        "pro";
+        PLANS.find((candidate) =>
+          candidate.allowedModelIds.includes(params.requestedModelId),
+        )?.id ?? "pro";
       throw new SupabaseBillingUpgradeRequiredError(requiredPlan);
     }
 
@@ -656,18 +717,21 @@ export async function startUsageRunMetering(params: {
     }
 
     const admin = createSupabaseAdminClient();
-    const { data: rpcData, error: rpcError } = await admin.rpc("billing_start_run", {
-      p_subject_id: profile.id,
-      p_model_id: routed.modelId,
-      p_est_tokens_in: Math.ceil(params.estimatedPromptTokens * 1.1),
-      p_est_tokens_out: Math.ceil(params.maxOutputTokens * 1.1),
-      p_is_auto: useAuto,
-      p_run_id: params.runReferenceId,
-      p_requested_model_id: params.requestedModelId,
-      p_plan_id: planId,
-      p_mode: params.mode ?? undefined,
-      p_provider_reference_id: `run:${params.runReferenceId}`,
-    });
+    const { data: rpcData, error: rpcError } = await admin.rpc(
+      "billing_start_run",
+      {
+        p_subject_id: profile.id,
+        p_model_id: routed.modelId,
+        p_est_tokens_in: Math.ceil(params.estimatedPromptTokens * 1.1),
+        p_est_tokens_out: Math.ceil(params.maxOutputTokens * 1.1),
+        p_is_auto: useAuto,
+        p_run_id: params.runReferenceId,
+        p_requested_model_id: params.requestedModelId,
+        p_plan_id: planId,
+        p_mode: params.mode ?? undefined,
+        p_provider_reference_id: `run:${params.runReferenceId}`,
+      },
+    );
 
     if (rpcError) {
       const message = getErrorMessage(rpcError);
@@ -703,7 +767,8 @@ export async function startUsageRunMetering(params: {
     return {
       runReferenceId: params.runReferenceId,
       modelId: routed.modelId,
-      bucketHint: (parsed.bucket as BillingBucket | undefined) ?? "included_plan",
+      bucketHint:
+        (parsed.bucket as BillingBucket | undefined) ?? "included_plan",
       planId,
       heldCreditsInt: safeNumber(parsed.held_credits_int),
       autoReservedValueUsdInt: safeNumber(parsed.auto_reserved_value_usd_int),
@@ -782,9 +847,12 @@ export async function finalizeUsageRunMetering(params: {
       );
     }
 
-    throw new SupabaseBillingUnavailableError("Failed to finalize metered run", {
-      cause: error,
-    });
+    throw new SupabaseBillingUnavailableError(
+      "Failed to finalize metered run",
+      {
+        cause: error,
+      },
+    );
   }
 
   return parseJsonObject(data ?? null);
@@ -835,9 +903,12 @@ export async function lockBillingSubject(params: {
   });
 
   if (error) {
-    throw new SupabaseBillingUnavailableError("Failed to lock billing subject", {
-      cause: error,
-    });
+    throw new SupabaseBillingUnavailableError(
+      "Failed to lock billing subject",
+      {
+        cause: error,
+      },
+    );
   }
 }
 
@@ -848,9 +919,12 @@ export async function unlockBillingSubject(subjectId: string) {
   });
 
   if (error) {
-    throw new SupabaseBillingUnavailableError("Failed to unlock billing subject", {
-      cause: error,
-    });
+    throw new SupabaseBillingUnavailableError(
+      "Failed to unlock billing subject",
+      {
+        cause: error,
+      },
+    );
   }
 }
 
@@ -888,7 +962,9 @@ function emptyIncludedUsageReport(
   };
 }
 
-export async function getIncludedUsageReport(userId: string): Promise<IncludedUsageReport> {
+export async function getIncludedUsageReport(
+  userId: string,
+): Promise<IncludedUsageReport> {
   const profile = await ensureBillingProfile({ id: userId });
   const admin = createSupabaseAdminClient();
 
@@ -943,9 +1019,12 @@ export async function getIncludedUsageReport(userId: string): Promise<IncludedUs
     if (isSchemaMissingError(subscriptionRowsResult.error)) {
       subscriptionData = [];
     } else {
-      throw new SupabaseBillingUnavailableError("Failed to build usage report", {
-        cause: subscriptionRowsResult.error,
-      });
+      throw new SupabaseBillingUnavailableError(
+        "Failed to build usage report",
+        {
+          cause: subscriptionRowsResult.error,
+        },
+      );
     }
   }
 
@@ -1004,7 +1083,10 @@ export async function getIncludedUsageReport(userId: string): Promise<IncludedUs
       row.bucket === "bonus",
   }));
 
-  rows.sort((a, b) => a.bucket.localeCompare(b.bucket) || a.modelId.localeCompare(b.modelId));
+  rows.sort(
+    (a, b) =>
+      a.bucket.localeCompare(b.bucket) || a.modelId.localeCompare(b.modelId),
+  );
 
   return {
     periodStartISO,

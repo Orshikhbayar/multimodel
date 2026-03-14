@@ -42,9 +42,7 @@ export function Composer({
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const maxHeight = 160;
-  const activeStreamCount = useStreamStore(
-    (state) => state.activeStreams.size,
-  );
+  const activeStreamCount = useStreamStore((state) => state.activeStreams.size);
   const { t, locale } = useI18n();
   const workflowPreset = useSettingsStore((state) => state.workflowPreset);
   const isStreaming = activeStreamCount > 0;
@@ -202,9 +200,7 @@ export function Composer({
               <ArrowUp className="h-4 w-4" />
             )}
             <span className="sr-only">
-              {isStreaming
-                ? t("composer.stopGenerating")
-                : t("composer.send")}
+              {isStreaming ? t("composer.stopGenerating") : t("composer.send")}
             </span>
           </Button>
         </div>

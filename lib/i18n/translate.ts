@@ -2,10 +2,7 @@ import { messages } from "./messages";
 import { normalizeLocale } from "./locale";
 import type { I18nKey, I18nLocale, TranslationParams } from "./types";
 
-function getPathValue(
-  obj: unknown,
-  path: string,
-): string | undefined {
+function getPathValue(obj: unknown, path: string): string | undefined {
   if (!obj || typeof obj !== "object") return undefined;
 
   const segments = path.split(".");
@@ -38,4 +35,3 @@ export function t(
   const value = localized ?? fallback ?? key;
   return interpolate(value, params);
 }
-
