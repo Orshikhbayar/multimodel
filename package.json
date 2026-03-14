@@ -22,7 +22,8 @@
     "spellcheck": "cspell lint . --no-progress --show-suggestions",
     "db:push": "npx supabase@latest db push",
     "db:reset": "npx supabase@latest db reset",
-    "db:new": "npx supabase@latest migration new"
+    "db:new": "npx supabase@latest migration new",
+    "seed:templates": "node scripts/seed-system-templates.mjs"
   },
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.1.0",

@@ -4,9 +4,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
+  BookmarkPlus,
   Check,
   Copy,
   ExternalLink,
+  Loader2,
   Pencil,
   RotateCcw,
   ThumbsDown,
@@ -27,8 +29,13 @@ import {
 import { useI18n } from "@/lib/i18n";
 import type { Message, Run, ToolCall } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { analytics } from "@/lib/analytics";
 import { useChatActions } from "@/lib/hooks/useChatActions";
-import { useConversationStore } from "@/lib/stores";
+import {
+  useConversationStore,
+  useSettingsStore,
+  useWorkspaceStore,
+} from "@/lib/stores";
 
 interface MessageItemProps {
   message: Message;
@@ -56,16 +63,25 @@ export function MessageItem({
   const isUser = message.role === "user";
   const assistantRuns = message.runs ?? (run ? [run] : []);
   const unifiedRun = assistantRuns.find((entry) => entry.model === "Unified");
-  const perspectiveRuns = assistantRuns.filter((entry) => entry.model !== "Unified");
-  const showUnifiedFlow = !isUser && Boolean(unifiedRun) && perspectiveRuns.length >= 2;
+  const perspectiveRuns = assistantRuns.filter(
+    (entry) => entry.model !== "Unified",
+  );
+  const showUnifiedFlow =
+    !isUser && Boolean(unifiedRun) && perspectiveRuns.length >= 2;
   const selectedRun = showUnifiedFlow ? unifiedRun : run;
   const toolCalls = message.toolCalls ?? [];
   const text = selectedRun?.text?.trim() || message.content;
   const { sendMessage, respondToEditedMessage } = useChatActions();
   const { t, formatTime } = useI18n();
   const { updateMessageContent } = useConversationStore();
+  const workspaceId = useWorkspaceStore((state) => state.workspaceId);
+  const selectedWorkflowPackId = useSettingsStore(
+    (state) => state.selectedWorkflowPackId,
+  );
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(message.content);
+  const [savingTemplate, setSavingTemplate] = useState(false);
+  const [savedTemplate, setSavedTemplate] = useState(false);
   const editRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -86,11 +102,63 @@ export function MessageItem({
   const displayContent = isUser ? message.content : text;
   const displayLineCount = displayContent.split("\n").length;
 
+  const saveAsTemplate = async () => {
+    if (isUser || !workspaceId) return;
+    const contentToSave = text.trim();
+    if (!contentToSave) return;
+    setSavingTemplate(true);
+
+    try {
+      const response = await fetch("/api/templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          workspaceId,
+          workflowPackId: selectedWorkflowPackId ?? "importer-solo-seller",
+          title: `Saved Output ${new Date().toLocaleString()}`,
+          description: "Saved from chat output",
+          bodyMd: contentToSave,
+          inputSchema: [],
+          isSystem: false,
+          changeNote: "Saved from assistant output",
+        }),
+      });
+      const payload = (await response.json()) as {
+        error?: string;
+        template?: { id: string };
+      };
+      if (!response.ok || !payload.template?.id) {
+        throw new Error(payload.error ?? "Failed to save as template");
+      }
+
+      analytics.track("asset_saved", {
+        workspace_id: workspaceId,
+        asset_type: "template",
+        template_id: payload.template.id,
+        is_first_asset: false,
+      });
+      analytics.track("template_created", {
+        workspace_id: workspaceId,
+        template_id: payload.template.id,
+        pack_id: selectedWorkflowPackId ?? "importer-solo-seller",
+        is_system: false,
+      });
+      setSavedTemplate(true);
+      setTimeout(() => setSavedTemplate(false), 1500);
+    } catch {
+      setSavedTemplate(false);
+    } finally {
+      setSavingTemplate(false);
+    }
+  };
+
   return (
     <ContentColumn withPadding={false} className="w-full">
       <article
         role="article"
-        aria-label={isUser ? t("chat.yourMessage") : t("chat.assistantResponse")}
+        aria-label={
+          isUser ? t("chat.yourMessage") : t("chat.assistantResponse")
+        }
         className={cn(
           "w-full space-y-1",
           isUser ? "flex justify-end" : "flex justify-start",
@@ -107,7 +175,7 @@ export function MessageItem({
             <div className="mb-1 text-[11px] text-muted-foreground">
               {showUnifiedFlow
                 ? t("chat.unifiedAnswer")
-                : selectedRun?.model ?? t("chat.assistant")}
+                : (selectedRun?.model ?? t("chat.assistant"))}
             </div>
           )}
           {showUnifiedFlow && unifiedRun ? (
@@ -176,7 +244,11 @@ export function MessageItem({
                           return;
                         }
                         updateMessageContent(conversationId, message.id, next);
-                        respondToEditedMessage(conversationId, message.id, next);
+                        respondToEditedMessage(
+                          conversationId,
+                          message.id,
+                          next,
+                        );
                         setIsEditing(false);
                       }}
                       className="inline-flex items-center gap-1 rounded-md border border-white/10 px-3 py-1.5 text-foreground transition hover:bg-muted/40"
@@ -191,7 +263,9 @@ export function MessageItem({
                   remarkPlugins={[remarkGfm]}
                   skipHtml
                   components={{
-                    p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                    p: ({ children }) => (
+                      <p className="mb-2 last:mb-0">{children}</p>
+                    ),
                     code: ({ className, children, ...props }) => {
                       const isInline = !className;
 
@@ -206,7 +280,8 @@ export function MessageItem({
                         );
                       }
 
-                      const language = className?.replace("language-", "") ?? "text";
+                      const language =
+                        className?.replace("language-", "") ?? "text";
                       const code = String(children).replace(/\n$/, "");
                       return <CodeBlock code={code} language={language} />;
                     },
@@ -282,6 +357,23 @@ export function MessageItem({
                 <CopyButton text={text} />
                 <button
                   type="button"
+                  className="hover:text-foreground transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                  title={savedTemplate ? "Saved" : "Save as template"}
+                  onClick={() => void saveAsTemplate()}
+                  disabled={
+                    savingTemplate || !workspaceId || text.trim().length === 0
+                  }
+                >
+                  {savingTemplate ? (
+                    <LoaderSpinner />
+                  ) : savedTemplate ? (
+                    <Check className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <BookmarkPlus className="h-4 w-4" />
+                  )}
+                </button>
+                <button
+                  type="button"
                   className="hover:text-foreground transition-colors"
                   title={t("chat.upvote")}
                 >
@@ -300,7 +392,9 @@ export function MessageItem({
                     className="hover:text-foreground transition-colors"
                     title={t("chat.tryAgain")}
                     onClick={() =>
-                      retryContent ? sendMessage(retryContent, projectId) : undefined
+                      retryContent
+                        ? sendMessage(retryContent, projectId)
+                        : undefined
                     }
                     disabled={!retryContent}
                     aria-label={t("chat.tryAgain")}
@@ -309,7 +403,9 @@ export function MessageItem({
                   </button>
                   {retryContent && (
                     <div className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 w-max -translate-x-1/2 rounded-md bg-black/90 px-2.5 py-2 text-[11px] text-white opacity-0 shadow-lg transition group-hover:opacity-100">
-                      <div className="font-medium">{t("chat.tryAgainEllipsis")}</div>
+                      <div className="font-medium">
+                        {t("chat.tryAgainEllipsis")}
+                      </div>
                       <div className="text-[10px] text-white/70">
                         {t("chat.usedModel", {
                           model: selectedRun.model ?? t("chat.assistant"),
@@ -385,6 +481,10 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
+function LoaderSpinner() {
+  return <Loader2 className="h-4 w-4 animate-spin" />;
+}
+
 /** Code block with copy functionality */
 function CodeBlock({ code, language }: { code: string; language?: string }) {
   const [copied, setCopied] = useState(false);
@@ -409,11 +509,7 @@ function CodeBlock({ code, language }: { code: string; language?: string }) {
     <div className="code-block my-3 overflow-hidden">
       <div className="code-block__header">
         <span className="code-block__label">{label}</span>
-        <button
-          type="button"
-          onClick={handleCopy}
-          className="code-block__copy"
-        >
+        <button type="button" onClick={handleCopy} className="code-block__copy">
           {copied ? (
             <Check className="h-3 w-3" />
           ) : (
@@ -491,7 +587,9 @@ function ToolActivityList({ toolCalls }: { toolCalls: ToolCall[] }) {
             </div>
           )}
           {toolCall.error && (
-            <div className="mt-2 text-[11px] text-destructive">{toolCall.error}</div>
+            <div className="mt-2 text-[11px] text-destructive">
+              {toolCall.error}
+            </div>
           )}
         </div>
       ))}

@@ -36,8 +36,10 @@ flowchart TD
 ## 2) API Contracts
 
 ### GET `/api/tools/registry`
+
 - Auth required.
 - Response:
+
 ```json
 {
   "requestId": "string",
@@ -58,8 +60,10 @@ flowchart TD
 ```
 
 ### POST `/api/tools/execute`
+
 - Auth required.
 - Input:
+
 ```json
 {
   "tool_name": "web_search",
@@ -73,8 +77,10 @@ flowchart TD
   "message_id": "uuid-or-null"
 }
 ```
+
 - `require_confirmation` is UI-only metadata; server enforcement is based on tool definition flags.
 - Response:
+
 ```json
 {
   "requestId": "string",
@@ -86,11 +92,14 @@ flowchart TD
   "from_idempotency_cache": false
 }
 ```
+
 - On write tools without valid confirmation token, API returns `409 CONFIRMATION_REQUIRED` with `details.confirmation_token` and `details.expires_at`.
 
 ### GET `/api/research/:reportId`
+
 - Auth required; RLS-protected.
 - Response:
+
 ```json
 {
   "requestId": "string",
@@ -116,6 +125,7 @@ flowchart TD
 Migration: `supabase/migrations/20260226101500_tool_framework.sql`
 
 ### Core tables
+
 - `tool_registry`:
   - `tool_name`, `tool_version`, `description`, `input_schema`, `output_schema`, `permissions`, `estimated_cost`, `changelog`, `deprecated_at`
   - PK: `(tool_name, tool_version)`
@@ -125,6 +135,7 @@ Migration: `supabase/migrations/20260226101500_tool_framework.sql`
   - unique idempotency: `(caller_user_id, project_scope_key, tool_name, tool_version, idempotency_key)` filtered non-null
 
 ### Web/deep research
+
 - `web_search_cache`
 - `web_pages_cache` (+ FTS index on `clean_text`)
 - both cache tables now use `project_scope_key` for null-safe workspace+project uniqueness
@@ -133,14 +144,17 @@ Migration: `supabase/migrations/20260226101500_tool_framework.sql`
 - `research_traces`
 
 ### Files/retrieval
+
 - `files` (+ FTS index on `parsed_text`)
 - `file_chunks` (+ FTS index on `chunk_text`)
 - `file_embeddings` (double precision[] for optional embedding storage)
 
 ### Artifacts/exports/images
+
 - `artifacts` (docx/pdf/pptx/image storage references)
 
 ### Integrations/GitHub
+
 - `integrations` (encrypted tokens)
 - `repos`
 - `repo_files_cache` (+ FTS)
@@ -148,6 +162,7 @@ Migration: `supabase/migrations/20260226101500_tool_framework.sql`
 - `repo_embeddings`
 
 ### RLS notes
+
 - Workspace/project scoped via `public.user_has_workspace_access(workspace_id)`.
 - Creator-bound writes for sensitive rows (`tool_runs`, `research_reports`, `artifacts`, `integrations`, etc.).
 - `tool_registry` readable to authenticated; writes blocked from normal clients.
@@ -156,6 +171,7 @@ Migration: `supabase/migrations/20260226101500_tool_framework.sql`
 
 Registry interface is implemented in `lib/tools/types.ts`, `lib/tools/registry.ts`, `lib/tools/executor.ts`.
 Each tool definition includes:
+
 - `tool_name` (snake_case)
 - `tool_version`
 - `description`
@@ -169,6 +185,7 @@ Each tool definition includes:
 - `execute(context, input)`
 
 Implemented tools (v1.0.0):
+
 - Web: `web_search`, `web_fetch`
 - Research: `deep_research`
 - Images: `image_generate`
@@ -177,6 +194,7 @@ Implemented tools (v1.0.0):
 - GitHub: `github_connect_repo`, `repo_index`, `repo_list_files`, `repo_read_file`, `repo_search`, `propose_patch`, `apply_patch`, `run_checks`, `create_pull_request`
 
 Example invocation pattern (all tools use `POST /api/tools/execute`):
+
 ```json
 {
   "tool_name": "web_search",
@@ -190,6 +208,7 @@ Example invocation pattern (all tools use `POST /api/tools/execute`):
 ```
 
 Tool IO summary:
+
 - `web_search`: query options -> ranked result list with `canonical_url`.
 - `web_fetch`: url -> `clean_text`, `headings`, metadata, hash, word count.
 - `deep_research`: topic/options -> report markdown + citations + source bundle + trace + report id.
@@ -211,32 +230,38 @@ Tool IO summary:
 ## 5) Phased Build Plan
 
 ### Phase 1 (implemented)
+
 - Tool framework core (registry + schema validation + audit + rate limit + idempotency)
 - `web_search` + `web_fetch`
 - caching (`web_search_cache`, `web_pages_cache`)
 - `tool_runs` audit logging
 
 ### Phase 2 (implemented)
+
 - `deep_research` orchestrator
 - source scoring, conflicts/uncertainty capture
 - citations/source bundle/trace persistence
 - report retrieval route
 
 ### Phase 3 (implemented)
+
 - `file_ingest` for txt/md/csv/json/docx/pdf/pptx/xlsx (best-effort)
 - stable chunk IDs (hash-based)
 - `file_search` with scoped filters and reference metadata
 
 ### Phase 4 (implemented)
+
 - `export_docx`, `export_pdf`, `export_pptx`
 - `skill_run` wrapper
 - artifact storage linking via `artifacts`
 
 ### Phase 5 (implemented)
+
 - `image_generate` with OpenAI image API
 - storage + metadata tracking in `artifacts`
 
 ### Phase 6 (implemented)
+
 - GitHub repo connect (encrypted token storage)
 - indexing cache + file listing/reading/search
 - patch proposal + guarded apply + checks + PR creation
@@ -245,6 +270,7 @@ Tool IO summary:
 ## 6) Test Plan
 
 ### Unit tests
+
 - Schema validator:
   - accepts valid payloads, rejects shape drift
 - Diff applier:
@@ -255,6 +281,7 @@ Tool IO summary:
   - OpenAI/GitHub/private key patterns
 
 ### Integration tests
+
 - Tool execution API:
   - auth, rate-limit, idempotency replay, audit row states
 - Deep research:
@@ -265,6 +292,7 @@ Tool IO summary:
   - connect repo, index, read/search, propose/apply patch (approved), create PR
 
 ### Security tests
+
 - RLS boundaries across workspace/project
 - Redaction in audit payloads/log context
 - Write-action approval enforcement (`approved` + note)

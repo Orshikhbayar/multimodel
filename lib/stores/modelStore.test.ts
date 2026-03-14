@@ -2,9 +2,10 @@ import { act } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("zustand/middleware", async () => {
-  const actual = await vi.importActual<typeof import("zustand/middleware")>(
-    "zustand/middleware",
-  );
+  const actual =
+    await vi.importActual<typeof import("zustand/middleware")>(
+      "zustand/middleware",
+    );
   return {
     ...actual,
     persist: (config: unknown) => config,
@@ -53,16 +54,22 @@ describe("modelStore", () => {
     const slots = useModelStore.getState().slots;
 
     act(() => {
-      slots.slice(1).forEach((slot) => useModelStore.getState().toggleSlot(slot.slotId));
+      slots
+        .slice(1)
+        .forEach((slot) => useModelStore.getState().toggleSlot(slot.slotId));
     });
 
-    const onlyEnabled = useModelStore.getState().slots.find((slot) => slot.enabled)!;
+    const onlyEnabled = useModelStore
+      .getState()
+      .slots.find((slot) => slot.enabled)!;
 
     act(() => {
       useModelStore.getState().toggleSlot(onlyEnabled.slotId);
     });
 
-    const enabledCount = useModelStore.getState().slots.filter((slot) => slot.enabled).length;
+    const enabledCount = useModelStore
+      .getState()
+      .slots.filter((slot) => slot.enabled).length;
     expect(enabledCount).toBe(1);
   });
 

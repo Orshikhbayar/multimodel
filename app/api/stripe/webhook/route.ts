@@ -61,7 +61,9 @@ function getTopUpCreditDelta(packId: string | null | undefined) {
   return Math.round(pack.creditUsd * 100);
 }
 
-async function getUserIdByStripeCustomer(customerId: string | null | undefined) {
+async function getUserIdByStripeCustomer(
+  customerId: string | null | undefined,
+) {
   if (!customerId) return null;
 
   const admin = createSupabaseAdminClient();
@@ -112,7 +114,11 @@ async function handleCheckoutSessionCompleted(event: StripeWebhookEvent) {
 
   const paymentStatus =
     typeof object.payment_status === "string" ? object.payment_status : null;
-  if (paymentStatus && paymentStatus !== "paid" && paymentStatus !== "no_payment_required") {
+  if (
+    paymentStatus &&
+    paymentStatus !== "paid" &&
+    paymentStatus !== "no_payment_required"
+  ) {
     return;
   }
 
@@ -156,20 +162,22 @@ async function handleInvoicePaid(event: StripeWebhookEvent) {
   const admin = createSupabaseAdminClient();
   const object = event.data.object;
 
-  const customerId = typeof object.customer === "string" ? object.customer : null;
+  const customerId =
+    typeof object.customer === "string" ? object.customer : null;
   const userId = await getUserIdByStripeCustomer(customerId);
   if (!userId) {
     return;
   }
 
-  const lines =
-    ((object.lines as { data?: Array<Record<string, unknown>> } | undefined)
-      ?.data ?? []) as Array<Record<string, unknown>>;
+  const lines = ((
+    object.lines as { data?: Array<Record<string, unknown>> } | undefined
+  )?.data ?? []) as Array<Record<string, unknown>>;
   const firstLine = lines[0];
 
   const linePrice =
     (firstLine?.price as { id?: string } | undefined)?.id ??
-    ((object as { price?: { id?: string } }).price?.id ?? null);
+    (object as { price?: { id?: string } }).price?.id ??
+    null;
 
   const resolvedPlan = resolvePlanFromPriceId(linePrice);
   if (!resolvedPlan) {
@@ -204,7 +212,8 @@ async function handleSubscriptionSync(event: StripeWebhookEvent) {
   const admin = createSupabaseAdminClient();
   const object = event.data.object;
 
-  const customerId = typeof object.customer === "string" ? object.customer : null;
+  const customerId =
+    typeof object.customer === "string" ? object.customer : null;
   const userId = await getUserIdByStripeCustomer(customerId);
   if (!userId) {
     return;
@@ -232,7 +241,10 @@ async function handleSubscriptionSync(event: StripeWebhookEvent) {
     updates.billing_cadence = resolvedPlan.cadence;
   }
 
-  const { error } = await admin.from("profiles").update(updates).eq("id", userId);
+  const { error } = await admin
+    .from("profiles")
+    .update(updates)
+    .eq("id", userId);
   if (error) {
     throw error;
   }
@@ -242,7 +254,8 @@ async function handleReversal(event: StripeWebhookEvent) {
   const admin = createSupabaseAdminClient();
   const object = event.data.object;
 
-  const customerId = typeof object.customer === "string" ? object.customer : null;
+  const customerId =
+    typeof object.customer === "string" ? object.customer : null;
   const userId = await getUserIdByStripeCustomer(customerId);
   if (!userId) {
     return;
@@ -333,10 +346,10 @@ export async function POST(request: Request) {
   try {
     webhookSecret = getWebhookSecret();
   } catch (error) {
-    return new Response(
-      JSON.stringify({ error: (error as Error).message }),
-      { status: 503, headers: { "Content-Type": "application/json" } },
-    );
+    return new Response(JSON.stringify({ error: (error as Error).message }), {
+      status: 503,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   const isValid = verifyStripeWebhookSignature({
@@ -346,20 +359,20 @@ export async function POST(request: Request) {
   });
 
   if (!isValid) {
-    return new Response(
-      JSON.stringify({ error: "Invalid Stripe signature" }),
-      { status: 400, headers: { "Content-Type": "application/json" } },
-    );
+    return new Response(JSON.stringify({ error: "Invalid Stripe signature" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   let event: StripeWebhookEvent;
   try {
     event = parseStripeWebhookEvent(payload);
   } catch {
-    return new Response(
-      JSON.stringify({ error: "Invalid Stripe payload" }),
-      { status: 400, headers: { "Content-Type": "application/json" } },
-    );
+    return new Response(JSON.stringify({ error: "Invalid Stripe payload" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   const admin = createSupabaseAdminClient();
@@ -393,11 +406,13 @@ export async function POST(request: Request) {
     );
   }
 
-  const { error: insertError } = await admin.from("stripe_webhook_events").insert({
-    stripe_event_id: event.id,
-    type: event.type,
-    metadata: event.data.object as Json,
-  });
+  const { error: insertError } = await admin
+    .from("stripe_webhook_events")
+    .insert({
+      stripe_event_id: event.id,
+      type: event.type,
+      metadata: event.data.object as Json,
+    });
 
   if (insertError && insertError.code !== "23505") {
     return new Response(

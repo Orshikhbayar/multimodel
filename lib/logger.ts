@@ -1,6 +1,6 @@
 /**
  * Structured logging utility for server-side code
- * 
+ *
  * Provides consistent log formatting with context for debugging and monitoring.
  * In production, logs are JSON-formatted for easy parsing by log aggregators.
  */
@@ -15,15 +15,15 @@ export interface LogContext {
   // Request context
   requestId?: string;
   userId?: string;
-  
+
   // Resource context
   conversationId?: string;
   runId?: string;
   model?: string;
-  
+
   // Performance
   durationMs?: number;
-  
+
   // Additional context
   [key: string]: unknown;
 }
@@ -52,7 +52,8 @@ const LOG_LEVELS: Record<LogLevel, number> = {
 };
 
 // Minimum log level based on environment
-const MIN_LOG_LEVEL: LogLevel = process.env.NODE_ENV === "production" ? "info" : "debug";
+const MIN_LOG_LEVEL: LogLevel =
+  process.env.NODE_ENV === "production" ? "info" : "debug";
 const IS_PRODUCTION = process.env.NODE_ENV === "production";
 
 // ============================================
@@ -65,7 +66,7 @@ function shouldLog(level: LogLevel): boolean {
 
 function formatError(error: unknown): LogEntry["error"] | undefined {
   if (!error) return undefined;
-  
+
   if (error instanceof Error) {
     return {
       name: error.name,
@@ -73,7 +74,7 @@ function formatError(error: unknown): LogEntry["error"] | undefined {
       stack: IS_PRODUCTION ? undefined : error.stack,
     };
   }
-  
+
   return {
     name: "UnknownError",
     message: String(error),
@@ -91,15 +92,15 @@ function formatLogEntry(
     level,
     message,
   };
-  
+
   if (context && Object.keys(context).length > 0) {
     entry.context = context;
   }
-  
+
   if (error) {
     entry.error = formatError(error);
   }
-  
+
   return entry;
 }
 
@@ -107,7 +108,7 @@ function outputLog(entry: LogEntry): void {
   if (IS_PRODUCTION) {
     // JSON format for production (easier to parse)
     const output = JSON.stringify(entry);
-    
+
     switch (entry.level) {
       case "error":
         console.error(output);
@@ -121,10 +122,8 @@ function outputLog(entry: LogEntry): void {
   } else {
     // Human-readable format for development
     const prefix = `[${entry.timestamp.split("T")[1].split(".")[0]}] [${entry.level.toUpperCase()}]`;
-    const contextStr = entry.context 
-      ? ` ${JSON.stringify(entry.context)}`
-      : "";
-    
+    const contextStr = entry.context ? ` ${JSON.stringify(entry.context)}` : "";
+
     switch (entry.level) {
       case "error":
         console.error(`${prefix} ${entry.message}${contextStr}`);
@@ -175,7 +174,11 @@ export function warn(message: string, context?: LogContext): void {
 /**
  * Log an error message
  */
-export function error(message: string, err?: unknown, context?: LogContext): void {
+export function error(
+  message: string,
+  err?: unknown,
+  context?: LogContext,
+): void {
   if (!shouldLog("error")) return;
   outputLog(formatLogEntry("error", message, context, err));
 }
@@ -186,13 +189,13 @@ export function error(message: string, err?: unknown, context?: LogContext): voi
  */
 export function createLogger(baseContext: LogContext) {
   return {
-    debug: (message: string, context?: LogContext) => 
+    debug: (message: string, context?: LogContext) =>
       debug(message, { ...baseContext, ...context }),
-    info: (message: string, context?: LogContext) => 
+    info: (message: string, context?: LogContext) =>
       info(message, { ...baseContext, ...context }),
-    warn: (message: string, context?: LogContext) => 
+    warn: (message: string, context?: LogContext) =>
       warn(message, { ...baseContext, ...context }),
-    error: (message: string, err?: unknown, context?: LogContext) => 
+    error: (message: string, err?: unknown, context?: LogContext) =>
       error(message, err, { ...baseContext, ...context }),
   };
 }

@@ -31,8 +31,12 @@ export function PricingTiers() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <p className="text-xs uppercase text-muted-foreground">{t("billing.pricing")}</p>
-          <h1 className="text-3xl font-semibold">{t("billing.pricingTitle")}</h1>
+          <p className="text-xs uppercase text-muted-foreground">
+            {t("billing.pricing")}
+          </p>
+          <h1 className="text-3xl font-semibold">
+            {t("billing.pricingTitle")}
+          </h1>
           <p className="text-sm text-muted-foreground">
             {t("billing.pricingDescription")}
           </p>
@@ -100,12 +104,19 @@ export function PricingTiers() {
               <CardHeader className="space-y-2">
                 <div className="flex items-center justify-between">
                   <CardTitle>{plan.name}</CardTitle>
-                  {plan.id === "pro" && <Badge>{t("billing.mostPopular")}</Badge>}
+                  {plan.id === "pro" && (
+                    <Badge>{t("billing.mostPopular")}</Badge>
+                  )}
                 </div>
                 <div className="text-3xl font-semibold">
-                  {price === 0 ? t("billing.free") : formatCurrency(price, currency, locale)}
+                  {price === 0
+                    ? t("billing.free")
+                    : formatCurrency(price, currency, locale)}
                   <span className="ml-2 text-sm font-normal text-muted-foreground">
-                    /{billingCadence === "monthly" ? t("billing.perMonth") : t("billing.perYear")}
+                    /
+                    {billingCadence === "monthly"
+                      ? t("billing.perMonth")
+                      : t("billing.perYear")}
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground">

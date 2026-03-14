@@ -64,4 +64,16 @@ describe("supabase middleware", () => {
 
     expect(response.status).toBe(200);
   });
+
+  it("allows unknown routes to fall through to not-found", async () => {
+    mockGetClaims.mockResolvedValue({ data: { claims: null } });
+
+    const response = await updateSession(
+      createMockRequest(
+        "http://localhost:3000/definitely-does-not-exist",
+      ) as never,
+    );
+
+    expect(response.status).toBe(200);
+  });
 });

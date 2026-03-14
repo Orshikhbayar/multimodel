@@ -28,7 +28,9 @@ function sentencePreview(text: string, fallback: string): string {
   if (!normalized) return fallback;
 
   const sentence = normalized.split(/(?<=[.!?])\s+/)[0] ?? normalized;
-  return sentence.length > 90 ? `${sentence.slice(0, 87).trimEnd()}...` : sentence;
+  return sentence.length > 90
+    ? `${sentence.slice(0, 87).trimEnd()}...`
+    : sentence;
 }
 
 function secondsLabel(totalMs: number | null): string {
@@ -74,9 +76,7 @@ export function UnifiedAnswerFlow({
       )}
       aria-label={t("chat.unifiedAnswer")}
     >
-      {prompt ? (
-        <div className="unified-flow__prompt">{prompt}</div>
-      ) : null}
+      {prompt ? <div className="unified-flow__prompt">{prompt}</div> : null}
 
       <div className="unified-flow__network">
         <div className="unified-flow__center-line unified-flow__center-line--top" />
@@ -96,7 +96,8 @@ export function UnifiedAnswerFlow({
                 <article
                   className={cn(
                     "unified-flow__perspective-card w-full rounded-xl border bg-background/80 px-3 py-2 shadow-sm",
-                    run.status === "streaming" && "unified-flow__perspective-card--streaming",
+                    run.status === "streaming" &&
+                      "unified-flow__perspective-card--streaming",
                     run.status === "error" && "border-destructive/40",
                   )}
                 >
@@ -145,7 +146,9 @@ export function UnifiedAnswerFlow({
               remarkPlugins={[remarkGfm]}
               skipHtml
               components={{
-                p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                p: ({ children }) => (
+                  <p className="mb-2 last:mb-0">{children}</p>
+                ),
                 code: ({ className, children, ...props }) => {
                   const isInline = !className;
                   if (isInline) {
@@ -159,7 +162,8 @@ export function UnifiedAnswerFlow({
                     );
                   }
 
-                  const language = className?.replace("language-", "") ?? "text";
+                  const language =
+                    className?.replace("language-", "") ?? "text";
                   const code = String(children).replace(/\n$/, "");
                   return (
                     <UnifiedCodeBlock
@@ -222,12 +226,12 @@ function UnifiedCodeBlock({
     <div className="code-block my-3 overflow-hidden">
       <div className="code-block__header">
         <span className="code-block__label">{label}</span>
-        <button
-          type="button"
-          onClick={handleCopy}
-          className="code-block__copy"
-        >
-          {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+        <button type="button" onClick={handleCopy} className="code-block__copy">
+          {copied ? (
+            <Check className="h-3 w-3" />
+          ) : (
+            <Copy className="h-3 w-3" />
+          )}
           {copied ? copiedLabel : copyLabel}
         </button>
       </div>

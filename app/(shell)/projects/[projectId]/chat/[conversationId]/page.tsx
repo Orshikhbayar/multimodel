@@ -17,7 +17,9 @@ export default function ProjectConversationPage() {
   const conversationId = getParam(params?.conversationId);
   const { projects, conversations } = useChatStore();
   const project = projects.find((entry) => entry.id === projectId);
-  const conversation = conversations.find((entry) => entry.id === conversationId);
+  const conversation = conversations.find(
+    (entry) => entry.id === conversationId,
+  );
 
   if (!project) {
     return (

@@ -36,7 +36,9 @@ export default function ProjectsPage() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const activeProjects = projects.filter((project) => !project.archivedAt);
-  const archivedProjects = projects.filter((project) => Boolean(project.archivedAt));
+  const archivedProjects = projects.filter((project) =>
+    Boolean(project.archivedAt),
+  );
 
   const create = async () => {
     if (!name.trim()) return;
@@ -65,7 +67,9 @@ export default function ProjectsPage() {
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>{t("projects.createProject")}</DialogTitle>
-                  <DialogDescription>{t("projects.createProjectDescription")}</DialogDescription>
+                  <DialogDescription>
+                    {t("projects.createProjectDescription")}
+                  </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-3">
                   <div className="space-y-1.5">
@@ -78,7 +82,9 @@ export default function ProjectsPage() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="description">{t("projects.projectDescription")}</Label>
+                    <Label htmlFor="description">
+                      {t("projects.projectDescription")}
+                    </Label>
                     <Textarea
                       id="description"
                       value={description}
@@ -122,9 +128,7 @@ export default function ProjectsPage() {
             <Card>
               <CardHeader>
                 <CardTitle>{t("projects.nothingYet")}</CardTitle>
-                <CardDescription>
-                  {t("projects.spinUpProject")}
-                </CardDescription>
+                <CardDescription>{t("projects.spinUpProject")}</CardDescription>
               </CardHeader>
             </Card>
           )}

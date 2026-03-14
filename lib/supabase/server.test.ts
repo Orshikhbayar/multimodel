@@ -54,9 +54,8 @@ describe("supabase server helpers", () => {
       },
     });
 
-    const { createSupabaseServerClient, getAuthenticatedUser } = await import(
-      "@/lib/supabase/server"
-    );
+    const { createSupabaseServerClient, getAuthenticatedUser } =
+      await import("@/lib/supabase/server");
 
     const client = await createSupabaseServerClient();
     expect(client).toBeTruthy();

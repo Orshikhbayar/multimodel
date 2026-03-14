@@ -21,8 +21,10 @@ function makeThenableQuery(result: unknown) {
     order: vi.fn(() => query),
     range: vi.fn(() => query),
     eq: vi.fn(() => query),
-    then: (onFulfilled: (value: unknown) => unknown, onRejected?: (reason: unknown) => unknown) =>
-      Promise.resolve(result).then(onFulfilled, onRejected),
+    then: (
+      onFulfilled: (value: unknown) => unknown,
+      onRejected?: (reason: unknown) => unknown,
+    ) => Promise.resolve(result).then(onFulfilled, onRejected),
     catch: (onRejected: (reason: unknown) => unknown) =>
       Promise.resolve(result).catch(onRejected),
     finally: (onFinally: () => void) =>
@@ -36,7 +38,12 @@ vi.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: mockCreateSupabaseServerClient,
 }));
 
-import { checkQuota, getUsageRecords, getUsageSummary, recordUsage } from "@/lib/actions/usage";
+import {
+  checkQuota,
+  getUsageRecords,
+  getUsageSummary,
+  recordUsage,
+} from "@/lib/actions/usage";
 
 describe("usage actions (supabase)", () => {
   beforeEach(() => {
@@ -135,7 +142,10 @@ describe("usage actions (supabase)", () => {
     mockSelect.mockReturnValueOnce(
       makeThenableQuery({
         data: null,
-        error: { code: "42P01", message: 'relation "model_runs" does not exist' },
+        error: {
+          code: "42P01",
+          message: 'relation "model_runs" does not exist',
+        },
       }),
     );
 
@@ -158,8 +168,16 @@ describe("usage actions (supabase)", () => {
     mockSelect.mockReturnValueOnce(
       makeThenableQuery({
         data: [
-          { input_tokens: 100, output_tokens: 50, created_at: "2026-02-20T09:00:00.000Z" },
-          { input_tokens: 70, output_tokens: 30, created_at: "2026-02-20T11:00:00.000Z" },
+          {
+            input_tokens: 100,
+            output_tokens: 50,
+            created_at: "2026-02-20T09:00:00.000Z",
+          },
+          {
+            input_tokens: 70,
+            output_tokens: 30,
+            created_at: "2026-02-20T11:00:00.000Z",
+          },
         ],
         error: null,
       }),

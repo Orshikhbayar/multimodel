@@ -62,7 +62,12 @@ type BillingProfileRow = {
 };
 
 function normalizePlanId(value: string): PlanId {
-  if (value === "free" || value === "plus" || value === "pro" || value === "team") {
+  if (
+    value === "free" ||
+    value === "plus" ||
+    value === "pro" ||
+    value === "team"
+  ) {
     return value;
   }
   return "free";
@@ -76,8 +81,17 @@ function normalizeCurrency(value: string): Currency {
   return value === "MNT" ? "MNT" : "USD";
 }
 
-function getBalanceCents(profile: Pick<BillingProfileRow, "included_credits_cents" | "top_up_credits_cents" | "bonus_credits_cents">) {
-  return profile.included_credits_cents + profile.top_up_credits_cents + profile.bonus_credits_cents;
+function getBalanceCents(
+  profile: Pick<
+    BillingProfileRow,
+    "included_credits_cents" | "top_up_credits_cents" | "bonus_credits_cents"
+  >,
+) {
+  return (
+    profile.included_credits_cents +
+    profile.top_up_credits_cents +
+    profile.bonus_credits_cents
+  );
 }
 
 function toSummary(profile: BillingProfileRow): BillingSummary {
@@ -135,9 +149,12 @@ async function ensureBillingProfile(user: {
     .maybeSingle();
 
   if (existingError) {
-    throw new SupabaseBillingUnavailableError("Failed to read billing profile", {
-      cause: existingError,
-    });
+    throw new SupabaseBillingUnavailableError(
+      "Failed to read billing profile",
+      {
+        cause: existingError,
+      },
+    );
   }
 
   if (existing) {
@@ -153,15 +170,20 @@ async function ensureBillingProfile(user: {
   );
 
   if (createError || !created) {
-    throw new SupabaseBillingUnavailableError("Failed to create billing profile", {
-      cause: createError,
-    });
+    throw new SupabaseBillingUnavailableError(
+      "Failed to create billing profile",
+      {
+        cause: createError,
+      },
+    );
   }
 
   return created as BillingProfileRow;
 }
 
-async function resetPeriodIfNeeded(profile: BillingProfileRow): Promise<BillingProfileRow> {
+async function resetPeriodIfNeeded(
+  profile: BillingProfileRow,
+): Promise<BillingProfileRow> {
   const now = new Date();
   const periodEnd = new Date(profile.period_end_at);
   if (now < periodEnd) {
@@ -177,9 +199,12 @@ async function resetPeriodIfNeeded(profile: BillingProfileRow): Promise<BillingP
   );
 
   if (error || !updated) {
-    throw new SupabaseBillingUnavailableError("Failed to reset billing period", {
-      cause: error,
-    });
+    throw new SupabaseBillingUnavailableError(
+      "Failed to reset billing period",
+      {
+        cause: error,
+      },
+    );
   }
 
   return updated as BillingProfileRow;
@@ -245,9 +270,12 @@ export async function getBillingTransactions(options?: {
     .range(rangeStart, rangeEnd);
 
   if (error) {
-    throw new SupabaseBillingUnavailableError("Failed to read billing transactions", {
-      cause: error,
-    });
+    throw new SupabaseBillingUnavailableError(
+      "Failed to read billing transactions",
+      {
+        cause: error,
+      },
+    );
   }
 
   const balanceAfterUsd = getBalanceCents(profile) / 100;
@@ -343,7 +371,9 @@ export async function purchaseTopUp(params: {
   return toSummary(updated as BillingProfileRow);
 }
 
-export async function setBillingCurrency(currency: Currency): Promise<BillingSummary | null> {
+export async function setBillingCurrency(
+  currency: Currency,
+): Promise<BillingSummary | null> {
   const profile = await requireBillingProfile();
   if (!profile) {
     return null;
@@ -362,9 +392,12 @@ export async function setBillingCurrency(currency: Currency): Promise<BillingSum
   );
 
   if (rpcError || !updated) {
-    throw new SupabaseBillingUnavailableError("Failed to set billing currency", {
-      cause: rpcError,
-    });
+    throw new SupabaseBillingUnavailableError(
+      "Failed to set billing currency",
+      {
+        cause: rpcError,
+      },
+    );
   }
 
   return toSummary(updated as BillingProfileRow);

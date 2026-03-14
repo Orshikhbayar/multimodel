@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { ChatErrorBoundary, ErrorBoundary } from "@/components/ErrorBoundary";
 
-function ProblemChild() {
+function ProblemChild(): never {
   throw new Error("boom");
 }
 

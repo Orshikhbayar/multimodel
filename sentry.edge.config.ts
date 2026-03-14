@@ -1,6 +1,6 @@
 /**
  * Sentry Edge Configuration
- * 
+ *
  * This file configures Sentry for Edge runtime (middleware, edge API routes).
  * See: https://docs.sentry.io/platforms/javascript/guides/nextjs/
  */

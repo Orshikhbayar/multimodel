@@ -22,12 +22,15 @@ describe("supabase chat persistence", () => {
   it("reuses existing workspace", async () => {
     const client = createSupabaseClientMock();
     client.auth.getUser.mockResolvedValue({
-      data: { user: { id: "u1", email: "u1@example.com" } },
+      data: { user: { id: "u1", email: "u1@example.com" } as never },
       error: null,
     });
 
     const workspaces = client.from("workspaces");
-    workspaces.maybeSingle.mockResolvedValue({ data: { id: "w1" }, error: null });
+    workspaces.maybeSingle.mockResolvedValue({
+      data: { id: "w1" },
+      error: null,
+    });
 
     const id = await ensureWorkspaceId(client as never);
     expect(id).toBe("w1");
@@ -36,7 +39,7 @@ describe("supabase chat persistence", () => {
   it("creates workspace when none exists", async () => {
     const client = createSupabaseClientMock();
     client.auth.getUser.mockResolvedValue({
-      data: { user: { id: "u1", email: "u1@example.com" } },
+      data: { user: { id: "u1", email: "u1@example.com" } as never },
       error: null,
     });
 
@@ -59,7 +62,10 @@ describe("supabase chat persistence", () => {
     });
     await updateConversationTitle(client as never, { id: "c1", title: "New" });
     await deleteConversation(client as never, "c1");
-    await updateUserMessageContent(client as never, { messageId: "m1", content: "updated" });
+    await updateUserMessageContent(client as never, {
+      messageId: "m1",
+      content: "updated",
+    });
 
     expect(client.from).toHaveBeenCalledWith("conversations");
     expect(client.from).toHaveBeenCalledWith("messages");

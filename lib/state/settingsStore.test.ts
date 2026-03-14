@@ -1,7 +1,10 @@
 import { act } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { DEFAULT_SETTINGS, useAppSettingsStore } from "@/lib/state/settingsStore";
+import {
+  DEFAULT_SETTINGS,
+  useAppSettingsStore,
+} from "@/lib/state/settingsStore";
 
 describe("app settings store", () => {
   it("updates locale/theme/motion", () => {

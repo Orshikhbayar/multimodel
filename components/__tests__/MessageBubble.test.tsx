@@ -24,6 +24,20 @@ vi.mock("@/lib/stores", () => ({
   useConversationStore: () => ({
     updateMessageContent: mockUpdateMessageContent,
   }),
+  useWorkspaceStore: (
+    selector: ((state: { workspaceId: string }) => unknown) | undefined,
+  ) =>
+    selector
+      ? selector({ workspaceId: "workspace-test" })
+      : { workspaceId: "workspace-test" },
+  useSettingsStore: (
+    selector:
+      | ((state: { selectedWorkflowPackId: string | null }) => unknown)
+      | undefined,
+  ) =>
+    selector
+      ? selector({ selectedWorkflowPackId: "importer-solo-seller" })
+      : { selectedWorkflowPackId: "importer-solo-seller" },
 }));
 
 // Mock lucide-react with all icons used in MessageBubble
@@ -109,7 +123,7 @@ describe("MessageBubble", () => {
       const editButton = screen.getByTitle("Edit");
 
       fireEvent.click(retryButton);
-      expect(mockSendMessage).toHaveBeenCalledWith("Edit me");
+      expect(mockSendMessage).toHaveBeenCalledWith("Edit me", undefined);
 
       fireEvent.click(editButton);
       expect(screen.getByRole("textbox")).toBeInTheDocument();

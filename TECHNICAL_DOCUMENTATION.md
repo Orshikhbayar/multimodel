@@ -163,19 +163,19 @@ The application is deployed on Vercel with the following configuration:
 
 ### Required Environment Variables (Vercel)
 
-| Variable | Description |
-|----------|-------------|
-| `AUTH_SECRET` | NextAuth secret for session encryption |
-| `OPENAI_API_KEY` | OpenAI API key for chat completions |
+| Variable         | Description                            |
+| ---------------- | -------------------------------------- |
+| `AUTH_SECRET`    | NextAuth secret for session encryption |
+| `OPENAI_API_KEY` | OpenAI API key for chat completions    |
 
 ### Optional Environment Variables
 
-| Variable | Description |
-|----------|-------------|
-| `DATABASE_URL` | PostgreSQL URL (required for OAuth persistence) |
-| `GOOGLE_CLIENT_ID` | Google OAuth client ID |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
-| `SENTRY_DSN` | Sentry error tracking DSN |
+| Variable               | Description                                     |
+| ---------------------- | ----------------------------------------------- |
+| `DATABASE_URL`         | PostgreSQL URL (required for OAuth persistence) |
+| `GOOGLE_CLIENT_ID`     | Google OAuth client ID                          |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret                      |
+| `SENTRY_DSN`           | Sentry error tracking DSN                       |
 
 ## Environment Variables (Local)
 

@@ -14,7 +14,9 @@ vi.mock("@/lib/hooks/useChatActions", () => ({
 }));
 
 vi.mock("@/components/ModelPicker", () => ({
-  ModelPicker: ({ trigger }: { trigger: React.ReactNode }) => <div>{trigger}</div>,
+  ModelPicker: ({ trigger }: { trigger: React.ReactNode }) => (
+    <div>{trigger}</div>
+  ),
 }));
 
 import { Composer } from "@/components/Composer";
@@ -30,7 +32,7 @@ describe("Composer", () => {
         lockedModelIds={[]}
         onSelectModel={vi.fn()}
         onSelectLocked={vi.fn()}
-      />, 
+      />,
     );
 
     const textbox = screen.getByRole("textbox");

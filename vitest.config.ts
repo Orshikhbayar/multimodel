@@ -48,6 +48,7 @@ export default defineConfig({
             "lib/logger.test.ts",
             "lib/metrics.test.ts",
             "lib/modelCatalog.test.ts",
+            "lib/appUrl.test.ts",
             "lib/api/**/*.{test,spec}.ts",
             "lib/billing/**/*.{test,spec}.ts",
             "lib/supabase/**/*.{test,spec}.ts",

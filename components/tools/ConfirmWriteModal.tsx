@@ -59,7 +59,8 @@ export function ConfirmWriteModal({
             Confirm write action
           </DialogTitle>
           <DialogDescription>
-            `{toolName}` is a write tool and requires explicit confirmation from the server challenge.
+            `{toolName}` is a write tool and requires explicit confirmation from
+            the server challenge.
           </DialogDescription>
         </DialogHeader>
 
@@ -67,7 +68,8 @@ export function ConfirmWriteModal({
           <p>{warningText}</p>
           {expiresAt ? (
             <p className="text-[11px] opacity-80">
-              Confirmation token expires at {new Date(expiresAt).toLocaleString()}.
+              Confirmation token expires at{" "}
+              {new Date(expiresAt).toLocaleString()}.
             </p>
           ) : null}
         </div>
@@ -87,7 +89,12 @@ export function ConfirmWriteModal({
         </div>
 
         <DialogFooter>
-          <Button type="button" variant="ghost" onClick={onCancel} disabled={loading}>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={onCancel}
+            disabled={loading}
+          >
             Cancel
           </Button>
           <Button

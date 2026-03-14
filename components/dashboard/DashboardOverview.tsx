@@ -47,7 +47,8 @@ export function DashboardOverview() {
       [...transactions]
         .sort(
           (a, b) =>
-            new Date(b.createdAtISO).getTime() - new Date(a.createdAtISO).getTime(),
+            new Date(b.createdAtISO).getTime() -
+            new Date(a.createdAtISO).getTime(),
         )
         .slice(0, 6),
     [transactions],
@@ -59,7 +60,9 @@ export function DashboardOverview() {
         <p className="text-xs uppercase text-muted-foreground">
           {t("account.dashboardLabel")}
         </p>
-        <h1 className="text-2xl font-semibold">{t("account.dashboardTitle")}</h1>
+        <h1 className="text-2xl font-semibold">
+          {t("account.dashboardTitle")}
+        </h1>
         <p className="text-sm text-muted-foreground">
           {t("account.dashboardDescription")}
         </p>
@@ -80,7 +83,12 @@ export function DashboardOverview() {
               <p className="text-xl font-semibold">{currentPlan.name}</p>
               <Badge variant="secondary">{t("common.active")}</Badge>
             </div>
-            <Button asChild variant="outline" size="sm" className="w-full gap-2">
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="w-full gap-2"
+            >
               <Link href="/dashboard/plans">
                 {t("billing.changePlan")}
                 <ArrowUpRight className="h-3.5 w-3.5" />
@@ -104,11 +112,16 @@ export function DashboardOverview() {
             </p>
             <p className="text-xs text-muted-foreground">
               {t("billing.remaining", {
-                credits: formatCredits(includedCreditsRemaining, currency, locale),
+                credits: formatCredits(
+                  includedCreditsRemaining,
+                  currency,
+                  locale,
+                ),
               })}
             </p>
             <p className="text-xs text-muted-foreground">
-              {t("billing.topUpBalance")}: {formatCredits(topUpCreditsBalance, currency, locale)}
+              {t("billing.topUpBalance")}:{" "}
+              {formatCredits(topUpCreditsBalance, currency, locale)}
             </p>
             <Button asChild variant="ghost" size="sm" className="h-7 px-2">
               <Link href="/dashboard/usage">{t("billing.usage")}</Link>
@@ -139,7 +152,9 @@ export function DashboardOverview() {
                   {formatDate(new Date(recentTransactions[0].createdAtISO))}
                 </p>
                 <Button asChild variant="ghost" size="sm" className="h-7 px-2">
-                  <Link href="/dashboard/billing">{t("billing.pageTitle")}</Link>
+                  <Link href="/dashboard/billing">
+                    {t("billing.pageTitle")}
+                  </Link>
                 </Button>
               </>
             ) : (

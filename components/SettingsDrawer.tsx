@@ -1,7 +1,12 @@
 "use client";
 
 import { useMemo } from "react";
-import { SlidersHorizontal, Sparkles, UserRound, Megaphone } from "lucide-react";
+import {
+  SlidersHorizontal,
+  Sparkles,
+  UserRound,
+  Megaphone,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -18,11 +23,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { ModelPicker } from "@/components/ModelPicker";
 import { useI18n } from "@/lib/i18n";
-import {
-  MODELS,
-  getProviderById,
-  getModelById,
-} from "@/lib/modelCatalog";
+import { MODELS, getProviderById, getModelById } from "@/lib/modelCatalog";
 import { MODE_OPTIONS, WORKFLOW_PRESETS, useChatStore } from "@/lib/store";
 import { useBillingStore } from "@/lib/billing/store";
 import { getNextPlanForSlots, getPlanById } from "@/lib/billing/plans";
@@ -67,7 +68,7 @@ export function SettingsDrawer({ open, onOpenChange }: SettingsDrawerProps) {
       <SheetContent side="right" className="sm:max-w-xl p-0 h-full">
         <div className="flex h-full flex-col">
           <div className="border-b px-5 pb-3 pt-4">
-              <SheetHeader className="items-start">
+            <SheetHeader className="items-start">
               <SheetTitle>{t("settings.workspaceSettings")}</SheetTitle>
             </SheetHeader>
           </div>
@@ -77,7 +78,9 @@ export function SettingsDrawer({ open, onOpenChange }: SettingsDrawerProps) {
               <section className="space-y-3">
                 <div className="flex items-center gap-2">
                   <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
-                  <h4 className="text-sm font-semibold">{t("settings.aiTeam")}</h4>
+                  <h4 className="text-sm font-semibold">
+                    {t("settings.aiTeam")}
+                  </h4>
                 </div>
                 <div className="space-y-2">
                   {sortedSlots.map((slot) => {
@@ -120,7 +123,9 @@ export function SettingsDrawer({ open, onOpenChange }: SettingsDrawerProps) {
                                 {slot.label}
                               </p>
                               {isActive ? (
-                                <Badge variant="secondary">{t("common.active")}</Badge>
+                                <Badge variant="secondary">
+                                  {t("common.active")}
+                                </Badge>
                               ) : null}
                             </div>
                             <p className="text-xs text-muted-foreground">
@@ -143,7 +148,7 @@ export function SettingsDrawer({ open, onOpenChange }: SettingsDrawerProps) {
                               setSlotModel(slot.slotId, model?.id ?? modelId);
                             }}
                             lockedModelIds={lockedModelIds}
-                              onSelectLocked={(modelId) =>
+                            onSelectLocked={(modelId) =>
                               openUpgradeModal({
                                 reason: t("billing.unlockMoreModels"),
                                 lockedModelId: modelId,
@@ -168,7 +173,9 @@ export function SettingsDrawer({ open, onOpenChange }: SettingsDrawerProps) {
               <section className="space-y-3">
                 <div className="flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-muted-foreground" />
-                  <h4 className="text-sm font-semibold">{t("settings.workflowPreset")}</h4>
+                  <h4 className="text-sm font-semibold">
+                    {t("settings.workflowPreset")}
+                  </h4>
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {t("settings.presetsTuneDefaults")}
@@ -216,7 +223,9 @@ export function SettingsDrawer({ open, onOpenChange }: SettingsDrawerProps) {
               <section className="space-y-3">
                 <div className="flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-muted-foreground" />
-                  <h4 className="text-sm font-semibold">{t("settings.behavior")}</h4>
+                  <h4 className="text-sm font-semibold">
+                    {t("settings.behavior")}
+                  </h4>
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {t("settings.chooseHowTeamCollaborates")}
@@ -233,7 +242,10 @@ export function SettingsDrawer({ open, onOpenChange }: SettingsDrawerProps) {
                     >
                       <RadioGroupItem value={option.value} id={option.value} />
                       <div>
-                        <Label htmlFor={option.value} className="cursor-pointer">
+                        <Label
+                          htmlFor={option.value}
+                          className="cursor-pointer"
+                        >
                           {option.value === "smart"
                             ? t("settings.modeAuto")
                             : option.value === "conversation"

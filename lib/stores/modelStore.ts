@@ -153,7 +153,9 @@ export const useModelStore = create<ModelStore>()(
       version: STORAGE_VERSION,
       storage: createJSONStorage(() => localStorage),
       migrate: (persistedState) => {
-        const state = persistedState as Partial<PersistedModelStoreState> | undefined;
+        const state = persistedState as
+          | Partial<PersistedModelStoreState>
+          | undefined;
         const slots = migrateSlots(state?.slots);
         const activeSlotId =
           typeof state?.activeSlotId === "string" &&

@@ -22,7 +22,9 @@ export function DashboardPlans() {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-6 py-6">
       <div>
-        <p className="text-xs uppercase text-muted-foreground">{t("billing.pageLabel")}</p>
+        <p className="text-xs uppercase text-muted-foreground">
+          {t("billing.pageLabel")}
+        </p>
         <h1 className="text-2xl font-semibold">{t("billing.pricing")}</h1>
       </div>
 

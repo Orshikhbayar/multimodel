@@ -2,10 +2,11 @@
 
 import { Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2, LogIn } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { getBrowserAppBaseUrl } from "@/lib/appUrl";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -36,7 +37,12 @@ function GoogleIcon() {
 
 function GitHubIcon() {
   return (
-    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <svg
+      className="h-5 w-5"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden="true"
+    >
       <path d="M12 0C5.37 0 0 5.37 0 12a12 12 0 0 0 8.2 11.39c.6.11.8-.26.8-.58v-2.03c-3.34.73-4.04-1.42-4.04-1.42-.54-1.39-1.33-1.75-1.33-1.75-1.09-.75.08-.74.08-.74 1.2.09 1.84 1.24 1.84 1.24 1.07 1.83 2.81 1.3 3.49.99.11-.77.42-1.3.76-1.6-2.67-.3-5.47-1.34-5.47-5.93 0-1.31.47-2.38 1.23-3.22-.12-.3-.53-1.52.12-3.17 0 0 1.01-.32 3.3 1.23a11.56 11.56 0 0 1 6.01 0c2.29-1.55 3.3-1.23 3.3-1.23.65 1.65.24 2.87.12 3.17.76.84 1.23 1.91 1.23 3.22 0 4.61-2.81 5.62-5.49 5.92.43.37.82 1.1.82 2.22v3.29c0 .32.19.7.8.58A12 12 0 0 0 24 12c0-6.63-5.37-12-12-12" />
     </svg>
   );
@@ -55,7 +61,9 @@ function AuthForm() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [oauthProvider, setOauthProvider] = useState<"google" | "github" | null>(null);
+  const [oauthProvider, setOauthProvider] = useState<
+    "google" | "github" | null
+  >(null);
 
   const queryErrorMessage = useMemo(() => {
     switch (errorCode) {
@@ -73,18 +81,10 @@ function AuthForm() {
       return undefined;
     }
 
-    const configuredAppUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
-    const origin = window.location.origin;
-    const isLocalOrigin =
-      /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?$/i.test(origin);
-    const safeFallbackBase = isLocalOrigin
-      ? "https://multimodel-ai.vercel.app"
-      : origin;
-    const baseUrl =
-      configuredAppUrl && /^https?:\/\//i.test(configuredAppUrl)
-        ? configuredAppUrl
-        : safeFallbackBase;
-
+    const baseUrl = getBrowserAppBaseUrl({
+      configuredAppUrl: process.env.NEXT_PUBLIC_APP_URL,
+      origin: window.location.origin,
+    });
     const callback = new URL("/auth/callback", baseUrl);
     callback.searchParams.set("next", next.startsWith("/") ? next : "/");
     return callback.toString();
@@ -235,6 +235,7 @@ function AuthForm() {
           className="h-11 w-full"
           onClick={() => handleOAuth("google")}
           disabled={oauthLoading || isSubmitting}
+          aria-label="Continue with Google"
         >
           {oauthProvider === "google" ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -250,6 +251,7 @@ function AuthForm() {
           className="h-11 w-full"
           onClick={() => handleOAuth("github")}
           disabled={oauthLoading || isSubmitting}
+          aria-label="Continue with GitHub"
         >
           {oauthProvider === "github" ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -265,17 +267,20 @@ function AuthForm() {
           <span className="w-full border-t" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-card/90 px-2 text-muted-foreground">or with email</span>
+          <span className="bg-card/90 px-2 text-muted-foreground">
+            or with email
+          </span>
         </div>
       </div>
 
-      <form onSubmit={handleEmailAuth} className="space-y-4">
+      <form onSubmit={handleEmailAuth} className="space-y-4" noValidate>
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <Input
             id="email"
             type="email"
             placeholder="you@company.com"
+            autoComplete="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             required
@@ -285,11 +290,24 @@ function AuthForm() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password">Password</Label>
+            {mode === "signin" && (
+              <a
+                href="/auth/reset-password"
+                className="text-xs text-muted-foreground hover:text-primary transition-colors"
+              >
+                Forgot password?
+              </a>
+            )}
+          </div>
           <Input
             id="password"
             type="password"
             placeholder="••••••••"
+            autoComplete={
+              mode === "signin" ? "current-password" : "new-password"
+            }
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             required
@@ -305,6 +323,7 @@ function AuthForm() {
               id="confirmPassword"
               type="password"
               placeholder="••••••••"
+              autoComplete="new-password"
               value={confirmPassword}
               onChange={(event) => setConfirmPassword(event.target.value)}
               required
@@ -315,13 +334,19 @@ function AuthForm() {
         ) : null}
 
         {visibleError ? (
-          <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          <p
+            className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+            role="alert"
+          >
             {visibleError}
           </p>
         ) : null}
 
         {success ? (
-          <p className="rounded-md border border-emerald-300/50 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+          <p
+            className="rounded-md border border-emerald-300/50 bg-emerald-50 px-3 py-2 text-sm text-emerald-700"
+            role="status"
+          >
             {success}
           </p>
         ) : null}
@@ -360,16 +385,18 @@ function LoginFormFallback() {
 
 export default function LoginPage() {
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background p-4">
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background p-4">
       <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-primary/20 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-24 -right-16 h-72 w-72 rounded-full bg-chart-4/20 blur-3xl" />
       <div className="relative z-10 w-full max-w-md">
         <div className="rounded-[1.6rem] border border-border/70 bg-card/88 p-8 shadow-[0_26px_60px_-38px_hsl(var(--foreground)/0.58)] backdrop-blur-xl">
           <div className="mb-8 text-center">
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-primary/30 bg-primary/12">
-              <LogIn className="h-7 w-7 text-primary" />
+              <Sparkles className="h-7 w-7 text-primary" aria-hidden="true" />
             </div>
-            <h1 className="text-2xl font-semibold tracking-tight">Welcome</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">
+              Multi-Model AI
+            </h1>
             <p className="mt-2 text-sm text-muted-foreground">
               Sign in with Google, GitHub, or your email and password.
             </p>
@@ -380,6 +407,6 @@ export default function LoginPage() {
           </Suspense>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

@@ -12,15 +12,18 @@ import {
   useSyncExternalStore,
 } from "react";
 import {
+  Activity,
   ArrowLeftRight,
   ChevronDown,
   CreditCard,
   FolderKanban,
+  LibraryBig,
   MessageSquare,
   MoreHorizontal,
   Moon,
   Pencil,
   Plus,
+  TimerReset,
   Sun,
   Tag,
   Trash2,
@@ -130,10 +133,13 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
     [],
   );
 
-  const routeForConversation = useCallback((conv: (typeof conversations)[number]) => {
-    if (!conv.projectId) return `/chat/${conv.id}`;
-    return `/projects/${conv.projectId}/chat/${conv.id}`;
-  }, []);
+  const routeForConversation = useCallback(
+    (conv: (typeof conversations)[number]) => {
+      if (!conv.projectId) return `/chat/${conv.id}`;
+      return `/projects/${conv.projectId}/chat/${conv.id}`;
+    },
+    [],
+  );
 
   const handleNewGeneralChat = useCallback(() => {
     const id = createConversation(t("navigation.untitledChat"));
@@ -206,6 +212,24 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
         icon: FolderKanban,
       },
       {
+        key: "templates",
+        href: "/templates",
+        label: "Templates",
+        icon: LibraryBig,
+      },
+      {
+        key: "autopilot",
+        href: "/autopilot",
+        label: "Autopilot",
+        icon: TimerReset,
+      },
+      {
+        key: "insights",
+        href: "/insights",
+        label: "Insights",
+        icon: Activity,
+      },
+      {
         key: "billing",
         href: "/dashboard/billing",
         label: t("navigation.billing"),
@@ -221,70 +245,78 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
     [t],
   );
 
-  const applyChatSearch = useCallback((items: (typeof conversations)[number][]) => {
-    const query = chatQuery.trim().toLowerCase();
-    if (!query) return items;
+  const applyChatSearch = useCallback(
+    (items: (typeof conversations)[number][]) => {
+      const query = chatQuery.trim().toLowerCase();
+      if (!query) return items;
 
-    return items.filter((conv) => {
-      const title = (conv.title || t("navigation.untitledChat")).toLowerCase();
-      const latestMessage = conv.messages[conv.messages.length - 1];
-      const latestText =
-        latestMessage?.role === "assistant"
-          ? (latestMessage.runs?.[0]?.text ?? latestMessage.content)
-          : (latestMessage?.content ?? "");
-      return (
-        title.includes(query) || latestText.toLowerCase().includes(query)
-      );
-    });
-  }, [chatQuery, t]);
+      return items.filter((conv) => {
+        const title = (
+          conv.title || t("navigation.untitledChat")
+        ).toLowerCase();
+        const latestMessage = conv.messages[conv.messages.length - 1];
+        const latestText =
+          latestMessage?.role === "assistant"
+            ? (latestMessage.runs?.[0]?.text ?? latestMessage.content)
+            : (latestMessage?.content ?? "");
+        return (
+          title.includes(query) || latestText.toLowerCase().includes(query)
+        );
+      });
+    },
+    [chatQuery, t],
+  );
 
-  const groupConversationsByDate = useCallback((items: (typeof conversations)[number][]) => {
-    const groups = {
-      today: [] as (typeof conversations),
-      yesterday: [] as (typeof conversations),
-      week: [] as (typeof conversations),
-      older: [] as (typeof conversations),
-    };
-    const now = new Date();
-    const startOfToday = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-    ).getTime();
-    const dayMs = 24 * 60 * 60 * 1000;
-
-    items.forEach((conv) => {
-      const ts = getConversationActivityTimestamp(conv);
-      const startOfTs = new Date(ts);
-      const tsDay = new Date(
-        startOfTs.getFullYear(),
-        startOfTs.getMonth(),
-        startOfTs.getDate(),
+  const groupConversationsByDate = useCallback(
+    (items: (typeof conversations)[number][]) => {
+      const groups = {
+        today: [] as typeof conversations,
+        yesterday: [] as typeof conversations,
+        week: [] as typeof conversations,
+        older: [] as typeof conversations,
+      };
+      const now = new Date();
+      const startOfToday = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
       ).getTime();
-      const daysAgo = Math.floor((startOfToday - tsDay) / dayMs);
+      const dayMs = 24 * 60 * 60 * 1000;
 
-      if (daysAgo <= 0) {
-        groups.today.push(conv);
-      } else if (daysAgo === 1) {
-        groups.yesterday.push(conv);
-      } else if (daysAgo <= 7) {
-        groups.week.push(conv);
-      } else {
-        groups.older.push(conv);
-      }
-    });
+      items.forEach((conv) => {
+        const ts = getConversationActivityTimestamp(conv);
+        const startOfTs = new Date(ts);
+        const tsDay = new Date(
+          startOfTs.getFullYear(),
+          startOfTs.getMonth(),
+          startOfTs.getDate(),
+        ).getTime();
+        const daysAgo = Math.floor((startOfToday - tsDay) / dayMs);
 
-    return [
-      { key: "today", label: t("navigation.today"), items: groups.today },
-      {
-        key: "yesterday",
-        label: t("navigation.yesterday"),
-        items: groups.yesterday,
-      },
-      { key: "week", label: t("navigation.last7Days"), items: groups.week },
-      { key: "older", label: t("navigation.older"), items: groups.older },
-    ].filter((group) => group.items.length > 0);
-  }, [getConversationActivityTimestamp, t]);
+        if (daysAgo <= 0) {
+          groups.today.push(conv);
+        } else if (daysAgo === 1) {
+          groups.yesterday.push(conv);
+        } else if (daysAgo <= 7) {
+          groups.week.push(conv);
+        } else {
+          groups.older.push(conv);
+        }
+      });
+
+      return [
+        { key: "today", label: t("navigation.today"), items: groups.today },
+        {
+          key: "yesterday",
+          label: t("navigation.yesterday"),
+          items: groups.yesterday,
+        },
+        { key: "week", label: t("navigation.last7Days"), items: groups.week },
+        { key: "older", label: t("navigation.older"), items: groups.older },
+      ].filter((group) => group.items.length > 0);
+    },
+    [getConversationActivityTimestamp, t],
+  );
 
   const sortedGeneralConversations = useMemo(
     () =>
@@ -438,10 +470,15 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
             const active =
               item.href === "/projects"
                 ? pathname === "/projects" || pathname.startsWith("/projects/")
-                : pathname === item.href || pathname.startsWith(`${item.href}/`);
+                : pathname === item.href ||
+                  pathname.startsWith(`${item.href}/`);
             const Icon = item.icon;
             return (
-              <Link key={item.key} href={item.href} onClick={() => onNavigate?.()}>
+              <Link
+                key={item.key}
+                href={item.href}
+                onClick={() => onNavigate?.()}
+              >
                 <span
                   className={cn(
                     "flex items-center rounded-xl border border-border/80 px-3 py-2 text-xs font-medium tracking-normal transition-all",
@@ -464,12 +501,16 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
           <Link href="/dashboard/billing" onClick={() => onNavigate?.()}>
             <div className="rounded-xl border border-border/80 bg-[hsl(var(--app-panel)/0.68)] px-3 py-2 text-xs transition hover:bg-muted/40">
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">{t("navigation.plan")}</span>
+                <span className="text-muted-foreground">
+                  {t("navigation.plan")}
+                </span>
                 <Badge variant="secondary">{activePlan.name}</Badge>
               </div>
               <div className="mt-2 space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">{t("navigation.credits")}</span>
+                  <span className="text-muted-foreground">
+                    {t("navigation.credits")}
+                  </span>
                   <span className="font-medium">
                     {formatCredits(creditsRemaining, currency, locale)}
                   </span>
@@ -508,195 +549,204 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
             {visibleGeneralConversations.length === 0 &&
               visibleProjectConversations.length === 0 &&
               !collapsed && (
-              <p className="px-2 text-xs text-muted-foreground">
-                {chatQuery
-                  ? t("navigation.noMatchingChats")
-                  : t("navigation.noChatsYet")}
-              </p>
-            )}
-            {collapsed
-              ? collapsedConversations.map((conv) => (
-                  <Fragment key={conv.id}>
-                    <ChatListItem
-                      title={conv.title || t("navigation.untitledChat")}
-                      active={conv.id === currentConversationId}
-                      collapsed={collapsed}
-                      onSelect={() => {
-                        setCurrentConversation(conv.id);
-                        router.push(routeForConversation(conv));
-                        onNavigate?.();
-                      }}
-                      onRename={() => {
-                        const currentTitle = conv.title || t("navigation.untitledChat");
-                        setPendingRename({
-                          id: conv.id,
-                          title: currentTitle,
-                        });
-                        setRenameDraft(currentTitle);
-                      }}
-                      onDelete={() =>
-                        setPendingDelete({
-                          id: conv.id,
-                          title: conv.title || t("navigation.untitledChat"),
-                        })
-                      }
-                    />
-                  </Fragment>
-                ))
-              : (
-                <>
-                  <div className="space-y-1">
-                    <button
-                      type="button"
-                      className={cn(
-                        "flex w-full items-center justify-start gap-1.5 rounded-lg px-2 py-1 text-left text-[10px] font-semibold uppercase tracking-wide transition",
-                        isGeneralRoute
-                          ? "text-foreground"
-                          : "text-muted-foreground hover:text-foreground",
-                      )}
-                      onClick={() => {
-                        setGeneralChatsExpanded((value) => !value);
-                        router.push("/chat");
-                        onNavigate?.();
-                      }}
-                    >
-                      <span>{t("navigation.generalChats")}</span>
-                      <ChevronDown
-                        className={cn(
-                          "h-3.5 w-3.5 shrink-0 transition-transform",
-                          generalChatsExpanded ? "rotate-0" : "-rotate-90",
-                        )}
-                      />
-                    </button>
-                    {generalChatsExpanded ? (
-                      visibleGeneralConversations.length === 0 ? (
-                        chatQuery ? (
-                          <p className="px-2 text-xs text-muted-foreground">
-                            {t("navigation.noMatchingChats")}
-                          </p>
-                        ) : null
-                      ) : (
-                        groupedGeneralConversations.map((group) => (
-                          <div key={`general-${group.key}`} className="space-y-1">
-                            <p className="px-2 pt-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                              {group.label}
-                            </p>
-                            {group.items.map((conv) => (
-                              <Fragment key={conv.id}>
-                                <ChatListItem
-                                  title={conv.title || t("navigation.untitledChat")}
-                                  active={conv.id === currentConversationId}
-                                  collapsed={collapsed}
-                                  onSelect={() => {
-                                    setCurrentConversation(conv.id);
-                                    router.push(routeForConversation(conv));
-                                    onNavigate?.();
-                                  }}
-                                  onRename={() => {
-                                    const currentTitle =
-                                      conv.title || t("navigation.untitledChat");
-                                    setPendingRename({
-                                      id: conv.id,
-                                      title: currentTitle,
-                                    });
-                                    setRenameDraft(currentTitle);
-                                  }}
-                                  onDelete={() =>
-                                    setPendingDelete({
-                                      id: conv.id,
-                                      title: conv.title || t("navigation.untitledChat"),
-                                    })
-                                  }
-                                />
-                              </Fragment>
-                            ))}
-                          </div>
-                        ))
-                      )
-                    ) : null}
-                  </div>
-                  <div className="space-y-1">
-                    <button
-                      type="button"
-                      className={cn(
-                        "flex w-full items-center justify-start gap-1.5 rounded-lg px-2 py-1 text-left text-[10px] font-semibold uppercase tracking-wide transition",
-                        activeProjectId
-                          ? "text-foreground"
-                          : "text-muted-foreground hover:text-foreground",
-                      )}
-                      onClick={() => {
-                        setProjectChatsExpanded((value) => !value);
-                        if (activeProjectId) {
-                          router.push(`/projects/${activeProjectId}/chat`);
-                        } else {
-                          router.push("/projects");
-                        }
-                        onNavigate?.();
-                      }}
-                    >
-                      <span>{t("navigation.projectChats")}</span>
-                      <ChevronDown
-                        className={cn(
-                          "h-3.5 w-3.5 shrink-0 transition-transform",
-                          projectChatsExpanded ? "rotate-0" : "-rotate-90",
-                        )}
-                      />
-                    </button>
-                    {projectChatsExpanded ? (
-                      visibleProjectConversations.length === 0 ? (
-                        <p className="px-2 text-xs text-muted-foreground">
-                          {chatQuery
-                            ? t("navigation.noMatchingChats")
-                            : t("navigation.noChatsYet")}
-                        </p>
-                      ) : (
-                        groupedProjectConversations.map((group) => (
-                          <div key={`project-${group.key}`} className="space-y-1">
-                            <p className="px-2 pt-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                              {group.label}
-                            </p>
-                            {group.items.map((conv) => (
-                              <Fragment key={conv.id}>
-                                <ChatListItem
-                                  title={conv.title || t("navigation.untitledChat")}
-                                  subtitle={
-                                    conv.projectId
-                                      ? projectNameById.get(conv.projectId) ??
-                                        conv.projectId
-                                      : undefined
-                                  }
-                                  active={conv.id === currentConversationId}
-                                  collapsed={collapsed}
-                                  onSelect={() => {
-                                    setCurrentConversation(conv.id);
-                                    router.push(routeForConversation(conv));
-                                    onNavigate?.();
-                                  }}
-                                  onRename={() => {
-                                    const currentTitle =
-                                      conv.title || t("navigation.untitledChat");
-                                    setPendingRename({
-                                      id: conv.id,
-                                      title: currentTitle,
-                                    });
-                                    setRenameDraft(currentTitle);
-                                  }}
-                                  onDelete={() =>
-                                    setPendingDelete({
-                                      id: conv.id,
-                                      title: conv.title || t("navigation.untitledChat"),
-                                    })
-                                  }
-                                />
-                              </Fragment>
-                            ))}
-                          </div>
-                        ))
-                      )
-                    ) : null}
-                  </div>
-                </>
+                <p className="px-2 text-xs text-muted-foreground">
+                  {chatQuery
+                    ? t("navigation.noMatchingChats")
+                    : t("navigation.noChatsYet")}
+                </p>
               )}
+            {collapsed ? (
+              collapsedConversations.map((conv) => (
+                <Fragment key={conv.id}>
+                  <ChatListItem
+                    title={conv.title || t("navigation.untitledChat")}
+                    active={conv.id === currentConversationId}
+                    collapsed={collapsed}
+                    onSelect={() => {
+                      setCurrentConversation(conv.id);
+                      router.push(routeForConversation(conv));
+                      onNavigate?.();
+                    }}
+                    onRename={() => {
+                      const currentTitle =
+                        conv.title || t("navigation.untitledChat");
+                      setPendingRename({
+                        id: conv.id,
+                        title: currentTitle,
+                      });
+                      setRenameDraft(currentTitle);
+                    }}
+                    onDelete={() =>
+                      setPendingDelete({
+                        id: conv.id,
+                        title: conv.title || t("navigation.untitledChat"),
+                      })
+                    }
+                  />
+                </Fragment>
+              ))
+            ) : (
+              <>
+                <div className="space-y-1">
+                  <button
+                    type="button"
+                    className={cn(
+                      "flex w-full items-center justify-start gap-1.5 rounded-lg px-2 py-1 text-left text-[10px] font-semibold uppercase tracking-wide transition",
+                      isGeneralRoute
+                        ? "text-foreground"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                    onClick={() => {
+                      setGeneralChatsExpanded((value) => !value);
+                      router.push("/chat");
+                      onNavigate?.();
+                    }}
+                  >
+                    <span>{t("navigation.generalChats")}</span>
+                    <ChevronDown
+                      className={cn(
+                        "h-3.5 w-3.5 shrink-0 transition-transform",
+                        generalChatsExpanded ? "rotate-0" : "-rotate-90",
+                      )}
+                    />
+                  </button>
+                  {generalChatsExpanded ? (
+                    visibleGeneralConversations.length === 0 ? (
+                      chatQuery ? (
+                        <p className="px-2 text-xs text-muted-foreground">
+                          {t("navigation.noMatchingChats")}
+                        </p>
+                      ) : null
+                    ) : (
+                      groupedGeneralConversations.map((group) => (
+                        <div key={`general-${group.key}`} className="space-y-1">
+                          <p className="px-2 pt-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                            {group.label}
+                          </p>
+                          {group.items.map((conv) => (
+                            <Fragment key={conv.id}>
+                              <ChatListItem
+                                title={
+                                  conv.title || t("navigation.untitledChat")
+                                }
+                                active={conv.id === currentConversationId}
+                                collapsed={collapsed}
+                                onSelect={() => {
+                                  setCurrentConversation(conv.id);
+                                  router.push(routeForConversation(conv));
+                                  onNavigate?.();
+                                }}
+                                onRename={() => {
+                                  const currentTitle =
+                                    conv.title || t("navigation.untitledChat");
+                                  setPendingRename({
+                                    id: conv.id,
+                                    title: currentTitle,
+                                  });
+                                  setRenameDraft(currentTitle);
+                                }}
+                                onDelete={() =>
+                                  setPendingDelete({
+                                    id: conv.id,
+                                    title:
+                                      conv.title ||
+                                      t("navigation.untitledChat"),
+                                  })
+                                }
+                              />
+                            </Fragment>
+                          ))}
+                        </div>
+                      ))
+                    )
+                  ) : null}
+                </div>
+                <div className="space-y-1">
+                  <button
+                    type="button"
+                    className={cn(
+                      "flex w-full items-center justify-start gap-1.5 rounded-lg px-2 py-1 text-left text-[10px] font-semibold uppercase tracking-wide transition",
+                      activeProjectId
+                        ? "text-foreground"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                    onClick={() => {
+                      setProjectChatsExpanded((value) => !value);
+                      if (activeProjectId) {
+                        router.push(`/projects/${activeProjectId}/chat`);
+                      } else {
+                        router.push("/projects");
+                      }
+                      onNavigate?.();
+                    }}
+                  >
+                    <span>{t("navigation.projectChats")}</span>
+                    <ChevronDown
+                      className={cn(
+                        "h-3.5 w-3.5 shrink-0 transition-transform",
+                        projectChatsExpanded ? "rotate-0" : "-rotate-90",
+                      )}
+                    />
+                  </button>
+                  {projectChatsExpanded ? (
+                    visibleProjectConversations.length === 0 ? (
+                      <p className="px-2 text-xs text-muted-foreground">
+                        {chatQuery
+                          ? t("navigation.noMatchingChats")
+                          : t("navigation.noChatsYet")}
+                      </p>
+                    ) : (
+                      groupedProjectConversations.map((group) => (
+                        <div key={`project-${group.key}`} className="space-y-1">
+                          <p className="px-2 pt-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                            {group.label}
+                          </p>
+                          {group.items.map((conv) => (
+                            <Fragment key={conv.id}>
+                              <ChatListItem
+                                title={
+                                  conv.title || t("navigation.untitledChat")
+                                }
+                                subtitle={
+                                  conv.projectId
+                                    ? (projectNameById.get(conv.projectId) ??
+                                      conv.projectId)
+                                    : undefined
+                                }
+                                active={conv.id === currentConversationId}
+                                collapsed={collapsed}
+                                onSelect={() => {
+                                  setCurrentConversation(conv.id);
+                                  router.push(routeForConversation(conv));
+                                  onNavigate?.();
+                                }}
+                                onRename={() => {
+                                  const currentTitle =
+                                    conv.title || t("navigation.untitledChat");
+                                  setPendingRename({
+                                    id: conv.id,
+                                    title: currentTitle,
+                                  });
+                                  setRenameDraft(currentTitle);
+                                }}
+                                onDelete={() =>
+                                  setPendingDelete({
+                                    id: conv.id,
+                                    title:
+                                      conv.title ||
+                                      t("navigation.untitledChat"),
+                                  })
+                                }
+                              />
+                            </Fragment>
+                          ))}
+                        </div>
+                      ))
+                    )
+                  ) : null}
+                </div>
+              </>
+            )}
           </div>
         </ScrollArea>
       </div>
@@ -713,7 +763,11 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
             ) : (
               <div className="h-4 w-4 rounded-full bg-muted/40" />
             )}
-            {!collapsed && <span className="text-sm font-medium">{t("navigation.theme")}</span>}
+            {!collapsed && (
+              <span className="text-sm font-medium">
+                {t("navigation.theme")}
+              </span>
+            )}
           </div>
           <Switch
             checked={isDark}
@@ -741,7 +795,9 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>{t("dialogs.renameChatTitle")}</DialogTitle>
-            <DialogDescription>{t("dialogs.renameChatDescription")}</DialogDescription>
+            <DialogDescription>
+              {t("dialogs.renameChatDescription")}
+            </DialogDescription>
           </DialogHeader>
           <Input
             value={renameDraft}
@@ -804,7 +860,8 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
               variant="destructive"
               onClick={() => {
                 if (!pendingDelete) return;
-                const deletingCurrent = pendingDelete.id === currentConversationId;
+                const deletingCurrent =
+                  pendingDelete.id === currentConversationId;
                 removeConversation(pendingDelete.id);
                 setPendingDelete(null);
                 if (deletingCurrent) {

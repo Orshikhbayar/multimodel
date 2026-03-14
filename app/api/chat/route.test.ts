@@ -24,7 +24,10 @@ const {
   mockGetRateLimitHeaders: vi.fn(() => ({ "X-RateLimit-Limit": "20" })),
   mockStreamOpenAICompletion: vi.fn(),
   mockWithStreamTimeouts: vi.fn((generator) => generator),
-  mockGetStreamStatusFromError: vi.fn(() => ({ status: "error", message: "boom" })),
+  mockGetStreamStatusFromError: vi.fn(() => ({
+    status: "error",
+    message: "boom",
+  })),
   mockCreateSupabaseServerClient: vi.fn(),
   mockUpsert: vi.fn(async () => ({ data: null, error: null })),
   mockUpdateEq: vi.fn(async () => ({ data: null, error: null })),
@@ -46,7 +49,10 @@ const {
   MockStreamTimeoutError: class MockStreamTimeoutError extends Error {
     type: "connect" | "inactivity" | "max_duration";
 
-    constructor(type: "connect" | "inactivity" | "max_duration", elapsedMs: number) {
+    constructor(
+      type: "connect" | "inactivity" | "max_duration",
+      elapsedMs: number,
+    ) {
       super(`timeout-${type}-${elapsedMs}`);
       this.type = type;
     }
@@ -190,7 +196,9 @@ describe("/api/chat route", () => {
   it("returns 401 when user is not authenticated", async () => {
     mockCreateSupabaseServerClient.mockResolvedValue(createSupabaseMock(null));
 
-    const response = await POST(createRequest({ messages: [{ role: "user", content: "hi" }] }));
+    const response = await POST(
+      createRequest({ messages: [{ role: "user", content: "hi" }] }),
+    );
 
     expect(response.status).toBe(401);
     const json = await response.json();
@@ -205,7 +213,9 @@ describe("/api/chat route", () => {
       concurrency: { allowed: false, active: 0, limit: 2 },
     });
 
-    const response = await POST(createRequest({ messages: [{ role: "user", content: "hi" }] }));
+    const response = await POST(
+      createRequest({ messages: [{ role: "user", content: "hi" }] }),
+    );
 
     expect(response.status).toBe(429);
     const json = await response.json();
@@ -220,7 +230,9 @@ describe("/api/chat route", () => {
       concurrency: { allowed: false, active: 2, limit: 2 },
     });
 
-    const response = await POST(createRequest({ messages: [{ role: "user", content: "hi" }] }));
+    const response = await POST(
+      createRequest({ messages: [{ role: "user", content: "hi" }] }),
+    );
     expect(response.status).toBe(429);
     const json = await response.json();
     expect(json.error).toBe("Too many concurrent requests");
@@ -237,7 +249,9 @@ describe("/api/chat route", () => {
 
   it("returns 500 when OPENAI_API_KEY is missing", async () => {
     vi.stubEnv("OPENAI_API_KEY", "");
-    const response = await POST(createRequest({ messages: [{ role: "user", content: "hi" }] }));
+    const response = await POST(
+      createRequest({ messages: [{ role: "user", content: "hi" }] }),
+    );
 
     expect(response.status).toBe(500);
     const json = await response.json();
@@ -311,7 +325,10 @@ describe("/api/chat route", () => {
     expect(text).toContain("done");
     expect(mockUpsert).toHaveBeenCalled();
     expect(mockUpdateEq).toHaveBeenCalled();
-    expect(mockReleaseConcurrencySlot).toHaveBeenCalledWith("user-1", "stream-1");
+    expect(mockReleaseConcurrencySlot).toHaveBeenCalledWith(
+      "user-1",
+      "stream-1",
+    );
   });
 
   it("falls back to estimated tokens when usage event is absent", async () => {
@@ -401,7 +418,10 @@ describe("/api/chat route", () => {
     await reader?.read();
     await reader?.cancel();
 
-    expect(mockReleaseConcurrencySlot).toHaveBeenCalledWith("user-1", "stream-1");
+    expect(mockReleaseConcurrencySlot).toHaveBeenCalledWith(
+      "user-1",
+      "stream-1",
+    );
     expect(mockUpdateEq).toHaveBeenCalled();
   });
 

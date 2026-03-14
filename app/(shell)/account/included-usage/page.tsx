@@ -66,16 +66,13 @@ export default async function IncludedUsagePage() {
     );
   }
 
-  const grouped = report.rows.reduce(
-    (acc, row) => {
-      const key = row.bucket;
-      const list = acc.get(key) ?? [];
-      list.push(row);
-      acc.set(key, list);
-      return acc;
-    },
-    new Map<string, typeof report.rows>(),
-  );
+  const grouped = report.rows.reduce((acc, row) => {
+    const key = row.bucket;
+    const list = acc.get(key) ?? [];
+    list.push(row);
+    acc.set(key, list);
+    return acc;
+  }, new Map<string, typeof report.rows>());
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-6 py-6">
@@ -83,7 +80,8 @@ export default async function IncludedUsagePage() {
         <p className="text-xs uppercase text-muted-foreground">Billing</p>
         <h1 className="text-2xl font-semibold">Included Usage</h1>
         <p className="text-sm text-muted-foreground">
-          Current billing period: {new Date(report.periodStartISO).toLocaleDateString()} -{" "}
+          Current billing period:{" "}
+          {new Date(report.periodStartISO).toLocaleDateString()} -{" "}
           {new Date(report.periodEndISO).toLocaleDateString()}
         </p>
       </div>
@@ -96,7 +94,9 @@ export default async function IncludedUsagePage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-semibold">{formatUsdInt(report.usageValueUsdInt)}</p>
+            <p className="text-3xl font-semibold">
+              {formatUsdInt(report.usageValueUsdInt)}
+            </p>
           </CardContent>
         </Card>
 
@@ -107,10 +107,12 @@ export default async function IncludedUsagePage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-1">
-            <p className="text-3xl font-semibold">{formatUsdInt(report.billedUsdInt)}</p>
+            <p className="text-3xl font-semibold">
+              {formatUsdInt(report.billedUsdInt)}
+            </p>
             <p className="text-xs text-muted-foreground">
-              Subscription {formatUsdInt(report.subscriptionBilledUsdInt)} + overage{" "}
-              {formatUsdInt(report.overageBilledUsdInt)}
+              Subscription {formatUsdInt(report.subscriptionBilledUsdInt)} +
+              overage {formatUsdInt(report.overageBilledUsdInt)}
             </p>
           </CardContent>
         </Card>
@@ -122,7 +124,9 @@ export default async function IncludedUsagePage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-semibold">{formatUsdInt(report.savedUsdInt)}</p>
+            <p className="text-3xl font-semibold">
+              {formatUsdInt(report.savedUsdInt)}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -132,16 +136,17 @@ export default async function IncludedUsagePage() {
           <CardTitle>Included Usage Breakdown</CardTitle>
           <Popover>
             <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
-                  aria-label="How cost is calculated"
-                >
-                  <Info className="h-4 w-4" />
-                </button>
+              <button
+                type="button"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
+                aria-label="How cost is calculated"
+              >
+                <Info className="h-4 w-4" />
+              </button>
             </PopoverTrigger>
             <PopoverContent className="max-w-sm text-xs leading-relaxed">
-                Cost is calculated using public API-equivalent rates. Included means covered by your plan or Auto policy.
+              Cost is calculated using public API-equivalent rates. Included
+              means covered by your plan or Auto policy.
             </PopoverContent>
           </Popover>
         </CardHeader>
@@ -149,7 +154,9 @@ export default async function IncludedUsagePage() {
           {Array.from(grouped.entries()).map(([bucket, rows]) => (
             <div key={bucket} className="space-y-2">
               <div className="flex items-center justify-between">
-                <h2 className="text-sm font-semibold">{BUCKET_TITLE[bucket] ?? bucket}</h2>
+                <h2 className="text-sm font-semibold">
+                  {BUCKET_TITLE[bucket] ?? bucket}
+                </h2>
                 {bucket === "included_plan" ||
                 bucket === "included_auto" ||
                 bucket === "bonus" ? (
@@ -173,10 +180,17 @@ export default async function IncludedUsagePage() {
                   </thead>
                   <tbody>
                     {rows.map((row) => (
-                      <tr key={`${row.bucket}:${row.modelId}`} className="border-t">
+                      <tr
+                        key={`${row.bucket}:${row.modelId}`}
+                        className="border-t"
+                      >
                         <td className="px-3 py-2 font-medium">{row.modelId}</td>
-                        <td className="px-3 py-2">{formatTokens(row.tokens)}</td>
-                        <td className="px-3 py-2">{formatUsdInt(row.usageValueUsdInt)}</td>
+                        <td className="px-3 py-2">
+                          {formatTokens(row.tokens)}
+                        </td>
+                        <td className="px-3 py-2">
+                          {formatUsdInt(row.usageValueUsdInt)}
+                        </td>
                         <td className="px-3 py-2">
                           {row.included ? (
                             <Badge variant="secondary">Included</Badge>

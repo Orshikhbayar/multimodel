@@ -26,7 +26,10 @@ export async function GET(request: NextRequest) {
   const hasProjectParam = params.has("project_id");
   const runId = params.get("run_id");
   const includePayloads = params.get("include_payloads") === "true";
-  const limit = Math.min(100, Math.max(1, Number.parseInt(params.get("limit") ?? "30", 10)));
+  const limit = Math.min(
+    100,
+    Math.max(1, Number.parseInt(params.get("limit") ?? "30", 10)),
+  );
 
   const db = supabase as any;
   const selectColumns = includePayloads
@@ -50,13 +53,10 @@ export async function GET(request: NextRequest) {
     const { data: run, error } = await query.eq("id", runId).maybeSingle();
 
     if (error) {
-      return new Response(
-        JSON.stringify({ error: error.message, requestId }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        },
-      );
+      return new Response(JSON.stringify({ error: error.message, requestId }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     if (!run) {
@@ -69,13 +69,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return new Response(
-      JSON.stringify({ requestId, run }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      },
-    );
+    return new Response(JSON.stringify({ requestId, run }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   query = query.order("started_at", { ascending: false }).limit(limit);
@@ -83,20 +80,14 @@ export async function GET(request: NextRequest) {
   const { data: runs, error } = await query;
 
   if (error) {
-    return new Response(
-      JSON.stringify({ error: error.message, requestId }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
-    );
+    return new Response(JSON.stringify({ error: error.message, requestId }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
-  return new Response(
-    JSON.stringify({ requestId, runs: runs ?? [] }),
-    {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    },
-  );
+  return new Response(JSON.stringify({ requestId, runs: runs ?? [] }), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
 }

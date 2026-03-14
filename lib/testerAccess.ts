@@ -11,7 +11,9 @@ function parseUnlimitedTesterEmails(raw: string | undefined): string[] {
 }
 
 export function getUnlimitedTesterEmails(): string[] {
-  const configured = parseUnlimitedTesterEmails(process.env.UNLIMITED_TESTER_EMAILS);
+  const configured = parseUnlimitedTesterEmails(
+    process.env.UNLIMITED_TESTER_EMAILS,
+  );
   const admin = normalizeEmail(process.env.ADMIN_EMAIL);
   const deduped = new Set<string>(configured);
 
@@ -22,7 +24,9 @@ export function getUnlimitedTesterEmails(): string[] {
   return [...deduped];
 }
 
-export function isUnlimitedTesterEmail(email: string | null | undefined): boolean {
+export function isUnlimitedTesterEmail(
+  email: string | null | undefined,
+): boolean {
   const normalized = normalizeEmail(email);
   if (!normalized) return false;
   return getUnlimitedTesterEmails().includes(normalized);

@@ -1,4 +1,8 @@
-import type { ToolDefinition, ToolExecutionContext, ToolRunCost } from "@/lib/tools/types";
+import type {
+  ToolDefinition,
+  ToolExecutionContext,
+  ToolRunCost,
+} from "@/lib/tools/types";
 import { hashCanonicalJson } from "@/lib/tools/hash";
 import { redactSecretsDeep } from "@/lib/security/secrets";
 
@@ -17,7 +21,10 @@ export async function startToolAudit(
     from: (table: string) => {
       insert: (value: Record<string, unknown>) => {
         select: (value: string) => {
-          single: () => Promise<{ data: { id?: string } | null; error: { message: string } | null }>;
+          single: () => Promise<{
+            data: { id?: string } | null;
+            error: { message: string } | null;
+          }>;
         };
       };
     };
@@ -48,7 +55,9 @@ export async function startToolAudit(
     .single();
 
   if (error || !data?.id) {
-    throw new Error(`Failed to create tool audit run: ${error?.message ?? "unknown"}`);
+    throw new Error(
+      `Failed to create tool audit run: ${error?.message ?? "unknown"}`,
+    );
   }
 
   return {
@@ -67,7 +76,10 @@ export async function completeToolAudit(
   const db = context.supabase as unknown as {
     from: (table: string) => {
       update: (value: Record<string, unknown>) => {
-        eq: (column: string, filter: string) => Promise<{ error: { message: string } | null }>;
+        eq: (
+          column: string,
+          filter: string,
+        ) => Promise<{ error: { message: string } | null }>;
       };
     };
   };
@@ -101,7 +113,10 @@ export async function failToolAudit(
   const db = context.supabase as unknown as {
     from: (table: string) => {
       update: (value: Record<string, unknown>) => {
-        eq: (column: string, filter: string) => Promise<{ error: { message: string } | null }>;
+        eq: (
+          column: string,
+          filter: string,
+        ) => Promise<{ error: { message: string } | null }>;
       };
     };
   };
