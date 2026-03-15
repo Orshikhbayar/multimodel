@@ -1,5 +1,10 @@
+import { Suspense } from "react";
 import { DashboardBilling } from "@/components/dashboard/DashboardBilling";
 
 export default function DashboardBillingPage() {
-  return <DashboardBilling />;
+  return (
+    <Suspense>
+      <DashboardBilling />
+    </Suspense>
+  );
 }
