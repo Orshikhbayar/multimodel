@@ -1,283 +1,479 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Senior Engineer Code Review — multimodel-ai</title>
-<style>
-  :root {
-    --bg: #0d1117;
-    --surface: #161b22;
-    --surface2: #1c2230;
-    --border: #30363d;
-    --text: #e6edf3;
-    --muted: #8b949e;
-    --red: #f85149;
-    --orange: #e3a451;
-    --yellow: #d29922;
-    --green: #3fb950;
-    --blue: #58a6ff;
-    --purple: #bc8cff;
-    --cyan: #79c0ff;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-    font-size: 14px;
-    line-height: 1.6;
-    padding: 40px 24px;
-    max-width: 1100px;
-    margin: 0 auto;
-  }
-  h1 { font-size: 28px; font-weight: 700; margin-bottom: 6px; color: var(--text); }
-  h2 { font-size: 20px; font-weight: 600; margin: 40px 0 16px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
-  h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
-  .meta { color: var(--muted); font-size: 13px; margin-bottom: 32px; }
-  .meta span { margin-right: 24px; }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Senior Engineer Code Review — multimodel-ai</title>
+    <style>
+      :root {
+        --bg: #0d1117;
+        --surface: #161b22;
+        --surface2: #1c2230;
+        --border: #30363d;
+        --text: #e6edf3;
+        --muted: #8b949e;
+        --red: #f85149;
+        --orange: #e3a451;
+        --yellow: #d29922;
+        --green: #3fb950;
+        --blue: #58a6ff;
+        --purple: #bc8cff;
+        --cyan: #79c0ff;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+        font-size: 14px;
+        line-height: 1.6;
+        padding: 40px 24px;
+        max-width: 1100px;
+        margin: 0 auto;
+      }
+      h1 {
+        font-size: 28px;
+        font-weight: 700;
+        margin-bottom: 6px;
+        color: var(--text);
+      }
+      h2 {
+        font-size: 20px;
+        font-weight: 600;
+        margin: 40px 0 16px;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 8px;
+      }
+      h3 {
+        font-size: 15px;
+        font-weight: 600;
+        margin-bottom: 8px;
+      }
+      .meta {
+        color: var(--muted);
+        font-size: 13px;
+        margin-bottom: 32px;
+      }
+      .meta span {
+        margin-right: 24px;
+      }
 
-  .scorecard {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 12px;
-    margin-bottom: 36px;
-  }
-  .score-box {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 16px;
-    text-align: center;
-  }
-  .score-box .label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 8px; }
-  .score-box .value { font-size: 32px; font-weight: 700; }
-  .score-box.red .value { color: var(--red); }
-  .score-box.orange .value { color: var(--orange); }
-  .score-box.yellow .value { color: var(--yellow); }
-  .score-box.green .value { color: var(--green); }
-  .score-box.blue .value { color: var(--blue); }
+      .scorecard {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 12px;
+        margin-bottom: 36px;
+      }
+      .score-box {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 16px;
+        text-align: center;
+      }
+      .score-box .label {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+      .score-box .value {
+        font-size: 32px;
+        font-weight: 700;
+      }
+      .score-box.red .value {
+        color: var(--red);
+      }
+      .score-box.orange .value {
+        color: var(--orange);
+      }
+      .score-box.yellow .value {
+        color: var(--yellow);
+      }
+      .score-box.green .value {
+        color: var(--green);
+      }
+      .score-box.blue .value {
+        color: var(--blue);
+      }
 
-  .finding {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    margin-bottom: 16px;
-    overflow: hidden;
-  }
-  .finding-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 14px 16px;
-    border-bottom: 1px solid var(--border);
-    cursor: pointer;
-  }
-  .badge {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: .05em;
-    white-space: nowrap;
-  }
-  .badge.critical { background: rgba(248,81,73,.18); color: var(--red); border: 1px solid rgba(248,81,73,.4); }
-  .badge.high { background: rgba(227,164,81,.15); color: var(--orange); border: 1px solid rgba(227,164,81,.35); }
-  .badge.medium { background: rgba(210,153,34,.12); color: var(--yellow); border: 1px solid rgba(210,153,34,.3); }
-  .badge.low { background: rgba(63,185,80,.1); color: var(--green); border: 1px solid rgba(63,185,80,.25); }
-  .badge.info { background: rgba(88,166,255,.1); color: var(--blue); border: 1px solid rgba(88,166,255,.25); }
+      .finding {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        margin-bottom: 16px;
+        overflow: hidden;
+      }
+      .finding-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--border);
+        cursor: pointer;
+      }
+      .badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        white-space: nowrap;
+      }
+      .badge.critical {
+        background: rgba(248, 81, 73, 0.18);
+        color: var(--red);
+        border: 1px solid rgba(248, 81, 73, 0.4);
+      }
+      .badge.high {
+        background: rgba(227, 164, 81, 0.15);
+        color: var(--orange);
+        border: 1px solid rgba(227, 164, 81, 0.35);
+      }
+      .badge.medium {
+        background: rgba(210, 153, 34, 0.12);
+        color: var(--yellow);
+        border: 1px solid rgba(210, 153, 34, 0.3);
+      }
+      .badge.low {
+        background: rgba(63, 185, 80, 0.1);
+        color: var(--green);
+        border: 1px solid rgba(63, 185, 80, 0.25);
+      }
+      .badge.info {
+        background: rgba(88, 166, 255, 0.1);
+        color: var(--blue);
+        border: 1px solid rgba(88, 166, 255, 0.25);
+      }
 
-  .finding-title { font-weight: 600; flex: 1; font-size: 14px; }
-  .finding-file { font-size: 12px; color: var(--muted); font-family: 'SF Mono', 'Fira Code', monospace; }
-  .finding-body { padding: 16px; }
-  .finding-body p { margin-bottom: 10px; color: var(--muted); line-height: 1.65; }
-  .finding-body p:last-child { margin-bottom: 0; }
-  .finding-body strong { color: var(--text); }
+      .finding-title {
+        font-weight: 600;
+        flex: 1;
+        font-size: 14px;
+      }
+      .finding-file {
+        font-size: 12px;
+        color: var(--muted);
+        font-family: "SF Mono", "Fira Code", monospace;
+      }
+      .finding-body {
+        padding: 16px;
+      }
+      .finding-body p {
+        margin-bottom: 10px;
+        color: var(--muted);
+        line-height: 1.65;
+      }
+      .finding-body p:last-child {
+        margin-bottom: 0;
+      }
+      .finding-body strong {
+        color: var(--text);
+      }
 
-  code {
-    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
-    font-size: 12px;
-    background: rgba(110,118,129,.15);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 1px 5px;
-    color: var(--cyan);
-  }
-  pre {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 14px 16px;
-    font-family: 'SF Mono', 'Fira Code', monospace;
-    font-size: 12px;
-    overflow-x: auto;
-    line-height: 1.6;
-    margin: 10px 0;
-    color: var(--cyan);
-  }
-  pre .comment { color: var(--muted); }
-  pre .bad { color: var(--red); }
-  pre .good { color: var(--green); }
-  pre .key { color: var(--purple); }
+      code {
+        font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+        font-size: 12px;
+        background: rgba(110, 118, 129, 0.15);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 1px 5px;
+        color: var(--cyan);
+      }
+      pre {
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 14px 16px;
+        font-family: "SF Mono", "Fira Code", monospace;
+        font-size: 12px;
+        overflow-x: auto;
+        line-height: 1.6;
+        margin: 10px 0;
+        color: var(--cyan);
+      }
+      pre .comment {
+        color: var(--muted);
+      }
+      pre .bad {
+        color: var(--red);
+      }
+      pre .good {
+        color: var(--green);
+      }
+      pre .key {
+        color: var(--purple);
+      }
 
-  .enhance-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-bottom: 32px;
-  }
-  @media (max-width: 680px) { .enhance-grid { grid-template-columns: 1fr; } }
-  .enhance-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 18px;
-  }
-  .enhance-card h3 { color: var(--blue); font-size: 14px; margin-bottom: 10px; }
-  .enhance-card .impact { font-size: 11px; color: var(--muted); margin-bottom: 12px; display: flex; gap: 12px; }
-  .enhance-card .impact span { display: flex; align-items: center; gap: 4px; }
-  .enhance-card p { color: var(--muted); font-size: 13px; line-height: 1.6; margin-bottom: 8px; }
-  .enhance-card ul { padding-left: 18px; }
-  .enhance-card li { color: var(--muted); font-size: 13px; margin-bottom: 4px; }
+      .enhance-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 32px;
+      }
+      @media (max-width: 680px) {
+        .enhance-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .enhance-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 18px;
+      }
+      .enhance-card h3 {
+        color: var(--blue);
+        font-size: 14px;
+        margin-bottom: 10px;
+      }
+      .enhance-card .impact {
+        font-size: 11px;
+        color: var(--muted);
+        margin-bottom: 12px;
+        display: flex;
+        gap: 12px;
+      }
+      .enhance-card .impact span {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .enhance-card p {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.6;
+        margin-bottom: 8px;
+      }
+      .enhance-card ul {
+        padding-left: 18px;
+      }
+      .enhance-card li {
+        color: var(--muted);
+        font-size: 13px;
+        margin-bottom: 4px;
+      }
 
-  .arch-diagram {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 24px;
-    margin-bottom: 28px;
-    overflow-x: auto;
-  }
-  .arch-diagram svg { max-width: 100%; height: auto; }
+      .arch-diagram {
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 24px;
+        margin-bottom: 28px;
+        overflow-x: auto;
+      }
+      .arch-diagram svg {
+        max-width: 100%;
+        height: auto;
+      }
 
-  .roadmap {
-    margin-bottom: 32px;
-  }
-  .roadmap-row {
-    display: grid;
-    grid-template-columns: 120px 1fr;
-    gap: 16px;
-    margin-bottom: 8px;
-    align-items: start;
-  }
-  .roadmap-phase {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 8px 12px;
-    font-size: 12px;
-    font-weight: 600;
-    text-align: center;
-  }
-  .roadmap-phase.p1 { color: var(--red); border-color: rgba(248,81,73,.4); }
-  .roadmap-phase.p2 { color: var(--orange); border-color: rgba(227,164,81,.4); }
-  .roadmap-phase.p3 { color: var(--blue); border-color: rgba(88,166,255,.35); }
-  .roadmap-items { display: flex; flex-wrap: wrap; gap: 8px; }
-  .roadmap-item {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 6px 12px;
-    font-size: 12px;
-    color: var(--text);
-  }
+      .roadmap {
+        margin-bottom: 32px;
+      }
+      .roadmap-row {
+        display: grid;
+        grid-template-columns: 120px 1fr;
+        gap: 16px;
+        margin-bottom: 8px;
+        align-items: start;
+      }
+      .roadmap-phase {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 8px 12px;
+        font-size: 12px;
+        font-weight: 600;
+        text-align: center;
+      }
+      .roadmap-phase.p1 {
+        color: var(--red);
+        border-color: rgba(248, 81, 73, 0.4);
+      }
+      .roadmap-phase.p2 {
+        color: var(--orange);
+        border-color: rgba(227, 164, 81, 0.4);
+      }
+      .roadmap-phase.p3 {
+        color: var(--blue);
+        border-color: rgba(88, 166, 255, 0.35);
+      }
+      .roadmap-items {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .roadmap-item {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 6px 12px;
+        font-size: 12px;
+        color: var(--text);
+      }
 
-  .verdict {
-    background: linear-gradient(135deg, rgba(248,81,73,.07), rgba(227,164,81,.05));
-    border: 1px solid rgba(248,81,73,.25);
-    border-radius: 10px;
-    padding: 24px;
-    margin-bottom: 32px;
-  }
-  .verdict h3 { color: var(--red); margin-bottom: 12px; font-size: 16px; }
-  .verdict p { color: var(--muted); line-height: 1.7; margin-bottom: 10px; }
-  .verdict p:last-child { margin-bottom: 0; }
-  .verdict strong { color: var(--text); }
+      .verdict {
+        background: linear-gradient(
+          135deg,
+          rgba(248, 81, 73, 0.07),
+          rgba(227, 164, 81, 0.05)
+        );
+        border: 1px solid rgba(248, 81, 73, 0.25);
+        border-radius: 10px;
+        padding: 24px;
+        margin-bottom: 32px;
+      }
+      .verdict h3 {
+        color: var(--red);
+        margin-bottom: 12px;
+        font-size: 16px;
+      }
+      .verdict p {
+        color: var(--muted);
+        line-height: 1.7;
+        margin-bottom: 10px;
+      }
+      .verdict p:last-child {
+        margin-bottom: 0;
+      }
+      .verdict strong {
+        color: var(--text);
+      }
 
-  .summary-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 24px;
-    font-size: 13px;
-  }
-  .summary-table th {
-    text-align: left;
-    padding: 10px 14px;
-    background: var(--surface2);
-    color: var(--muted);
-    font-weight: 600;
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: .06em;
-    border-bottom: 1px solid var(--border);
-  }
-  .summary-table td {
-    padding: 10px 14px;
-    border-bottom: 1px solid var(--border);
-    color: var(--text);
-    vertical-align: top;
-  }
-  .summary-table tr:last-child td { border-bottom: none; }
-  .summary-table .file-col { font-family: 'SF Mono', monospace; font-size: 11px; color: var(--muted); }
+      .summary-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 24px;
+        font-size: 13px;
+      }
+      .summary-table th {
+        text-align: left;
+        padding: 10px 14px;
+        background: var(--surface2);
+        color: var(--muted);
+        font-weight: 600;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        border-bottom: 1px solid var(--border);
+      }
+      .summary-table td {
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--border);
+        color: var(--text);
+        vertical-align: top;
+      }
+      .summary-table tr:last-child td {
+        border-bottom: none;
+      }
+      .summary-table .file-col {
+        font-family: "SF Mono", monospace;
+        font-size: 11px;
+        color: var(--muted);
+      }
 
-  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
-</style>
-</head>
-<body>
+      hr {
+        border: none;
+        border-top: 1px solid var(--border);
+        margin: 40px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🔍 Senior Engineer Code Review</h1>
+    <div class="meta">
+      <span><strong>Project:</strong> multimodel-ai</span>
+      <span
+        ><strong>Stack:</strong> Next.js 16 · React 19 · Supabase · Zustand ·
+        TypeScript</span
+      >
+      <span><strong>Reviewer role:</strong> Senior / Staff Engineer</span>
+      <span><strong>Date:</strong> March 2026</span>
+    </div>
 
-<h1>🔍 Senior Engineer Code Review</h1>
-<div class="meta">
-  <span><strong>Project:</strong> multimodel-ai</span>
-  <span><strong>Stack:</strong> Next.js 16 · React 19 · Supabase · Zustand · TypeScript</span>
-  <span><strong>Reviewer role:</strong> Senior / Staff Engineer</span>
-  <span><strong>Date:</strong> March 2026</span>
-</div>
+    <!-- SCORECARD -->
+    <div class="scorecard">
+      <div class="score-box red">
+        <div class="label">Critical</div>
+        <div class="value">3</div>
+      </div>
+      <div class="score-box orange">
+        <div class="label">High</div>
+        <div class="value">5</div>
+      </div>
+      <div class="score-box yellow">
+        <div class="label">Medium</div>
+        <div class="value">6</div>
+      </div>
+      <div class="score-box blue">
+        <div class="label">Enhancements</div>
+        <div class="value">8</div>
+      </div>
+      <div class="score-box orange">
+        <div class="label">Overall Score</div>
+        <div class="value">4/10</div>
+      </div>
+    </div>
 
-<!-- SCORECARD -->
-<div class="scorecard">
-  <div class="score-box red">
-    <div class="label">Critical</div>
-    <div class="value">3</div>
-  </div>
-  <div class="score-box orange">
-    <div class="label">High</div>
-    <div class="value">5</div>
-  </div>
-  <div class="score-box yellow">
-    <div class="label">Medium</div>
-    <div class="value">6</div>
-  </div>
-  <div class="score-box blue">
-    <div class="label">Enhancements</div>
-    <div class="value">8</div>
-  </div>
-  <div class="score-box orange">
-    <div class="label">Overall Score</div>
-    <div class="value">4/10</div>
-  </div>
-</div>
+    <!-- VERDICT -->
+    <div class="verdict">
+      <h3>⚠ Overall Verdict</h3>
+      <p>
+        The codebase shows <strong>genuine ambition</strong> — the architecture
+        diagram, streaming pipeline, billing metering, RLS policies, CI/CD
+        workflows — these are not beginner work. But the gap between what's
+        <em>built</em> and what's <em>working</em> is wide enough to sink the
+        product in production. The "multi-model" value proposition is entirely
+        fictional beyond OpenAI. The rate limiter is a serverless time bomb.
+        There are two competing state architectures that neither team member
+        seems to have resolved. Legacy files are committed. The model catalog
+        lists models that don't exist. This is the kind of code that demos
+        beautifully and fails silently in the real world.
+      </p>
+      <p>
+        <strong>The fundamental problem:</strong> junior developers often build
+        the shape of production systems without validating whether the core
+        mechanisms actually work under load, at scale, or across the advertised
+        feature surface. Every one of the critical issues below falls into this
+        category.
+      </p>
+    </div>
 
-<!-- VERDICT -->
-<div class="verdict">
-  <h3>⚠ Overall Verdict</h3>
-  <p>The codebase shows <strong>genuine ambition</strong> — the architecture diagram, streaming pipeline, billing metering, RLS policies, CI/CD workflows — these are not beginner work. But the gap between what's <em>built</em> and what's <em>working</em> is wide enough to sink the product in production. The "multi-model" value proposition is entirely fictional beyond OpenAI. The rate limiter is a serverless time bomb. There are two competing state architectures that neither team member seems to have resolved. Legacy files are committed. The model catalog lists models that don't exist. This is the kind of code that demos beautifully and fails silently in the real world.</p>
-  <p><strong>The fundamental problem:</strong> junior developers often build the shape of production systems without validating whether the core mechanisms actually work under load, at scale, or across the advertised feature surface. Every one of the critical issues below falls into this category.</p>
-</div>
+    <!-- ─── SECTION 1: CRITICAL BUGS ─── -->
+    <h2>🔴 Critical Issues — Production-Breaking</h2>
 
-<!-- ─── SECTION 1: CRITICAL BUGS ─── -->
-<h2>🔴 Critical Issues — Production-Breaking</h2>
-
-<div class="finding">
-  <div class="finding-header">
-    <span class="badge critical">CRITICAL</span>
-    <span class="finding-title">In-memory rate limiter breaks entirely on serverless/multi-instance deployments</span>
-    <span class="finding-file">lib/rateLimit.ts:55–58</span>
-  </div>
-  <div class="finding-body">
-    <p>The rate limiter uses <code>new Map&lt;string, RateLimitEntry&gt;()</code> and <code>new Map&lt;string, ConcurrencyEntry&gt;()</code> as its backing store. The file even documents this limitation: <em>"Uses in-memory storage (for single-instance deployments)"</em>. The problem is this app is deployed on Vercel, which runs serverless functions. Every incoming request may hit a different cold-started instance. The maps are empty on every new instance, so the rate limiter <strong>provides zero protection in production</strong>. A user can simply hammer the API from parallel tabs and rack up unlimited LLM costs.</p>
-    <pre><span class="bad">// Current — every serverless instance has its own empty map</span>
+    <div class="finding">
+      <div class="finding-header">
+        <span class="badge critical">CRITICAL</span>
+        <span class="finding-title"
+          >In-memory rate limiter breaks entirely on serverless/multi-instance
+          deployments</span
+        >
+        <span class="finding-file">lib/rateLimit.ts:55–58</span>
+      </div>
+      <div class="finding-body">
+        <p>
+          The rate limiter uses
+          <code>new Map&lt;string, RateLimitEntry&gt;()</code> and
+          <code>new Map&lt;string, ConcurrencyEntry&gt;()</code> as its backing
+          store. The file even documents this limitation:
+          <em>"Uses in-memory storage (for single-instance deployments)"</em>.
+          The problem is this app is deployed on Vercel, which runs serverless
+          functions. Every incoming request may hit a different cold-started
+          instance. The maps are empty on every new instance, so the rate
+          limiter <strong>provides zero protection in production</strong>. A
+          user can simply hammer the API from parallel tabs and rack up
+          unlimited LLM costs.
+        </p>
+        <pre><span class="bad">// Current — every serverless instance has its own empty map</span>
 <span class="bad">const rateLimitStore = new Map&lt;string, RateLimitEntry&gt;();</span>
 <span class="bad">const concurrencyStore = new Map&lt;string, ConcurrencyEntry&gt;();</span>
 
@@ -288,486 +484,1223 @@
 <span class="good">  redis: Redis.fromEnv(),</span>
 <span class="good">  limiter: Ratelimit.slidingWindow(20, "60 s"),</span>
 <span class="good">});</span></pre>
-    <p><strong>Impact:</strong> Unlimited API spend exposure. A single bad actor or accidental client-side loop can drain the OpenAI API budget to zero with no effective server-side brake.</p>
-  </div>
-</div>
+        <p>
+          <strong>Impact:</strong> Unlimited API spend exposure. A single bad
+          actor or accidental client-side loop can drain the OpenAI API budget
+          to zero with no effective server-side brake.
+        </p>
+      </div>
+    </div>
 
-<div class="finding">
-  <div class="finding-header">
-    <span class="badge critical">CRITICAL</span>
-    <span class="finding-title">The "multi-model" core feature is entirely fictional beyond OpenAI</span>
-    <span class="finding-file">lib/api/openai.ts · lib/modelCatalog.ts</span>
-  </div>
-  <div class="finding-body">
-    <p>The product is named <em>Multi-Model AI</em>. The README lists GPT-4o, Claude, Gemini, Grok as features. The model catalog has 20 models across 5 providers. Users can select Gemini 3 Pro or Claude Opus 4.1 in the UI. <strong>None of them work.</strong> Every model request — regardless of which model is selected — is routed through <code>lib/api/openai.ts</code> and hits OpenAI's API. If an unrecognized model ID comes in, <code>getOpenAIModelName()</code> silently falls back to <code>gpt-4o-mini</code>.</p>
-    <pre><span class="bad">// lib/api/openai.ts — silent fallback on unknown model</span>
+    <div class="finding">
+      <div class="finding-header">
+        <span class="badge critical">CRITICAL</span>
+        <span class="finding-title"
+          >The "multi-model" core feature is entirely fictional beyond
+          OpenAI</span
+        >
+        <span class="finding-file"
+          >lib/api/openai.ts · lib/modelCatalog.ts</span
+        >
+      </div>
+      <div class="finding-body">
+        <p>
+          The product is named <em>Multi-Model AI</em>. The README lists GPT-4o,
+          Claude, Gemini, Grok as features. The model catalog has 20 models
+          across 5 providers. Users can select Gemini 3 Pro or Claude Opus 4.1
+          in the UI. <strong>None of them work.</strong> Every model request —
+          regardless of which model is selected — is routed through
+          <code>lib/api/openai.ts</code> and hits OpenAI's API. If an
+          unrecognized model ID comes in,
+          <code>getOpenAIModelName()</code> silently falls back to
+          <code>gpt-4o-mini</code>.
+        </p>
+        <pre><span class="bad">// lib/api/openai.ts — silent fallback on unknown model</span>
 <span class="bad">export function getOpenAIModelName(modelId: string): string {</span>
 <span class="bad">  return MODEL_MAP[modelId] || "gpt-4o-mini"; // Claude/Gemini → gpt-4o-mini</span>
 <span class="bad">}</span></pre>
-    <p>Users selecting Claude or Gemini believe they're comparing model outputs. They're actually comparing the same OpenAI model against itself. This is not a roadmap item — it is <strong>the entire product premise</strong>. Shipping this to real users is misleading.</p>
-  </div>
-</div>
+        <p>
+          Users selecting Claude or Gemini believe they're comparing model
+          outputs. They're actually comparing the same OpenAI model against
+          itself. This is not a roadmap item — it is
+          <strong>the entire product premise</strong>. Shipping this to real
+          users is misleading.
+        </p>
+      </div>
+    </div>
 
-<div class="finding">
-  <div class="finding-header">
-    <span class="badge critical">CRITICAL</span>
-    <span class="finding-title">Model catalog lists models that do not exist</span>
-    <span class="finding-file">lib/modelCatalog.ts:44–90, lib/api/openai.ts:44–52</span>
-  </div>
-  <div class="finding-body">
-    <p>The catalog includes <code>openai/gpt-5.2</code>, <code>openai/gpt-5.2-codex</code>, <code>openai/gpt-5-mini</code>, <code>openai/gpt-5.1</code>, <code>google/gemini-3-pro-preview</code>, <code>google/gemini-3-flash-preview</code>, <code>xai/grok-4</code> — models labeled as "new" that are aspirational, not real. The billing table in <code>supabaseService.ts</code> also prices these non-existent models. There is even this in <code>openai.ts</code>:</p>
-    <pre><span class="bad">"openai/gpt-5.1": "gpt-5.2", // Legacy alias</span></pre>
-    <p>A "legacy alias" to a model that doesn't exist yet. The model catalog is pure UI theater. Any actual API call for these models would fail at the OpenAI API layer, and the fallback to <code>gpt-4o-mini</code> means users have no idea their selected model wasn't called.</p>
-  </div>
-</div>
+    <div class="finding">
+      <div class="finding-header">
+        <span class="badge critical">CRITICAL</span>
+        <span class="finding-title"
+          >Model catalog lists models that do not exist</span
+        >
+        <span class="finding-file"
+          >lib/modelCatalog.ts:44–90, lib/api/openai.ts:44–52</span
+        >
+      </div>
+      <div class="finding-body">
+        <p>
+          The catalog includes <code>openai/gpt-5.2</code>,
+          <code>openai/gpt-5.2-codex</code>, <code>openai/gpt-5-mini</code>,
+          <code>openai/gpt-5.1</code>, <code>google/gemini-3-pro-preview</code>,
+          <code>google/gemini-3-flash-preview</code>, <code>xai/grok-4</code> —
+          models labeled as "new" that are aspirational, not real. The billing
+          table in <code>supabaseService.ts</code> also prices these
+          non-existent models. There is even this in <code>openai.ts</code>:
+        </p>
+        <pre><span class="bad">"openai/gpt-5.1": "gpt-5.2", // Legacy alias</span></pre>
+        <p>
+          A "legacy alias" to a model that doesn't exist yet. The model catalog
+          is pure UI theater. Any actual API call for these models would fail at
+          the OpenAI API layer, and the fallback to
+          <code>gpt-4o-mini</code> means users have no idea their selected model
+          wasn't called.
+        </p>
+      </div>
+    </div>
 
-<!-- ─── SECTION 2: HIGH SEVERITY ─── -->
-<h2>🟠 High Severity — Architecture & Security</h2>
+    <!-- ─── SECTION 2: HIGH SEVERITY ─── -->
+    <h2>🟠 High Severity — Architecture & Security</h2>
 
-<div class="finding">
-  <div class="finding-header">
-    <span class="badge high">HIGH</span>
-    <span class="finding-title">Two competing state architectures with a compatibility shim on top</span>
-    <span class="finding-file">lib/stores/ vs lib/state/ vs lib/store.ts</span>
-  </div>
-  <div class="finding-body">
-    <p>There are <strong>three separate state layers</strong> in this codebase:</p>
-    <p>• <code>lib/stores/</code> — the "new" split stores: <code>conversationStore</code>, <code>modelStore</code>, <code>settingsStore</code>, <code>streamStore</code>, <code>workspaceStore</code></p>
-    <p>• <code>lib/state/</code> — a <em>second</em> set of stores: <code>sessionStore</code>, <code>settingsStore</code>, <code>userStore</code> (separate from the first <code>settingsStore</code>)</p>
-    <p>• <code>lib/store.ts</code> — a backwards-compatibility wrapper described in the docs as "mirrors the old <code>useChatStore</code> API to support gradual migration"</p>
-    <p>There is now a <code>settingsStore</code> in both <code>lib/stores/</code> and <code>lib/state/</code> that store different things with different keys. This creates confusion about which store governs which concern, potential subtle state divergence, and makes onboarding a new developer a cognitive nightmare. The "gradual migration" described in the docs has apparently been ongoing without completion.</p>
-  </div>
-</div>
+    <div class="finding">
+      <div class="finding-header">
+        <span class="badge high">HIGH</span>
+        <span class="finding-title"
+          >Two competing state architectures with a compatibility shim on
+          top</span
+        >
+        <span class="finding-file"
+          >lib/stores/ vs lib/state/ vs lib/store.ts</span
+        >
+      </div>
+      <div class="finding-body">
+        <p>
+          There are <strong>three separate state layers</strong> in this
+          codebase:
+        </p>
+        <p>
+          • <code>lib/stores/</code> — the "new" split stores:
+          <code>conversationStore</code>, <code>modelStore</code>,
+          <code>settingsStore</code>, <code>streamStore</code>,
+          <code>workspaceStore</code>
+        </p>
+        <p>
+          • <code>lib/state/</code> — a <em>second</em> set of stores:
+          <code>sessionStore</code>, <code>settingsStore</code>,
+          <code>userStore</code> (separate from the first
+          <code>settingsStore</code>)
+        </p>
+        <p>
+          • <code>lib/store.ts</code> — a backwards-compatibility wrapper
+          described in the docs as "mirrors the old
+          <code>useChatStore</code> API to support gradual migration"
+        </p>
+        <p>
+          There is now a <code>settingsStore</code> in both
+          <code>lib/stores/</code> and <code>lib/state/</code> that store
+          different things with different keys. This creates confusion about
+          which store governs which concern, potential subtle state divergence,
+          and makes onboarding a new developer a cognitive nightmare. The
+          "gradual migration" described in the docs has apparently been ongoing
+          without completion.
+        </p>
+      </div>
+    </div>
 
-<div class="finding">
-  <div class="finding-header">
-    <span class="badge high">HIGH</span>
-    <span class="finding-title">Token estimation via character count is inaccurate and affects billing</span>
-    <span class="finding-file">app/api/chat/route.ts:48–56, lib/hooks/useChatActions.ts</span>
-  </div>
-  <div class="finding-body">
-    <p>Token cost metering uses <code>Math.ceil(message.content.length / 4)</code> — a rough heuristic that assumes 4 characters per token. This is deeply inaccurate in practice:</p>
-    <pre><span class="comment">// English prose: ~4 chars/token ✓ (acceptable)</span>
+    <div class="finding">
+      <div class="finding-header">
+        <span class="badge high">HIGH</span>
+        <span class="finding-title"
+          >Token estimation via character count is inaccurate and affects
+          billing</span
+        >
+        <span class="finding-file"
+          >app/api/chat/route.ts:48–56, lib/hooks/useChatActions.ts</span
+        >
+      </div>
+      <div class="finding-body">
+        <p>
+          Token cost metering uses
+          <code>Math.ceil(message.content.length / 4)</code> — a rough heuristic
+          that assumes 4 characters per token. This is deeply inaccurate in
+          practice:
+        </p>
+        <pre><span class="comment">// English prose: ~4 chars/token ✓ (acceptable)</span>
 <span class="bad">// Code (dense syntax): often 1–2 chars/token → 2–4x undercount</span>
 <span class="bad">// CJK/Arabic characters: 1–3 chars per token → 3x undercount</span>
 <span class="bad">// JSON/XML with whitespace: often 6–8 chars/token → overcounting</span></pre>
-    <p>The API route itself notes: <em>"useChatActions estimates token usage by character count (~4 chars per token)"</em> acknowledging this is an estimate. But this estimate directly feeds into the credit hold system via <code>estimatedPromptTokens</code>, meaning non-English users and developers sharing code will be systematically misstated. The fix is a lightweight tokenizer like <code>gpt-tokenizer</code> (browser/edge compatible, zero native deps).</p>
-  </div>
-</div>
-
-<div class="finding">
-  <div class="finding-header">
-    <span class="badge high">HIGH</span>
-    <span class="finding-title">Rate limit bypass via email is exploitable if email is mutable</span>
-    <span class="finding-file">lib/testerAccess.ts · lib/rateLimit.ts:269–285</span>
-  </div>
-  <div class="finding-body">
-    <p>The <code>checkStreamPermission</code> function checks <code>isUnlimitedTesterEmail(context?.email)</code> — if the email matches a configured tester email, all rate limits are bypassed and streams are granted <code>Number.MAX_SAFE_INTEGER</code> slots. The email is sourced from JWT claims in the API route:</p>
-    <pre><span class="bad">const sessionEmail = typeof claims.email === "string" ? claims.email : null;</span>
-<span class="bad">// then passed straight to checkStreamPermission → isUnlimitedTesterEmail</span></pre>
-    <p>If any of the tester emails listed in <code>UNLIMITED_TESTER_EMAILS</code> env var correspond to accounts whose email addresses could be changed, or if Supabase's email confirmation is bypassed, this becomes an unlimited-spend exploit. Tester bypass logic should use immutable user IDs, not mutable email strings.</p>
-  </div>
-</div>
-
-<div class="finding">
-  <div class="finding-header">
-    <span class="badge high">HIGH</span>
-    <span class="finding-title">No transactional integrity on multi-step DB writes inside the stream</span>
-    <span class="finding-file">app/api/chat/route.ts:384–395, 453–468</span>
-  </div>
-  <div class="finding-body">
-    <p>The streaming API route performs multiple sequential Supabase writes with no transaction wrapping: first <code>upsert</code> to <code>model_runs</code> with status "running", then <code>update</code> on completion with tokens, cost, and output text. If the process crashes between these two writes (which is likely in a serverless environment with 5-minute stream windows), you get orphaned "running" records that never settle. The billing <code>finalizeMetering</code> also writes separately. Three async DB operations in a stream callback with no rollback semantics.</p>
-    <p>This leads to ghost "running" rows in <code>model_runs</code> accumulating over time, inaccurate usage dashboards, and potential double-charges on retries.</p>
-  </div>
-</div>
-
-<div class="finding">
-  <div class="finding-header">
-    <span class="badge high">HIGH</span>
-    <span class="finding-title">Authentication documentation is self-contradictory — points to implementation confusion</span>
-    <span class="finding-file">README.md vs TECHNICAL_DOCUMENTATION.md</span>
-  </div>
-  <div class="finding-body">
-    <p>README.md (the public-facing doc) says: <em>"Auth: Supabase Auth (magic link)"</em>. TECHNICAL_DOCUMENTATION.md says: <em>"Demo authentication with NextAuth Credentials + middleware protection"</em> and lists <code>AUTH_SECRET</code> (NextAuth env var) as a required production variable. The actual code uses Supabase Auth (<code>lib/supabase/middleware.ts</code>, <code>createSupabaseServerClient</code>). There is a <code>lib/auth.ts</code> (NextAuth config) also present.</p>
-    <p>This isn't just a docs problem — it signals the authentication system was rewritten mid-development (from NextAuth to Supabase) and the migration was never fully committed to. There are likely dead code paths around the old NextAuth config and route handlers.</p>
-  </div>
-</div>
-
-<!-- ─── SECTION 3: MEDIUM ─── -->
-<h2>🟡 Medium Severity — Code Quality & Technical Debt</h2>
-
-<div class="finding">
-  <div class="finding-header">
-    <span class="badge medium">MEDIUM</span>
-    <span class="finding-title">Legacy files committed to production: store.old.ts and mockStream.ts</span>
-    <span class="finding-file">lib/store.old.ts · lib/mockStream.ts</span>
-  </div>
-  <div class="finding-body">
-    <p><code>lib/store.old.ts</code> is the original monolithic Zustand store, importing from <code>./mockStream</code> — a mock streaming implementation. Both files are committed to the main codebase and referenced in TECHNICAL_DOCUMENTATION: <em>"Legacy mock streaming flow retained for reference."</em> Reference material belongs in git history or a private branch, not in the production file tree. These files add dead import paths, inflate bundle analysis, and confuse navigation. They should have been removed the moment the migration to split stores was complete.</p>
-  </div>
-</div>
-
-<div class="finding">
-  <div class="finding-header">
-    <span class="badge medium">MEDIUM</span>
-    <span class="finding-title">Billing price tables hard-coded for fictional model IDs</span>
-    <span class="finding-file">lib/billing/supabaseService.ts:52+</span>
-  </div>
-  <div class="finding-body">
-    <p>The <code>MODEL_RETAIL_CENTS_PER_1M</code> object prices <code>openai/gpt-5.2</code>, <code>openai/gpt-5.2-codex</code>, <code>openai/gpt-5-mini</code>, <code>openai/gpt-5.1</code> — models that don't exist on OpenAI's API. This billing table is quietly being used to calculate real credits/holds against user accounts for models that will fall back to <code>gpt-4o-mini</code>. Depending on which fictional model the user selected, they could be over- or under-charged relative to the model actually called.</p>
-  </div>
-</div>
-
-<div class="finding">
-  <div class="finding-header">
-    <span class="badge medium">MEDIUM</span>
-    <span class="finding-title">Analytics and usage tracking use localStorage — volatile, not queryable</span>
-    <span class="finding-file">lib/analytics/usage.ts · TECHNICAL_DOCUMENTATION.md</span>
-  </div>
-  <div class="finding-body">
-    <p>The analytics system persists usage data to <code>localStorage</code>. This data is: lost when the user clears browser storage, invisible to server-side dashboards, unavailable for cross-device sessions, not aggregatable for business metrics, and silently unavailable in incognito/private browsing. The proper approach is server-side persistence to Supabase (already available). The infrastructure exists — the analytics layer just isn't using it.</p>
-  </div>
-</div>
-
-<div class="finding">
-  <div class="finding-header">
-    <span class="badge medium">MEDIUM</span>
-    <span class="finding-title">Sources and disagreements UI is wired but never populated</span>
-    <span class="finding-file">components/SourcesDialog.tsx · components/DisagreementsDialog.tsx</span>
-  </div>
-  <div class="finding-body">
-    <p>The TECHNICAL_DOCUMENTATION explicitly states: <em>"Sources/disagreements are modeled in types and UI but not generated by the live API."</em> There are complete UI dialogs, type definitions, and state model for these features. Users can presumably open the dialogs and see empty states — or the dialogs are hidden behind conditions that never resolve to true. Either way, this is dead feature surface shipped to production. Features that don't work should not have visible UI entry points.</p>
-  </div>
-</div>
-
-<div class="finding">
-  <div class="finding-header">
-    <span class="badge medium">MEDIUM</span>
-    <span class="finding-title">Collaboration modes (Ensemble, Debate, Expert) use client-side synthesis with no real backend</span>
-    <span class="finding-file">TECHNICAL_DOCUMENTATION.md — "ensemble/debate modes, a placeholder unified response is generated client-side"</span>
-  </div>
-  <div class="finding-body">
-    <p>Four of the seven advertised collaboration modes — Ensemble, Expert, Debate, Simulation — generate their "unified response" or synthesis client-side as a placeholder. This means the differentiated modes that justify the product's value proposition are stubs. Users in Debate mode are not watching Claude and Grok argue; they're watching a client-generated placeholder that looks like output. Combined with the fact that only OpenAI actually streams, the product's feature differentiation is largely cosmetic.</p>
-  </div>
-</div>
-
-<div class="finding">
-  <div class="finding-header">
-    <span class="badge medium">MEDIUM</span>
-    <span class="finding-title">No input sanitization or message content validation in the chat route</span>
-    <span class="finding-file">app/api/chat/route.ts:173–179</span>
-  </div>
-  <div class="finding-body">
-    <p>The API validates that <code>messages</code> is a non-empty array, but performs no validation on individual message content: no max-length check per message, no total-context-length guard, no character type sanitization. A client could send messages with 200K characters each (well above any model's context window), causing either upstream API errors that leak into logs, or extremely high token bills. The <code>estimatePromptTokensFromMessages</code> function runs but its output is only used for billing estimation — it does not gate the request.</p>
-  </div>
-</div>
-
-<!-- ─── SECTION 4: ENHANCEMENTS ─── -->
-<h2>🔵 Enhancement Opportunities — Strategic Improvements</h2>
-
-<div class="enhance-grid">
-
-  <div class="enhance-card">
-    <h3>1. Unified Provider Abstraction Layer</h3>
-    <div class="impact">
-      <span>🎯 Core Feature Unlock</span>
-      <span>⏱ ~2 weeks</span>
+        <p>
+          The API route itself notes:
+          <em
+            >"useChatActions estimates token usage by character count (~4 chars
+            per token)"</em
+          >
+          acknowledging this is an estimate. But this estimate directly feeds
+          into the credit hold system via <code>estimatedPromptTokens</code>,
+          meaning non-English users and developers sharing code will be
+          systematically misstated. The fix is a lightweight tokenizer like
+          <code>gpt-tokenizer</code> (browser/edge compatible, zero native
+          deps).
+        </p>
+      </div>
     </div>
-    <p>Replace the OpenAI-only client with a provider interface. Implement adapters for Anthropic SDK (<code>@anthropic-ai/sdk</code>), Google Generative AI (<code>@google/generative-ai</code>), and xAI. The chat route should resolve the correct adapter from model ID prefix, not silently default to OpenAI.</p>
-    <pre>interface ProviderAdapter {
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="badge high">HIGH</span>
+        <span class="finding-title"
+          >Rate limit bypass via email is exploitable if email is mutable</span
+        >
+        <span class="finding-file"
+          >lib/testerAccess.ts · lib/rateLimit.ts:269–285</span
+        >
+      </div>
+      <div class="finding-body">
+        <p>
+          The <code>checkStreamPermission</code> function checks
+          <code>isUnlimitedTesterEmail(context?.email)</code> — if the email
+          matches a configured tester email, all rate limits are bypassed and
+          streams are granted <code>Number.MAX_SAFE_INTEGER</code> slots. The
+          email is sourced from JWT claims in the API route:
+        </p>
+        <pre><span class="bad">const sessionEmail = typeof claims.email === "string" ? claims.email : null;</span>
+<span class="bad">// then passed straight to checkStreamPermission → isUnlimitedTesterEmail</span></pre>
+        <p>
+          If any of the tester emails listed in
+          <code>UNLIMITED_TESTER_EMAILS</code> env var correspond to accounts
+          whose email addresses could be changed, or if Supabase's email
+          confirmation is bypassed, this becomes an unlimited-spend exploit.
+          Tester bypass logic should use immutable user IDs, not mutable email
+          strings.
+        </p>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="badge high">HIGH</span>
+        <span class="finding-title"
+          >No transactional integrity on multi-step DB writes inside the
+          stream</span
+        >
+        <span class="finding-file">app/api/chat/route.ts:384–395, 453–468</span>
+      </div>
+      <div class="finding-body">
+        <p>
+          The streaming API route performs multiple sequential Supabase writes
+          with no transaction wrapping: first <code>upsert</code> to
+          <code>model_runs</code> with status "running", then
+          <code>update</code> on completion with tokens, cost, and output text.
+          If the process crashes between these two writes (which is likely in a
+          serverless environment with 5-minute stream windows), you get orphaned
+          "running" records that never settle. The billing
+          <code>finalizeMetering</code> also writes separately. Three async DB
+          operations in a stream callback with no rollback semantics.
+        </p>
+        <p>
+          This leads to ghost "running" rows in
+          <code>model_runs</code> accumulating over time, inaccurate usage
+          dashboards, and potential double-charges on retries.
+        </p>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="badge high">HIGH</span>
+        <span class="finding-title"
+          >Authentication documentation is self-contradictory — points to
+          implementation confusion</span
+        >
+        <span class="finding-file"
+          >README.md vs TECHNICAL_DOCUMENTATION.md</span
+        >
+      </div>
+      <div class="finding-body">
+        <p>
+          README.md (the public-facing doc) says:
+          <em>"Auth: Supabase Auth (magic link)"</em>.
+          TECHNICAL_DOCUMENTATION.md says:
+          <em
+            >"Demo authentication with NextAuth Credentials + middleware
+            protection"</em
+          >
+          and lists <code>AUTH_SECRET</code> (NextAuth env var) as a required
+          production variable. The actual code uses Supabase Auth
+          (<code>lib/supabase/middleware.ts</code>,
+          <code>createSupabaseServerClient</code>). There is a
+          <code>lib/auth.ts</code> (NextAuth config) also present.
+        </p>
+        <p>
+          This isn't just a docs problem — it signals the authentication system
+          was rewritten mid-development (from NextAuth to Supabase) and the
+          migration was never fully committed to. There are likely dead code
+          paths around the old NextAuth config and route handlers.
+        </p>
+      </div>
+    </div>
+
+    <!-- ─── SECTION 3: MEDIUM ─── -->
+    <h2>🟡 Medium Severity — Code Quality & Technical Debt</h2>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="badge medium">MEDIUM</span>
+        <span class="finding-title"
+          >Legacy files committed to production: store.old.ts and
+          mockStream.ts</span
+        >
+        <span class="finding-file">lib/store.old.ts · lib/mockStream.ts</span>
+      </div>
+      <div class="finding-body">
+        <p>
+          <code>lib/store.old.ts</code> is the original monolithic Zustand
+          store, importing from <code>./mockStream</code> — a mock streaming
+          implementation. Both files are committed to the main codebase and
+          referenced in TECHNICAL_DOCUMENTATION:
+          <em>"Legacy mock streaming flow retained for reference."</em>
+          Reference material belongs in git history or a private branch, not in
+          the production file tree. These files add dead import paths, inflate
+          bundle analysis, and confuse navigation. They should have been removed
+          the moment the migration to split stores was complete.
+        </p>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="badge medium">MEDIUM</span>
+        <span class="finding-title"
+          >Billing price tables hard-coded for fictional model IDs</span
+        >
+        <span class="finding-file">lib/billing/supabaseService.ts:52+</span>
+      </div>
+      <div class="finding-body">
+        <p>
+          The <code>MODEL_RETAIL_CENTS_PER_1M</code> object prices
+          <code>openai/gpt-5.2</code>, <code>openai/gpt-5.2-codex</code>,
+          <code>openai/gpt-5-mini</code>, <code>openai/gpt-5.1</code> — models
+          that don't exist on OpenAI's API. This billing table is quietly being
+          used to calculate real credits/holds against user accounts for models
+          that will fall back to <code>gpt-4o-mini</code>. Depending on which
+          fictional model the user selected, they could be over- or
+          under-charged relative to the model actually called.
+        </p>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="badge medium">MEDIUM</span>
+        <span class="finding-title"
+          >Analytics and usage tracking use localStorage — volatile, not
+          queryable</span
+        >
+        <span class="finding-file"
+          >lib/analytics/usage.ts · TECHNICAL_DOCUMENTATION.md</span
+        >
+      </div>
+      <div class="finding-body">
+        <p>
+          The analytics system persists usage data to <code>localStorage</code>.
+          This data is: lost when the user clears browser storage, invisible to
+          server-side dashboards, unavailable for cross-device sessions, not
+          aggregatable for business metrics, and silently unavailable in
+          incognito/private browsing. The proper approach is server-side
+          persistence to Supabase (already available). The infrastructure exists
+          — the analytics layer just isn't using it.
+        </p>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="badge medium">MEDIUM</span>
+        <span class="finding-title"
+          >Sources and disagreements UI is wired but never populated</span
+        >
+        <span class="finding-file"
+          >components/SourcesDialog.tsx ·
+          components/DisagreementsDialog.tsx</span
+        >
+      </div>
+      <div class="finding-body">
+        <p>
+          The TECHNICAL_DOCUMENTATION explicitly states:
+          <em
+            >"Sources/disagreements are modeled in types and UI but not
+            generated by the live API."</em
+          >
+          There are complete UI dialogs, type definitions, and state model for
+          these features. Users can presumably open the dialogs and see empty
+          states — or the dialogs are hidden behind conditions that never
+          resolve to true. Either way, this is dead feature surface shipped to
+          production. Features that don't work should not have visible UI entry
+          points.
+        </p>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="badge medium">MEDIUM</span>
+        <span class="finding-title"
+          >Collaboration modes (Ensemble, Debate, Expert) use client-side
+          synthesis with no real backend</span
+        >
+        <span class="finding-file"
+          >TECHNICAL_DOCUMENTATION.md — "ensemble/debate modes, a placeholder
+          unified response is generated client-side"</span
+        >
+      </div>
+      <div class="finding-body">
+        <p>
+          Four of the seven advertised collaboration modes — Ensemble, Expert,
+          Debate, Simulation — generate their "unified response" or synthesis
+          client-side as a placeholder. This means the differentiated modes that
+          justify the product's value proposition are stubs. Users in Debate
+          mode are not watching Claude and Grok argue; they're watching a
+          client-generated placeholder that looks like output. Combined with the
+          fact that only OpenAI actually streams, the product's feature
+          differentiation is largely cosmetic.
+        </p>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-header">
+        <span class="badge medium">MEDIUM</span>
+        <span class="finding-title"
+          >No input sanitization or message content validation in the chat
+          route</span
+        >
+        <span class="finding-file">app/api/chat/route.ts:173–179</span>
+      </div>
+      <div class="finding-body">
+        <p>
+          The API validates that <code>messages</code> is a non-empty array, but
+          performs no validation on individual message content: no max-length
+          check per message, no total-context-length guard, no character type
+          sanitization. A client could send messages with 200K characters each
+          (well above any model's context window), causing either upstream API
+          errors that leak into logs, or extremely high token bills. The
+          <code>estimatePromptTokensFromMessages</code> function runs but its
+          output is only used for billing estimation — it does not gate the
+          request.
+        </p>
+      </div>
+    </div>
+
+    <!-- ─── SECTION 4: ENHANCEMENTS ─── -->
+    <h2>🔵 Enhancement Opportunities — Strategic Improvements</h2>
+
+    <div class="enhance-grid">
+      <div class="enhance-card">
+        <h3>1. Unified Provider Abstraction Layer</h3>
+        <div class="impact">
+          <span>🎯 Core Feature Unlock</span>
+          <span>⏱ ~2 weeks</span>
+        </div>
+        <p>
+          Replace the OpenAI-only client with a provider interface. Implement
+          adapters for Anthropic SDK (<code>@anthropic-ai/sdk</code>), Google
+          Generative AI (<code>@google/generative-ai</code>), and xAI. The chat
+          route should resolve the correct adapter from model ID prefix, not
+          silently default to OpenAI.
+        </p>
+        <pre>interface ProviderAdapter {
   stream(opts: StreamOptions): AsyncGenerator&lt;StreamEvent&gt;;
 }
 <span class="good">// registry["anthropic"] → AnthropicAdapter</span>
 <span class="good">// registry["google"]    → GoogleAdapter</span></pre>
-  </div>
+      </div>
 
-  <div class="enhance-card">
-    <h3>2. Upstash Redis Rate Limiting</h3>
-    <div class="impact">
-      <span>🔥 Critical Fix First</span>
-      <span>⏱ ~2 days</span>
-    </div>
-    <p>Replace the in-memory Maps with <code>@upstash/ratelimit</code>. This is edge-compatible, serverless-safe, and free up to 10K requests/day. Single dependency swap, no architecture change required. Use sliding window algorithm to prevent burst-at-window-boundary exploits that fixed window allows.</p>
-    <ul>
-      <li>Sliding window: no cliff-edge reset exploits</li>
-      <li>Atomic check-and-consume: no TOCTOU race</li>
-      <li>Persists across Vercel cold starts</li>
-    </ul>
-  </div>
+      <div class="enhance-card">
+        <h3>2. Upstash Redis Rate Limiting</h3>
+        <div class="impact">
+          <span>🔥 Critical Fix First</span>
+          <span>⏱ ~2 days</span>
+        </div>
+        <p>
+          Replace the in-memory Maps with <code>@upstash/ratelimit</code>. This
+          is edge-compatible, serverless-safe, and free up to 10K requests/day.
+          Single dependency swap, no architecture change required. Use sliding
+          window algorithm to prevent burst-at-window-boundary exploits that
+          fixed window allows.
+        </p>
+        <ul>
+          <li>Sliding window: no cliff-edge reset exploits</li>
+          <li>Atomic check-and-consume: no TOCTOU race</li>
+          <li>Persists across Vercel cold starts</li>
+        </ul>
+      </div>
 
-  <div class="enhance-card">
-    <h3>3. Proper Tokenization (gpt-tokenizer)</h3>
-    <div class="impact">
-      <span>💰 Billing Accuracy</span>
-      <span>⏱ ~1 day</span>
-    </div>
-    <p>Replace <code>content.length / 4</code> with <code>gpt-tokenizer</code> — a pure-JS cl100k/o200k encoder, browser and edge compatible, zero native deps. Accurate within ±1 token for pre-flight estimation. For non-OpenAI models, use actual token counts returned in API responses rather than estimates.</p>
-    <pre><span class="good">import { encode } from "gpt-tokenizer";</span>
+      <div class="enhance-card">
+        <h3>3. Proper Tokenization (gpt-tokenizer)</h3>
+        <div class="impact">
+          <span>💰 Billing Accuracy</span>
+          <span>⏱ ~1 day</span>
+        </div>
+        <p>
+          Replace <code>content.length / 4</code> with
+          <code>gpt-tokenizer</code> — a pure-JS cl100k/o200k encoder, browser
+          and edge compatible, zero native deps. Accurate within ±1 token for
+          pre-flight estimation. For non-OpenAI models, use actual token counts
+          returned in API responses rather than estimates.
+        </p>
+        <pre><span class="good">import { encode } from "gpt-tokenizer";</span>
 <span class="good">const tokens = encode(content).length; // exact</span>
 <span class="bad">// vs Math.ceil(content.length / 4)   // wrong</span></pre>
-  </div>
+      </div>
 
-  <div class="enhance-card">
-    <h3>4. Consolidate State Architecture</h3>
-    <div class="impact">
-      <span>🏗 Developer Velocity</span>
-      <span>⏱ ~3 days</span>
-    </div>
-    <p>Delete <code>lib/store.old.ts</code> and <code>lib/mockStream.ts</code>. Merge <code>lib/state/settingsStore</code> into <code>lib/stores/settingsStore</code> (they govern different concerns but the split is confusing). Remove the compat wrapper <code>lib/store.ts</code> by completing the migration. One store directory, clear ownership, no shims.</p>
-    <ul>
-      <li>Remove 2 dead files from production bundle</li>
-      <li>Single <code>lib/stores/</code> as canonical truth</li>
-      <li>Rename <code>lib/state/settingsStore</code> → <code>lib/stores/appSettingsStore</code></li>
-    </ul>
-  </div>
+      <div class="enhance-card">
+        <h3>4. Consolidate State Architecture</h3>
+        <div class="impact">
+          <span>🏗 Developer Velocity</span>
+          <span>⏱ ~3 days</span>
+        </div>
+        <p>
+          Delete <code>lib/store.old.ts</code> and
+          <code>lib/mockStream.ts</code>. Merge
+          <code>lib/state/settingsStore</code> into
+          <code>lib/stores/settingsStore</code> (they govern different concerns
+          but the split is confusing). Remove the compat wrapper
+          <code>lib/store.ts</code> by completing the migration. One store
+          directory, clear ownership, no shims.
+        </p>
+        <ul>
+          <li>Remove 2 dead files from production bundle</li>
+          <li>Single <code>lib/stores/</code> as canonical truth</li>
+          <li>
+            Rename <code>lib/state/settingsStore</code> →
+            <code>lib/stores/appSettingsStore</code>
+          </li>
+        </ul>
+      </div>
 
-  <div class="enhance-card">
-    <h3>5. Message Content Guardrails</h3>
-    <div class="impact">
-      <span>🛡 Security & Cost</span>
-      <span>⏱ ~1 day</span>
-    </div>
-    <p>Add server-side validation in the chat route: max message count (e.g., 100 messages), max individual message length (e.g., 32K chars), total context budget per request. Return structured 400 errors instead of letting oversized requests hit the upstream API and fail expensively.</p>
-    <pre><span class="good">const MAX_MESSAGES = 100;</span>
+      <div class="enhance-card">
+        <h3>5. Message Content Guardrails</h3>
+        <div class="impact">
+          <span>🛡 Security & Cost</span>
+          <span>⏱ ~1 day</span>
+        </div>
+        <p>
+          Add server-side validation in the chat route: max message count (e.g.,
+          100 messages), max individual message length (e.g., 32K chars), total
+          context budget per request. Return structured 400 errors instead of
+          letting oversized requests hit the upstream API and fail expensively.
+        </p>
+        <pre><span class="good">const MAX_MESSAGES = 100;</span>
 <span class="good">const MAX_MESSAGE_CHARS = 32_000;</span>
 <span class="good">const MAX_TOTAL_CHARS = 500_000;</span></pre>
-  </div>
+      </div>
 
-  <div class="enhance-card">
-    <h3>6. Implement Real Collaboration Modes</h3>
-    <div class="impact">
-      <span>🎯 Product Differentiation</span>
-      <span>⏱ ~1–2 weeks</span>
+      <div class="enhance-card">
+        <h3>6. Implement Real Collaboration Modes</h3>
+        <div class="impact">
+          <span>🎯 Product Differentiation</span>
+          <span>⏱ ~1–2 weeks</span>
+        </div>
+        <p>
+          The mode pipeline should be server-side, not client-side placeholders.
+          For Ensemble: stream all model responses in parallel, then call a
+          synthesis model with those responses as context. For Debate: assign
+          explicit roles per model ID in the system prompt. For Expert: chain a
+          review call after the initial response. These are all achievable with
+          the existing streaming infrastructure.
+        </p>
+      </div>
+
+      <div class="enhance-card">
+        <h3>7. Server-Side Analytics via Supabase</h3>
+        <div class="impact">
+          <span>📊 Business Intelligence</span>
+          <span>⏱ ~2 days</span>
+        </div>
+        <p>
+          Move <code>lib/analytics/usage.ts</code> from
+          <code>localStorage</code> to a Supabase write on each run completion.
+          The <code>model_runs</code> table already records token counts and
+          cost — it just needs an analytics query layer on top. This unlocks
+          cross-device usage dashboards, retention metrics, and model popularity
+          data that is currently invisible.
+        </p>
+      </div>
+
+      <div class="enhance-card">
+        <h3>8. Real Stripe Integration</h3>
+        <div class="impact">
+          <span>💵 Revenue Enablement</span>
+          <span>⏱ ~1 week</span>
+        </div>
+        <p>
+          The billing infrastructure is impressive — plans, quotas, credit
+          ledger, hold/settle/refund. The webhook handler and checkout routes
+          exist. Stripe is in <code>package.json</code>. The only missing piece
+          is a real Stripe publishable key and price IDs. This is 80% done. The
+          remaining 20% is connecting real price objects to the subscription
+          flow and validating the webhook signing secret in production.
+        </p>
+      </div>
     </div>
-    <p>The mode pipeline should be server-side, not client-side placeholders. For Ensemble: stream all model responses in parallel, then call a synthesis model with those responses as context. For Debate: assign explicit roles per model ID in the system prompt. For Expert: chain a review call after the initial response. These are all achievable with the existing streaming infrastructure.</p>
-  </div>
 
-  <div class="enhance-card">
-    <h3>7. Server-Side Analytics via Supabase</h3>
-    <div class="impact">
-      <span>📊 Business Intelligence</span>
-      <span>⏱ ~2 days</span>
+    <!-- ─── ARCHITECTURE DIAGRAM ─── -->
+    <h2>📐 Current vs Target Architecture</h2>
+
+    <div class="arch-diagram">
+      <svg
+        viewBox="0 0 900 380"
+        xmlns="http://www.w3.org/2000/svg"
+        font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"
+      >
+        <defs>
+          <marker
+            id="arr"
+            markerWidth="8"
+            markerHeight="8"
+            refX="6"
+            refY="3"
+            orient="auto"
+          >
+            <path d="M0,0 L0,6 L8,3 z" fill="#8b949e" />
+          </marker>
+          <marker
+            id="arr-red"
+            markerWidth="8"
+            markerHeight="8"
+            refX="6"
+            refY="3"
+            orient="auto"
+          >
+            <path d="M0,0 L0,6 L8,3 z" fill="#f85149" />
+          </marker>
+          <marker
+            id="arr-green"
+            markerWidth="8"
+            markerHeight="8"
+            refX="6"
+            refY="3"
+            orient="auto"
+          >
+            <path d="M0,0 L0,6 L8,3 z" fill="#3fb950" />
+          </marker>
+        </defs>
+
+        <!-- LEFT SIDE: CURRENT -->
+        <text
+          x="220"
+          y="22"
+          text-anchor="middle"
+          fill="#f85149"
+          font-size="13"
+          font-weight="600"
+        >
+          CURRENT STATE
+        </text>
+
+        <!-- Client -->
+        <rect
+          x="160"
+          y="35"
+          width="120"
+          height="40"
+          rx="6"
+          fill="#1c2230"
+          stroke="#30363d"
+        />
+        <text x="220" y="60" text-anchor="middle" fill="#e6edf3" font-size="12">
+          Chat UI
+        </text>
+
+        <!-- Arrow down -->
+        <line
+          x1="220"
+          y1="75"
+          x2="220"
+          y2="100"
+          stroke="#8b949e"
+          marker-end="url(#arr)"
+        />
+
+        <!-- API Route -->
+        <rect
+          x="135"
+          y="100"
+          width="170"
+          height="40"
+          rx="6"
+          fill="#1c2230"
+          stroke="#30363d"
+        />
+        <text
+          x="220"
+          y="125"
+          text-anchor="middle"
+          fill="#e6edf3"
+          font-size="12"
+        >
+          /api/chat (Node)
+        </text>
+
+        <!-- Arrow down: rate limit -->
+        <line
+          x1="220"
+          y1="140"
+          x2="220"
+          y2="160"
+          stroke="#f85149"
+          marker-end="url(#arr-red)"
+        />
+
+        <!-- Rate limit box (broken) -->
+        <rect
+          x="150"
+          y="160"
+          width="140"
+          height="36"
+          rx="6"
+          fill="rgba(248,81,73,.1)"
+          stroke="rgba(248,81,73,.4)"
+        />
+        <text
+          x="220"
+          y="183"
+          text-anchor="middle"
+          fill="#f85149"
+          font-size="11"
+        >
+          In-Memory RateLimit ⚠
+        </text>
+
+        <!-- Arrow down: model resolver -->
+        <line
+          x1="220"
+          y1="196"
+          x2="220"
+          y2="216"
+          stroke="#8b949e"
+          marker-end="url(#arr)"
+        />
+
+        <!-- Model resolver -->
+        <rect
+          x="130"
+          y="216"
+          width="180"
+          height="36"
+          rx="6"
+          fill="rgba(248,81,73,.08)"
+          stroke="rgba(248,81,73,.3)"
+        />
+        <text
+          x="220"
+          y="235"
+          text-anchor="middle"
+          fill="#f85149"
+          font-size="11"
+        >
+          getOpenAIModelName()
+        </text>
+        <text
+          x="220"
+          y="248"
+          text-anchor="middle"
+          fill="#8b949e"
+          font-size="10"
+        >
+          All providers → OpenAI
+        </text>
+
+        <!-- Arrow down: openai -->
+        <line
+          x1="220"
+          y1="252"
+          x2="220"
+          y2="275"
+          stroke="#8b949e"
+          marker-end="url(#arr)"
+        />
+
+        <!-- OpenAI only -->
+        <rect
+          x="155"
+          y="275"
+          width="130"
+          height="36"
+          rx="6"
+          fill="#1c2230"
+          stroke="#30363d"
+        />
+        <text
+          x="220"
+          y="298"
+          text-anchor="middle"
+          fill="#e6edf3"
+          font-size="12"
+        >
+          OpenAI API Only
+        </text>
+
+        <!-- Fake providers ghosted -->
+        <rect
+          x="50"
+          y="290"
+          width="80"
+          height="28"
+          rx="6"
+          fill="rgba(139,148,158,.05)"
+          stroke="rgba(139,148,158,.15)"
+        />
+        <text
+          x="90"
+          y="308"
+          text-anchor="middle"
+          fill="rgba(139,148,158,.4)"
+          font-size="10"
+        >
+          Anthropic ?
+        </text>
+        <rect
+          x="290"
+          y="290"
+          width="80"
+          height="28"
+          rx="6"
+          fill="rgba(139,148,158,.05)"
+          stroke="rgba(139,148,158,.15)"
+        />
+        <text
+          x="330"
+          y="308"
+          text-anchor="middle"
+          fill="rgba(139,148,158,.4)"
+          font-size="10"
+        >
+          Gemini ?
+        </text>
+
+        <!-- DIVIDER -->
+        <line
+          x1="450"
+          y1="20"
+          x2="450"
+          y2="360"
+          stroke="#30363d"
+          stroke-dasharray="4,4"
+        />
+
+        <!-- RIGHT SIDE: TARGET -->
+        <text
+          x="680"
+          y="22"
+          text-anchor="middle"
+          fill="#3fb950"
+          font-size="13"
+          font-weight="600"
+        >
+          TARGET STATE
+        </text>
+
+        <!-- Client -->
+        <rect
+          x="620"
+          y="35"
+          width="120"
+          height="40"
+          rx="6"
+          fill="#1c2230"
+          stroke="#30363d"
+        />
+        <text x="680" y="60" text-anchor="middle" fill="#e6edf3" font-size="12">
+          Chat UI
+        </text>
+
+        <line
+          x1="680"
+          y1="75"
+          x2="680"
+          y2="100"
+          stroke="#8b949e"
+          marker-end="url(#arr)"
+        />
+
+        <!-- API Route -->
+        <rect
+          x="595"
+          y="100"
+          width="170"
+          height="40"
+          rx="6"
+          fill="#1c2230"
+          stroke="#30363d"
+        />
+        <text
+          x="680"
+          y="125"
+          text-anchor="middle"
+          fill="#e6edf3"
+          font-size="12"
+        >
+          /api/chat (Node)
+        </text>
+
+        <line
+          x1="680"
+          y1="140"
+          x2="680"
+          y2="160"
+          stroke="#3fb950"
+          marker-end="url(#arr-green)"
+        />
+
+        <!-- Redis rate limit -->
+        <rect
+          x="595"
+          y="160"
+          width="170"
+          height="36"
+          rx="6"
+          fill="rgba(63,185,80,.1)"
+          stroke="rgba(63,185,80,.35)"
+        />
+        <text
+          x="680"
+          y="183"
+          text-anchor="middle"
+          fill="#3fb950"
+          font-size="11"
+        >
+          Upstash Redis RateLimit ✓
+        </text>
+
+        <line
+          x1="680"
+          y1="196"
+          x2="680"
+          y2="216"
+          stroke="#8b949e"
+          marker-end="url(#arr)"
+        />
+
+        <!-- Provider resolver -->
+        <rect
+          x="580"
+          y="216"
+          width="200"
+          height="36"
+          rx="6"
+          fill="rgba(63,185,80,.08)"
+          stroke="rgba(63,185,80,.3)"
+        />
+        <text
+          x="680"
+          y="235"
+          text-anchor="middle"
+          fill="#3fb950"
+          font-size="11"
+        >
+          Provider Adapter Registry
+        </text>
+        <text
+          x="680"
+          y="248"
+          text-anchor="middle"
+          fill="#8b949e"
+          font-size="10"
+        >
+          model prefix → correct client
+        </text>
+
+        <line
+          x1="680"
+          y1="252"
+          x2="680"
+          y2="275"
+          stroke="#8b949e"
+          marker-end="url(#arr)"
+        />
+
+        <!-- Real providers -->
+        <rect
+          x="490"
+          y="275"
+          width="80"
+          height="32"
+          rx="5"
+          fill="#1c2230"
+          stroke="#3fb950"
+        />
+        <text
+          x="530"
+          y="295"
+          text-anchor="middle"
+          fill="#e6edf3"
+          font-size="10"
+        >
+          OpenAI
+        </text>
+        <rect
+          x="580"
+          y="275"
+          width="80"
+          height="32"
+          rx="5"
+          fill="#1c2230"
+          stroke="#58a6ff"
+        />
+        <text
+          x="620"
+          y="295"
+          text-anchor="middle"
+          fill="#e6edf3"
+          font-size="10"
+        >
+          Anthropic
+        </text>
+        <rect
+          x="670"
+          y="275"
+          width="80"
+          height="32"
+          rx="5"
+          fill="#1c2230"
+          stroke="#bc8cff"
+        />
+        <text
+          x="710"
+          y="295"
+          text-anchor="middle"
+          fill="#e6edf3"
+          font-size="10"
+        >
+          Gemini
+        </text>
+        <rect
+          x="760"
+          y="275"
+          width="70"
+          height="32"
+          rx="5"
+          fill="#1c2230"
+          stroke="#d29922"
+        />
+        <text
+          x="795"
+          y="295"
+          text-anchor="middle"
+          fill="#e6edf3"
+          font-size="10"
+        >
+          xAI
+        </text>
+
+        <line
+          x1="530"
+          y1="252"
+          x2="530"
+          y2="275"
+          stroke="#3fb950"
+          stroke-width=".8"
+          marker-end="url(#arr-green)"
+        />
+        <line
+          x1="620"
+          y1="252"
+          x2="620"
+          y2="275"
+          stroke="#58a6ff"
+          stroke-width=".8"
+          marker-end="url(#arr-green)"
+        />
+        <line
+          x1="710"
+          y1="252"
+          x2="710"
+          y2="275"
+          stroke="#bc8cff"
+          stroke-width=".8"
+          marker-end="url(#arr-green)"
+        />
+        <line
+          x1="795"
+          y1="252"
+          x2="795"
+          y2="275"
+          stroke="#d29922"
+          stroke-width=".8"
+          marker-end="url(#arr-green)"
+        />
+        <line
+          x1="680"
+          y1="252"
+          x2="680"
+          y2="270"
+          stroke="#3fb950"
+          stroke-width=".8"
+        />
+        <line
+          x1="530"
+          y1="260"
+          x2="795"
+          y2="260"
+          stroke="#3fb950"
+          stroke-width=".8"
+        />
+      </svg>
     </div>
-    <p>Move <code>lib/analytics/usage.ts</code> from <code>localStorage</code> to a Supabase write on each run completion. The <code>model_runs</code> table already records token counts and cost — it just needs an analytics query layer on top. This unlocks cross-device usage dashboards, retention metrics, and model popularity data that is currently invisible.</p>
-  </div>
 
-  <div class="enhance-card">
-    <h3>8. Real Stripe Integration</h3>
-    <div class="impact">
-      <span>💵 Revenue Enablement</span>
-      <span>⏱ ~1 week</span>
+    <!-- ─── PRIORITY ROADMAP ─── -->
+    <h2>📋 Recommended Fix Priority</h2>
+
+    <div class="roadmap">
+      <div class="roadmap-row">
+        <div class="roadmap-phase p1">
+          Phase 1<br /><small>This Sprint</small>
+        </div>
+        <div class="roadmap-items">
+          <div class="roadmap-item">Upstash Redis rate limiter</div>
+          <div class="roadmap-item">Delete store.old.ts + mockStream.ts</div>
+          <div class="roadmap-item">Fix auth docs contradiction</div>
+          <div class="roadmap-item">
+            Add message content max-length validation
+          </div>
+          <div class="roadmap-item">
+            Remove fictional model IDs from catalog
+          </div>
+        </div>
+      </div>
+      <div class="roadmap-row">
+        <div class="roadmap-phase p2">
+          Phase 2<br /><small>Next Sprint</small>
+        </div>
+        <div class="roadmap-items">
+          <div class="roadmap-item">Provider adapter abstraction layer</div>
+          <div class="roadmap-item">
+            Wire Anthropic SDK (highest ROI provider)
+          </div>
+          <div class="roadmap-item">Replace char/4 with gpt-tokenizer</div>
+          <div class="roadmap-item">Consolidate lib/stores vs lib/state</div>
+          <div class="roadmap-item">Move analytics to Supabase</div>
+        </div>
+      </div>
+      <div class="roadmap-row">
+        <div class="roadmap-phase p3">Phase 3<br /><small>Month 2</small></div>
+        <div class="roadmap-items">
+          <div class="roadmap-item">Real Ensemble/Debate/Expert synthesis</div>
+          <div class="roadmap-item">Wire Gemini + xAI adapters</div>
+          <div class="roadmap-item">Complete Stripe checkout flow</div>
+          <div class="roadmap-item">
+            Sources/disagreements backend generation
+          </div>
+          <div class="roadmap-item">
+            Transactional DB write guards in stream route
+          </div>
+        </div>
+      </div>
     </div>
-    <p>The billing infrastructure is impressive — plans, quotas, credit ledger, hold/settle/refund. The webhook handler and checkout routes exist. Stripe is in <code>package.json</code>. The only missing piece is a real Stripe publishable key and price IDs. This is 80% done. The remaining 20% is connecting real price objects to the subscription flow and validating the webhook signing secret in production.</p>
-  </div>
 
-</div>
+    <!-- ─── WHAT'S GOOD ─── -->
+    <h2>✅ What's Done Well</h2>
 
-<!-- ─── ARCHITECTURE DIAGRAM ─── -->
-<h2>📐 Current vs Target Architecture</h2>
+    <table class="summary-table">
+      <thead>
+        <tr>
+          <th>Area</th>
+          <th>Finding</th>
+          <th>File</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Streaming Pipeline</td>
+          <td>
+            SSE implementation is clean. Proper backpressure with
+            ReadableStream, timeout handling via generator wrapper, AbortSignal
+            threading through all layers.
+          </td>
+          <td class="file-col">
+            app/api/chat/route.ts · lib/api/streamWithTimeout.ts
+          </td>
+        </tr>
+        <tr>
+          <td>Billing Metering</td>
+          <td>
+            Hold/settle/refund pattern is sophisticated for a junior project.
+            Server-enforced, RLS-scoped, with proper error typing per billing
+            failure mode.
+          </td>
+          <td class="file-col">lib/billing/supabaseService.ts</td>
+        </tr>
+        <tr>
+          <td>Error Typing</td>
+          <td>
+            Custom error classes
+            (<code>SupabaseBillingInsufficientCreditsError</code>, etc.) per
+            failure mode, with structured HTTP status codes and client-readable
+            codes. This is good API design.
+          </td>
+          <td class="file-col">lib/billing/supabaseService.ts</td>
+        </tr>
+        <tr>
+          <td>Observability</td>
+          <td>
+            Structured logging with request IDs, Sentry integration, custom
+            Metrics class with tagged counters/timings. Better than most junior
+            projects.
+          </td>
+          <td class="file-col">lib/logger.ts · lib/metrics.ts</td>
+        </tr>
+        <tr>
+          <td>CI/CD Pipeline</td>
+          <td>
+            GitHub Actions workflows for lint, typecheck, unit tests, E2E,
+            bundle size, and format check are all present and correctly
+            structured.
+          </td>
+          <td class="file-col">.github/workflows/</td>
+        </tr>
+        <tr>
+          <td>Rate Limit Design</td>
+          <td>
+            The <em>design</em> of the rate limiter — separate check vs consume,
+            combined rate+concurrency permission check — is architecturally
+            correct. The backing store is the only problem.
+          </td>
+          <td class="file-col">lib/rateLimit.ts</td>
+        </tr>
+        <tr>
+          <td>TypeScript Usage</td>
+          <td>
+            Strict TypeScript throughout. No <code>any</code> types observed in
+            reviewed files. Proper generic typing in store interfaces.
+          </td>
+          <td class="file-col">Codebase-wide</td>
+        </tr>
+        <tr>
+          <td>Testing Setup</td>
+          <td>
+            Vitest + Testing Library + Playwright configured. Coverage scripts
+            present. Multiple test files exist for billing, stores, and API
+            layers.
+          </td>
+          <td class="file-col">vitest.config.ts · playwright.config.ts</td>
+        </tr>
+      </tbody>
+    </table>
 
-<div class="arch-diagram">
-  <svg viewBox="0 0 900 380" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
-    <defs>
-      <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-        <path d="M0,0 L0,6 L8,3 z" fill="#8b949e"/>
-      </marker>
-      <marker id="arr-red" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-        <path d="M0,0 L0,6 L8,3 z" fill="#f85149"/>
-      </marker>
-      <marker id="arr-green" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-        <path d="M0,0 L0,6 L8,3 z" fill="#3fb950"/>
-      </marker>
-    </defs>
+    <hr />
 
-    <!-- LEFT SIDE: CURRENT -->
-    <text x="220" y="22" text-anchor="middle" fill="#f85149" font-size="13" font-weight="600">CURRENT STATE</text>
-
-    <!-- Client -->
-    <rect x="160" y="35" width="120" height="40" rx="6" fill="#1c2230" stroke="#30363d"/>
-    <text x="220" y="60" text-anchor="middle" fill="#e6edf3" font-size="12">Chat UI</text>
-
-    <!-- Arrow down -->
-    <line x1="220" y1="75" x2="220" y2="100" stroke="#8b949e" marker-end="url(#arr)"/>
-
-    <!-- API Route -->
-    <rect x="135" y="100" width="170" height="40" rx="6" fill="#1c2230" stroke="#30363d"/>
-    <text x="220" y="125" text-anchor="middle" fill="#e6edf3" font-size="12">/api/chat (Node)</text>
-
-    <!-- Arrow down: rate limit -->
-    <line x1="220" y1="140" x2="220" y2="160" stroke="#f85149" marker-end="url(#arr-red)"/>
-
-    <!-- Rate limit box (broken) -->
-    <rect x="150" y="160" width="140" height="36" rx="6" fill="rgba(248,81,73,.1)" stroke="rgba(248,81,73,.4)"/>
-    <text x="220" y="183" text-anchor="middle" fill="#f85149" font-size="11">In-Memory RateLimit ⚠</text>
-
-    <!-- Arrow down: model resolver -->
-    <line x1="220" y1="196" x2="220" y2="216" stroke="#8b949e" marker-end="url(#arr)"/>
-
-    <!-- Model resolver -->
-    <rect x="130" y="216" width="180" height="36" rx="6" fill="rgba(248,81,73,.08)" stroke="rgba(248,81,73,.3)"/>
-    <text x="220" y="235" text-anchor="middle" fill="#f85149" font-size="11">getOpenAIModelName()</text>
-    <text x="220" y="248" text-anchor="middle" fill="#8b949e" font-size="10">All providers → OpenAI</text>
-
-    <!-- Arrow down: openai -->
-    <line x1="220" y1="252" x2="220" y2="275" stroke="#8b949e" marker-end="url(#arr)"/>
-
-    <!-- OpenAI only -->
-    <rect x="155" y="275" width="130" height="36" rx="6" fill="#1c2230" stroke="#30363d"/>
-    <text x="220" y="298" text-anchor="middle" fill="#e6edf3" font-size="12">OpenAI API Only</text>
-
-    <!-- Fake providers ghosted -->
-    <rect x="50" y="290" width="80" height="28" rx="6" fill="rgba(139,148,158,.05)" stroke="rgba(139,148,158,.15)"/>
-    <text x="90" y="308" text-anchor="middle" fill="rgba(139,148,158,.4)" font-size="10">Anthropic ?</text>
-    <rect x="290" y="290" width="80" height="28" rx="6" fill="rgba(139,148,158,.05)" stroke="rgba(139,148,158,.15)"/>
-    <text x="330" y="308" text-anchor="middle" fill="rgba(139,148,158,.4)" font-size="10">Gemini ?</text>
-
-
-    <!-- DIVIDER -->
-    <line x1="450" y1="20" x2="450" y2="360" stroke="#30363d" stroke-dasharray="4,4"/>
-
-    <!-- RIGHT SIDE: TARGET -->
-    <text x="680" y="22" text-anchor="middle" fill="#3fb950" font-size="13" font-weight="600">TARGET STATE</text>
-
-    <!-- Client -->
-    <rect x="620" y="35" width="120" height="40" rx="6" fill="#1c2230" stroke="#30363d"/>
-    <text x="680" y="60" text-anchor="middle" fill="#e6edf3" font-size="12">Chat UI</text>
-
-    <line x1="680" y1="75" x2="680" y2="100" stroke="#8b949e" marker-end="url(#arr)"/>
-
-    <!-- API Route -->
-    <rect x="595" y="100" width="170" height="40" rx="6" fill="#1c2230" stroke="#30363d"/>
-    <text x="680" y="125" text-anchor="middle" fill="#e6edf3" font-size="12">/api/chat (Node)</text>
-
-    <line x1="680" y1="140" x2="680" y2="160" stroke="#3fb950" marker-end="url(#arr-green)"/>
-
-    <!-- Redis rate limit -->
-    <rect x="595" y="160" width="170" height="36" rx="6" fill="rgba(63,185,80,.1)" stroke="rgba(63,185,80,.35)"/>
-    <text x="680" y="183" text-anchor="middle" fill="#3fb950" font-size="11">Upstash Redis RateLimit ✓</text>
-
-    <line x1="680" y1="196" x2="680" y2="216" stroke="#8b949e" marker-end="url(#arr)"/>
-
-    <!-- Provider resolver -->
-    <rect x="580" y="216" width="200" height="36" rx="6" fill="rgba(63,185,80,.08)" stroke="rgba(63,185,80,.3)"/>
-    <text x="680" y="235" text-anchor="middle" fill="#3fb950" font-size="11">Provider Adapter Registry</text>
-    <text x="680" y="248" text-anchor="middle" fill="#8b949e" font-size="10">model prefix → correct client</text>
-
-    <line x1="680" y1="252" x2="680" y2="275" stroke="#8b949e" marker-end="url(#arr)"/>
-
-    <!-- Real providers -->
-    <rect x="490" y="275" width="80" height="32" rx="5" fill="#1c2230" stroke="#3fb950"/>
-    <text x="530" y="295" text-anchor="middle" fill="#e6edf3" font-size="10">OpenAI</text>
-    <rect x="580" y="275" width="80" height="32" rx="5" fill="#1c2230" stroke="#58a6ff"/>
-    <text x="620" y="295" text-anchor="middle" fill="#e6edf3" font-size="10">Anthropic</text>
-    <rect x="670" y="275" width="80" height="32" rx="5" fill="#1c2230" stroke="#bc8cff"/>
-    <text x="710" y="295" text-anchor="middle" fill="#e6edf3" font-size="10">Gemini</text>
-    <rect x="760" y="275" width="70" height="32" rx="5" fill="#1c2230" stroke="#d29922"/>
-    <text x="795" y="295" text-anchor="middle" fill="#e6edf3" font-size="10">xAI</text>
-
-    <line x1="530" y1="252" x2="530" y2="275" stroke="#3fb950" stroke-width=".8" marker-end="url(#arr-green)"/>
-    <line x1="620" y1="252" x2="620" y2="275" stroke="#58a6ff" stroke-width=".8" marker-end="url(#arr-green)"/>
-    <line x1="710" y1="252" x2="710" y2="275" stroke="#bc8cff" stroke-width=".8" marker-end="url(#arr-green)"/>
-    <line x1="795" y1="252" x2="795" y2="275" stroke="#d29922" stroke-width=".8" marker-end="url(#arr-green)"/>
-    <line x1="680" y1="252" x2="680" y2="270" stroke="#3fb950" stroke-width=".8"/>
-    <line x1="530" y1="260" x2="795" y2="260" stroke="#3fb950" stroke-width=".8"/>
-  </svg>
-</div>
-
-<!-- ─── PRIORITY ROADMAP ─── -->
-<h2>📋 Recommended Fix Priority</h2>
-
-<div class="roadmap">
-  <div class="roadmap-row">
-    <div class="roadmap-phase p1">Phase 1<br><small>This Sprint</small></div>
-    <div class="roadmap-items">
-      <div class="roadmap-item">Upstash Redis rate limiter</div>
-      <div class="roadmap-item">Delete store.old.ts + mockStream.ts</div>
-      <div class="roadmap-item">Fix auth docs contradiction</div>
-      <div class="roadmap-item">Add message content max-length validation</div>
-      <div class="roadmap-item">Remove fictional model IDs from catalog</div>
+    <div
+      style="
+        color: var(--muted);
+        font-size: 12px;
+        text-align: center;
+        padding-bottom: 20px;
+      "
+    >
+      Code Review — multimodel-ai — Senior Engineer Assessment — March 2026
+      &nbsp;|&nbsp; 14 findings · 8 enhancement paths
     </div>
-  </div>
-  <div class="roadmap-row">
-    <div class="roadmap-phase p2">Phase 2<br><small>Next Sprint</small></div>
-    <div class="roadmap-items">
-      <div class="roadmap-item">Provider adapter abstraction layer</div>
-      <div class="roadmap-item">Wire Anthropic SDK (highest ROI provider)</div>
-      <div class="roadmap-item">Replace char/4 with gpt-tokenizer</div>
-      <div class="roadmap-item">Consolidate lib/stores vs lib/state</div>
-      <div class="roadmap-item">Move analytics to Supabase</div>
-    </div>
-  </div>
-  <div class="roadmap-row">
-    <div class="roadmap-phase p3">Phase 3<br><small>Month 2</small></div>
-    <div class="roadmap-items">
-      <div class="roadmap-item">Real Ensemble/Debate/Expert synthesis</div>
-      <div class="roadmap-item">Wire Gemini + xAI adapters</div>
-      <div class="roadmap-item">Complete Stripe checkout flow</div>
-      <div class="roadmap-item">Sources/disagreements backend generation</div>
-      <div class="roadmap-item">Transactional DB write guards in stream route</div>
-    </div>
-  </div>
-</div>
-
-<!-- ─── WHAT'S GOOD ─── -->
-<h2>✅ What's Done Well</h2>
-
-<table class="summary-table">
-  <thead>
-    <tr>
-      <th>Area</th>
-      <th>Finding</th>
-      <th>File</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>Streaming Pipeline</td>
-      <td>SSE implementation is clean. Proper backpressure with ReadableStream, timeout handling via generator wrapper, AbortSignal threading through all layers.</td>
-      <td class="file-col">app/api/chat/route.ts · lib/api/streamWithTimeout.ts</td>
-    </tr>
-    <tr>
-      <td>Billing Metering</td>
-      <td>Hold/settle/refund pattern is sophisticated for a junior project. Server-enforced, RLS-scoped, with proper error typing per billing failure mode.</td>
-      <td class="file-col">lib/billing/supabaseService.ts</td>
-    </tr>
-    <tr>
-      <td>Error Typing</td>
-      <td>Custom error classes (<code>SupabaseBillingInsufficientCreditsError</code>, etc.) per failure mode, with structured HTTP status codes and client-readable codes. This is good API design.</td>
-      <td class="file-col">lib/billing/supabaseService.ts</td>
-    </tr>
-    <tr>
-      <td>Observability</td>
-      <td>Structured logging with request IDs, Sentry integration, custom Metrics class with tagged counters/timings. Better than most junior projects.</td>
-      <td class="file-col">lib/logger.ts · lib/metrics.ts</td>
-    </tr>
-    <tr>
-      <td>CI/CD Pipeline</td>
-      <td>GitHub Actions workflows for lint, typecheck, unit tests, E2E, bundle size, and format check are all present and correctly structured.</td>
-      <td class="file-col">.github/workflows/</td>
-    </tr>
-    <tr>
-      <td>Rate Limit Design</td>
-      <td>The <em>design</em> of the rate limiter — separate check vs consume, combined rate+concurrency permission check — is architecturally correct. The backing store is the only problem.</td>
-      <td class="file-col">lib/rateLimit.ts</td>
-    </tr>
-    <tr>
-      <td>TypeScript Usage</td>
-      <td>Strict TypeScript throughout. No <code>any</code> types observed in reviewed files. Proper generic typing in store interfaces.</td>
-      <td class="file-col">Codebase-wide</td>
-    </tr>
-    <tr>
-      <td>Testing Setup</td>
-      <td>Vitest + Testing Library + Playwright configured. Coverage scripts present. Multiple test files exist for billing, stores, and API layers.</td>
-      <td class="file-col">vitest.config.ts · playwright.config.ts</td>
-    </tr>
-  </tbody>
-</table>
-
-<hr>
-
-<div style="color: var(--muted); font-size: 12px; text-align: center; padding-bottom: 20px;">
-  Code Review — multimodel-ai — Senior Engineer Assessment — March 2026 &nbsp;|&nbsp; 14 findings · 8 enhancement paths
-</div>
-
-</body>
+  </body>
 </html>
