@@ -1,9 +1,0 @@
-{
-  "framework": "nextjs",
-  "crons": [
-    {
-      "path": "/api/autopilot/run-due",
-      "schedule": "*/15 * * * *"
-    }
-  ]
-}

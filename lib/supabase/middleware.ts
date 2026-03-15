@@ -86,7 +86,12 @@ export async function updateSession(request: NextRequest) {
   const isApi = pathname.startsWith("/api/");
   const isAuthenticated = Boolean(claims?.sub);
 
-  if (!isApi && !isPublic && !isAuthenticated && isKnownProtectedRoute(pathname)) {
+  if (
+    !isApi &&
+    !isPublic &&
+    !isAuthenticated &&
+    isKnownProtectedRoute(pathname)
+  ) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/auth/login";
     const target = `${pathname}${request.nextUrl.search}`;
