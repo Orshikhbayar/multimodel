@@ -1,0 +1,32 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "useGitignore": true,
+  "ignorePaths": [
+    "node_modules",
+    ".next",
+    "coverage",
+    "build",
+    "out",
+    "public/intro",
+    "intro",
+    "multimodel.pptx"
+  ],
+  "words": [
+    "Multimodel",
+    "multimodel",
+    "tanstack",
+    "lucide",
+    "nextauth",
+    "nanoid",
+    "Radix",
+    "shadcn",
+    "zustand",
+    "Tailwind",
+    "Turbopack",
+    "pwa",
+    "telemetry",
+    "Playwright",
+    "cspell"
+  ]
+}
