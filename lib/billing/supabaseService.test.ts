@@ -56,6 +56,44 @@ beforeEach(() => {
   delete process.env.NEXT_PUBLIC_DISABLE_SERVER_BILLING;
   delete process.env.SUPABASE_SERVICE_ROLE_KEY;
   process.env.SUPABASE_SERVICE_ROLE_KEY = "test-key";
+
+  // Provide a default working admin client so tests that don't need a custom
+  // mock don't crash with "Cannot read properties of undefined (reading 'from')"
+  const defaultMockAdmin = {
+    from: vi.fn().mockReturnThis(),
+    select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    lt: vi.fn().mockReturnThis(),
+    gte: vi.fn().mockReturnThis(),
+    maybeSingle: vi.fn().mockResolvedValue({
+      data: {
+        id: "user-1",
+        plan_id: "free",
+        period_start_at: new Date().toISOString(),
+        period_end_at: new Date(Date.now() + 86400000).toISOString(),
+        included_credits_cents: 1000,
+        bonus_credits_cents: 0,
+        top_up_credits_cents: 0,
+      },
+      error: null,
+    }),
+    single: vi.fn().mockResolvedValue({ data: null, error: null }),
+    upsert: vi.fn().mockResolvedValue({ error: null }),
+    update: vi.fn().mockReturnThis(),
+    rpc: vi.fn().mockResolvedValue({
+      data: {
+        id: "user-1",
+        plan_id: "free",
+        period_start_at: new Date().toISOString(),
+        period_end_at: new Date(Date.now() + 86400000).toISOString(),
+        included_credits_cents: 1000,
+        bonus_credits_cents: 0,
+        top_up_credits_cents: 0,
+      },
+      error: null,
+    }),
+  };
+  mockCreateSupabaseAdminClient.mockReturnValue(defaultMockAdmin);
 });
 
 describe("supabaseService", () => {

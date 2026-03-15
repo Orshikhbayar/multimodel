@@ -47,7 +47,9 @@ function createMockContext(): ToolExecutionContext {
     messageId: "msg-1",
     supabase: {
       from: mockSupabaseFrom,
-      storage: mockSupabaseStorage,
+      // Source calls db.storage.from(bucket).download(path), so storage must
+      // be an object with a .from property rather than a bare function.
+      storage: { from: mockSupabaseStorage },
     } as any,
     abortSignal: undefined,
   };
@@ -106,11 +108,9 @@ describe("fileTools", () => {
       });
 
       mockSupabaseStorage.mockReturnValue({
-        from: vi.fn(() => ({
-          download: vi.fn(async () => ({
-            data: new Blob([textBuffer]),
-            error: null,
-          })),
+        download: vi.fn(async () => ({
+          data: new Blob([textBuffer]),
+          error: null,
         })),
       });
 
@@ -174,11 +174,9 @@ describe("fileTools", () => {
       });
 
       mockSupabaseStorage.mockReturnValue({
-        from: vi.fn(() => ({
-          download: vi.fn(async () => ({
-            data: new Blob([pdfBuffer]),
-            error: null,
-          })),
+        download: vi.fn(async () => ({
+          data: new Blob([pdfBuffer]),
+          error: null,
         })),
       });
 
@@ -239,11 +237,9 @@ describe("fileTools", () => {
       });
 
       mockSupabaseStorage.mockReturnValue({
-        from: vi.fn(() => ({
-          download: vi.fn(async () => ({
-            data: new Blob([docxBuffer]),
-            error: null,
-          })),
+        download: vi.fn(async () => ({
+          data: new Blob([docxBuffer]),
+          error: null,
         })),
       });
 
@@ -295,11 +291,9 @@ describe("fileTools", () => {
       });
 
       mockSupabaseStorage.mockReturnValue({
-        from: vi.fn(() => ({
-          download: vi.fn(async () => ({
-            data: new Blob([Buffer.from(largeText)]),
-            error: null,
-          })),
+        download: vi.fn(async () => ({
+          data: new Blob([Buffer.from(largeText)]),
+          error: null,
         })),
       });
 
@@ -356,11 +350,9 @@ describe("fileTools", () => {
       });
 
       mockSupabaseStorage.mockReturnValue({
-        from: vi.fn(() => ({
-          download: vi.fn(async () => ({
-            data: null,
-            error: new Error("Download failed"),
-          })),
+        download: vi.fn(async () => ({
+          data: null,
+          error: new Error("Download failed"),
         })),
       });
 

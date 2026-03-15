@@ -163,7 +163,7 @@ describe("rateLimit", () => {
   it("emits debug logs when NODE_ENV is development", async () => {
     vi.resetModules();
     vi.stubEnv("NODE_ENV", "development");
-    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const logSpy = vi.spyOn(console, "debug").mockImplementation(() => {});
 
     const mod = await import("@/lib/rateLimit");
     mod.resetAllLimits();

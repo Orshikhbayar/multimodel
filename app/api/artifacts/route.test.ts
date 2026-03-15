@@ -1,4 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
+import { NextRequest } from "next/server";
 
 const {
   mockCreateSupabaseServerClient,
@@ -72,7 +73,7 @@ function createSupabaseMock(
 function createRequest(query: Record<string, string> = {}) {
   const params = new URLSearchParams(query);
   const url = `http://localhost:3000/api/artifacts?${params.toString()}`;
-  return new Request(url, { method: "GET" }) as never;
+  return new NextRequest(url, { method: "GET" });
 }
 
 describe("/api/artifacts route", () => {

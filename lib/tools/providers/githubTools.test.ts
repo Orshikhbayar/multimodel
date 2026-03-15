@@ -139,7 +139,8 @@ describe("githubTools", () => {
 
       (context.supabase.from as any) = mockFrom;
 
-      mockFrom.mockReturnValue({
+      // Call 1: getRepoAndIntegration → query "repos" table
+      mockFrom.mockReturnValueOnce({
         select: vi.fn(() => ({
           eq: vi.fn(() => ({
             maybeSingle: vi.fn(async () => ({
@@ -148,8 +149,24 @@ describe("githubTools", () => {
                 owner: "testuser",
                 name: "testrepo",
                 default_branch: "main",
+                integration_id: "int-1",
                 workspace_id: "ws-1",
                 protected_branches: ["main"],
+              },
+              error: null,
+            })),
+          })),
+        })),
+      });
+
+      // Call 2: getRepoAndIntegration → query "integrations" table
+      mockFrom.mockReturnValueOnce({
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            maybeSingle: vi.fn(async () => ({
+              data: {
+                id: "int-1",
+                encrypted_access_token: Buffer.from("ghp_test_token").toString("base64"),
               },
               error: null,
             })),
@@ -168,22 +185,8 @@ describe("githubTools", () => {
           }),
       });
 
-      mockFrom.mockReturnValueOnce({
-        select: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            maybeSingle: vi.fn(async () => ({
-              data: {
-                id: "repo-1",
-                owner: "testuser",
-                name: "testrepo",
-                default_branch: "main",
-                workspace_id: "ws-1",
-                protected_branches: ["main"],
-              },
-              error: null,
-            })),
-          })),
-        })),
+      // Call 3+: indexRepo → delete old cache rows + insert new ones
+      mockFrom.mockReturnValue({
         delete: vi.fn(() => ({
           eq: vi.fn(() => ({
             eq: vi.fn(async () => ({ error: null })),
@@ -208,7 +211,8 @@ describe("githubTools", () => {
 
       (context.supabase.from as any) = mockFrom;
 
-      mockFrom.mockReturnValue({
+      // Call 1: getRepoAndIntegration → query "repos" table
+      mockFrom.mockReturnValueOnce({
         select: vi.fn(() => ({
           eq: vi.fn(() => ({
             maybeSingle: vi.fn(async () => ({
@@ -217,6 +221,7 @@ describe("githubTools", () => {
                 owner: "testuser",
                 name: "testrepo",
                 default_branch: "main",
+                integration_id: "int-1",
                 workspace_id: "ws-1",
                 protected_branches: ["main"],
               },
@@ -226,13 +231,33 @@ describe("githubTools", () => {
         })),
       });
 
+      // Call 2: getRepoAndIntegration → query "integrations" table
       mockFrom.mockReturnValueOnce({
-        select: vi.fn(async () => ({
-          data: [
-            { path: "README.md", size_bytes: 1024, sha: "abc123" },
-            { path: "package.json", size_bytes: 512, sha: "def456" },
-          ],
-          error: null,
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            maybeSingle: vi.fn(async () => ({
+              data: {
+                id: "int-1",
+                encrypted_access_token: Buffer.from("ghp_test_token").toString("base64"),
+              },
+              error: null,
+            })),
+          })),
+        })),
+      });
+
+      // Call 3: list files from repo_files_cache (.select().eq().eq())
+      mockFrom.mockReturnValue({
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            eq: vi.fn(async () => ({
+              data: [
+                { path: "README.md", size_bytes: 1024, sha: "abc123" },
+                { path: "package.json", size_bytes: 512, sha: "def456" },
+              ],
+              error: null,
+            })),
+          })),
         })),
       });
 
@@ -255,7 +280,8 @@ describe("githubTools", () => {
 
       (context.supabase.from as any) = mockFrom;
 
-      mockFrom.mockReturnValue({
+      // Call 1: repos query
+      mockFrom.mockReturnValueOnce({
         select: vi.fn(() => ({
           eq: vi.fn(() => ({
             maybeSingle: vi.fn(async () => ({
@@ -264,6 +290,7 @@ describe("githubTools", () => {
                 owner: "testuser",
                 name: "testrepo",
                 default_branch: "main",
+                integration_id: "int-1",
                 workspace_id: "ws-1",
               },
               error: null,
@@ -272,14 +299,34 @@ describe("githubTools", () => {
         })),
       });
 
+      // Call 2: integrations query
       mockFrom.mockReturnValueOnce({
-        select: vi.fn(async () => ({
-          data: [
-            { path: "src/index.ts", size_bytes: 2048, sha: "abc123" },
-            { path: "src/utils.ts", size_bytes: 1024, sha: "def456" },
-            { path: "README.md", size_bytes: 512, sha: "ghi789" },
-          ],
-          error: null,
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            maybeSingle: vi.fn(async () => ({
+              data: {
+                id: "int-1",
+                encrypted_access_token: Buffer.from("ghp_test_token").toString("base64"),
+              },
+              error: null,
+            })),
+          })),
+        })),
+      });
+
+      // Call 3: file cache query with .eq().eq() chain
+      mockFrom.mockReturnValue({
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            eq: vi.fn(async () => ({
+              data: [
+                { path: "src/index.ts", size_bytes: 2048, sha: "abc123" },
+                { path: "src/utils.ts", size_bytes: 1024, sha: "def456" },
+                { path: "README.md", size_bytes: 512, sha: "ghi789" },
+              ],
+              error: null,
+            })),
+          })),
         })),
       });
 
@@ -299,7 +346,8 @@ describe("githubTools", () => {
 
       (context.supabase.from as any) = mockFrom;
 
-      mockFrom.mockReturnValue({
+      // Call 1: getRepoAndIntegration → repos query
+      mockFrom.mockReturnValueOnce({
         select: vi.fn(() => ({
           eq: vi.fn(() => ({
             maybeSingle: vi.fn(async () => ({
@@ -308,6 +356,24 @@ describe("githubTools", () => {
                 owner: "testuser",
                 name: "testrepo",
                 default_branch: "main",
+                integration_id: "int-1",
+                workspace_id: "ws-1",
+                protected_branches: ["main"],
+              },
+              error: null,
+            })),
+          })),
+        })),
+      });
+
+      // Call 2: getRepoAndIntegration → integrations query
+      mockFrom.mockReturnValueOnce({
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            maybeSingle: vi.fn(async () => ({
+              data: {
+                id: "int-1",
+                encrypted_access_token: Buffer.from("ghp_test_token").toString("base64"),
               },
               error: null,
             })),
@@ -325,7 +391,8 @@ describe("githubTools", () => {
           }),
       });
 
-      mockFrom.mockReturnValueOnce({
+      // Call 3: upsertCachedFile
+      mockFrom.mockReturnValue({
         upsert: vi.fn(async () => ({ error: null })),
       });
 
@@ -349,7 +416,8 @@ describe("githubTools", () => {
 
       (context.supabase.from as any) = mockFrom;
 
-      mockFrom.mockReturnValue({
+      // Call 1: getRepoAndIntegration → repos query
+      mockFrom.mockReturnValueOnce({
         select: vi.fn(() => ({
           eq: vi.fn(() => ({
             maybeSingle: vi.fn(async () => ({
@@ -358,6 +426,9 @@ describe("githubTools", () => {
                 owner: "testuser",
                 name: "testrepo",
                 default_branch: "main",
+                integration_id: "int-1",
+                workspace_id: "ws-1",
+                protected_branches: ["main"],
               },
               error: null,
             })),
@@ -365,19 +436,39 @@ describe("githubTools", () => {
         })),
       });
 
+      // Call 2: getRepoAndIntegration → integrations query
       mockFrom.mockReturnValueOnce({
-        select: vi.fn(async () => ({
-          data: [
-            {
-              path: "src/index.ts",
-              content: "function test() { return 42; }",
-            },
-            {
-              path: "src/utils.ts",
-              content: "export function helper() { return 'test'; }",
-            },
-          ],
-          error: null,
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            maybeSingle: vi.fn(async () => ({
+              data: {
+                id: "int-1",
+                encrypted_access_token: Buffer.from("ghp_test_token").toString("base64"),
+              },
+              error: null,
+            })),
+          })),
+        })),
+      });
+
+      // Call 3: search repo_files_cache — .select().eq().eq()
+      mockFrom.mockReturnValue({
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            eq: vi.fn(async () => ({
+              data: [
+                {
+                  path: "src/index.ts",
+                  content: "function test() { return 42; }",
+                },
+                {
+                  path: "src/utils.ts",
+                  content: "export function helper() { return 'test'; }",
+                },
+              ],
+              error: null,
+            })),
+          })),
         })),
       });
 
@@ -516,7 +607,8 @@ ${Array.from({ length: 100 }, (_, i) => `+added line ${i}`).join("\n")}`;
 
       (context.supabase.from as any) = mockFrom;
 
-      mockFrom.mockReturnValue({
+      // Call 1: repos query
+      mockFrom.mockReturnValueOnce({
         select: vi.fn(() => ({
           eq: vi.fn(() => ({
             maybeSingle: vi.fn(async () => ({
@@ -525,7 +617,24 @@ ${Array.from({ length: 100 }, (_, i) => `+added line ${i}`).join("\n")}`;
                 owner: "testuser",
                 name: "testrepo",
                 default_branch: "main",
+                integration_id: "int-1",
+                workspace_id: "ws-1",
                 protected_branches: ["main", "master"],
+              },
+              error: null,
+            })),
+          })),
+        })),
+      });
+
+      // Call 2: integrations query
+      mockFrom.mockReturnValue({
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            maybeSingle: vi.fn(async () => ({
+              data: {
+                id: "int-1",
+                encrypted_access_token: Buffer.from("ghp_test_token").toString("base64"),
               },
               error: null,
             })),
@@ -572,7 +681,8 @@ ${Array.from({ length: 100 }, (_, i) => `+added line ${i}`).join("\n")}`;
 
       (context.supabase.from as any) = mockFrom;
 
-      mockFrom.mockReturnValue({
+      // Call 1: getRepoAndIntegration → repos query
+      mockFrom.mockReturnValueOnce({
         select: vi.fn(() => ({
           eq: vi.fn(() => ({
             maybeSingle: vi.fn(async () => ({
@@ -581,6 +691,24 @@ ${Array.from({ length: 100 }, (_, i) => `+added line ${i}`).join("\n")}`;
                 owner: "testuser",
                 name: "testrepo",
                 default_branch: "main",
+                integration_id: "int-1",
+                workspace_id: "ws-1",
+                protected_branches: [],
+              },
+              error: null,
+            })),
+          })),
+        })),
+      });
+
+      // Call 2: getRepoAndIntegration → integrations query
+      mockFrom.mockReturnValue({
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            maybeSingle: vi.fn(async () => ({
+              data: {
+                id: "int-1",
+                encrypted_access_token: Buffer.from("ghp_test_token").toString("base64"),
               },
               error: null,
             })),

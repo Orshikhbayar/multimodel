@@ -28,8 +28,13 @@ function createMockContext(): ToolExecutionContext {
     supabase: {
       from: () => ({
         select: () => ({
+          // Source calls .eq().eq().eq() (workspace_id, project_scope_key,
+          // query_hash) so we need three levels of chaining.
           eq: vi.fn(() => ({
-            eq: mockSupabaseQuery,
+            eq: vi.fn(() => ({
+              eq: mockSupabaseQuery,
+              maybeSingle: mockSupabaseQuery,
+            })),
             maybeSingle: mockSupabaseQuery,
           })),
           gt: vi.fn(() => ({

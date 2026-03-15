@@ -16,9 +16,16 @@ const {
 }));
 
 vi.mock("docx", () => ({
-  Document: vi.fn((config) => config),
-  Paragraph: vi.fn((config) => ({ type: "paragraph", ...config })),
-  TextRun: vi.fn((config) => ({ type: "text", ...config })),
+  // Must use `function` keyword so vitest can call them with `new`
+  Document: vi.fn(function (config: unknown) {
+    return config;
+  }),
+  Paragraph: vi.fn(function (config: unknown) {
+    return { type: "paragraph", ...(config as object) };
+  }),
+  TextRun: vi.fn(function (config: unknown) {
+    return { type: "text", ...(config as object) };
+  }),
   HeadingLevel: {
     HEADING_1: 1,
     HEADING_2: 2,
@@ -55,7 +62,9 @@ function createMockContext(): ToolExecutionContext {
     messageId: "msg-1",
     supabase: {
       from: mockSupabaseFrom,
-      storage: mockSupabaseStorage,
+      // Source accesses db.storage.from(bucket).upload(...), so storage must
+      // be an object whose .from property is the mock callable.
+      storage: { from: mockSupabaseStorage },
     } as any,
     abortSignal: undefined,
   };
@@ -74,9 +83,7 @@ describe("exportTools", () => {
       mockPacker.mockResolvedValue(Buffer.from("fake docx"));
 
       mockSupabaseStorage.mockReturnValue({
-        from: vi.fn(() => ({
-          upload: vi.fn(async () => ({ error: null })),
-        })),
+        upload: vi.fn(async () => ({ error: null })),
       });
 
       mockSupabaseFrom.mockReturnValue({
@@ -109,9 +116,7 @@ describe("exportTools", () => {
       mockPacker.mockResolvedValue(Buffer.from("fake docx"));
 
       mockSupabaseStorage.mockReturnValue({
-        from: vi.fn(() => ({
-          upload: vi.fn(async () => ({ error: null })),
-        })),
+        upload: vi.fn(async () => ({ error: null })),
       });
 
       mockSupabaseFrom.mockReturnValue({
@@ -147,9 +152,7 @@ describe("exportTools", () => {
       mockPacker.mockResolvedValue(Buffer.from("fake docx"));
 
       mockSupabaseStorage.mockReturnValue({
-        from: vi.fn(() => ({
-          upload: vi.fn(async () => ({ error: null })),
-        })),
+        upload: vi.fn(async () => ({ error: null })),
       });
 
       mockSupabaseFrom.mockReturnValue({
@@ -191,12 +194,14 @@ describe("exportTools", () => {
         end: vi.fn(),
       };
 
-      mockPDFDocument.mockReturnValue(mockDoc);
+      // Use mockImplementation with a regular function so `new PDFDocument()`
+      // returns mockDoc (arrow functions cannot be used as constructors).
+      mockPDFDocument.mockImplementation(function () {
+        return mockDoc;
+      });
 
       mockSupabaseStorage.mockReturnValue({
-        from: vi.fn(() => ({
-          upload: vi.fn(async () => ({ error: null })),
-        })),
+        upload: vi.fn(async () => ({ error: null })),
       });
 
       mockSupabaseFrom.mockReturnValue({
@@ -239,12 +244,12 @@ describe("exportTools", () => {
         end: vi.fn(),
       };
 
-      mockPDFDocument.mockReturnValue(mockDoc);
+      mockPDFDocument.mockImplementation(function () {
+        return mockDoc;
+      });
 
       mockSupabaseStorage.mockReturnValue({
-        from: vi.fn(() => ({
-          upload: vi.fn(async () => ({ error: null })),
-        })),
+        upload: vi.fn(async () => ({ error: null })),
       });
 
       mockSupabaseFrom.mockReturnValue({
@@ -294,12 +299,12 @@ describe("exportTools", () => {
         ShapeType: { line: "line" },
       };
 
-      mockPptxGenJS.mockReturnValue(mockPptx);
+      mockPptxGenJS.mockImplementation(function () {
+        return mockPptx;
+      });
 
       mockSupabaseStorage.mockReturnValue({
-        from: vi.fn(() => ({
-          upload: vi.fn(async () => ({ error: null })),
-        })),
+        upload: vi.fn(async () => ({ error: null })),
       });
 
       mockSupabaseFrom.mockReturnValue({
@@ -353,12 +358,12 @@ describe("exportTools", () => {
         ShapeType: { line: "line" },
       };
 
-      mockPptxGenJS.mockReturnValue(mockPptx);
+      mockPptxGenJS.mockImplementation(function () {
+        return mockPptx;
+      });
 
       mockSupabaseStorage.mockReturnValue({
-        from: vi.fn(() => ({
-          upload: vi.fn(async () => ({ error: null })),
-        })),
+        upload: vi.fn(async () => ({ error: null })),
       });
 
       mockSupabaseFrom.mockReturnValue({
@@ -405,12 +410,12 @@ describe("exportTools", () => {
         ShapeType: { line: "line" },
       };
 
-      mockPptxGenJS.mockReturnValue(mockPptx);
+      mockPptxGenJS.mockImplementation(function () {
+        return mockPptx;
+      });
 
       mockSupabaseStorage.mockReturnValue({
-        from: vi.fn(() => ({
-          upload: vi.fn(async () => ({ error: null })),
-        })),
+        upload: vi.fn(async () => ({ error: null })),
       });
 
       mockSupabaseFrom.mockReturnValue({
@@ -455,12 +460,12 @@ describe("exportTools", () => {
         ShapeType: { line: "line" },
       };
 
-      mockPptxGenJS.mockReturnValue(mockPptx);
+      mockPptxGenJS.mockImplementation(function () {
+        return mockPptx;
+      });
 
       mockSupabaseStorage.mockReturnValue({
-        from: vi.fn(() => ({
-          upload: vi.fn(async () => ({ error: null })),
-        })),
+        upload: vi.fn(async () => ({ error: null })),
       });
 
       mockSupabaseFrom.mockReturnValue({

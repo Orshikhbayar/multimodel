@@ -465,30 +465,39 @@ describe("executeToolRequest pipeline", () => {
 
   describe("timeout handling", () => {
     it("wraps execution with timeout and rejects after timeout expires", async () => {
-      const slowExecute = vi.fn(
-        () =>
-          new Promise((resolve) =>
-            setTimeout(() => resolve({ output: { ok: true } }), 200_000),
-          ),
-      );
-      const definition = createDefinition({
-        execute: slowExecute,
-      });
-      mocks.registryGet.mockReturnValue(definition);
+      vi.useFakeTimers();
+      try {
+        const slowExecute = vi.fn(
+          () =>
+            new Promise((resolve) =>
+              setTimeout(() => resolve({ output: { ok: true } }), 200_000),
+            ),
+        );
+        const definition = createDefinition({
+          execute: slowExecute,
+        });
+        mocks.registryGet.mockReturnValue(definition);
 
-      const { client } = createToolRunsSupabase([]);
-      const context = createBaseContext(client);
+        const { client } = createToolRunsSupabase([]);
+        const context = createBaseContext(client);
 
-      const promise = executeToolRequest(context, {
-        tool_name: "read_tool",
-        input: {},
-      });
+        const promise = executeToolRequest(context, {
+          tool_name: "read_tool",
+          input: {},
+        });
 
-      await expect(promise).rejects.toMatchObject({
-        statusCode: 504,
-        code: "TOOL_TIMEOUT",
-        message: "Tool execution timed out",
-      });
+        // Advance past DEFAULT_TIMEOUT_MS (90_000) so the executor's
+        // internal timer fires and rejects the promise.
+        await vi.advanceTimersByTimeAsync(90_001);
+
+        await expect(promise).rejects.toMatchObject({
+          statusCode: 504,
+          code: "TOOL_TIMEOUT",
+          message: "Tool execution timed out",
+        });
+      } finally {
+        vi.useRealTimers();
+      }
     });
 
     it("passes abort signal to tool executor", async () => {
@@ -772,6 +781,9 @@ describe("executeToolRequest pipeline", () => {
         tool_name: "read_tool",
         input: {},
       });
+
+      // Flush microtasks so the first async execution of flakeyExecute runs
+      await vi.advanceTimersByTimeAsync(0);
 
       // First execution happens immediately
       expect(flakeyExecute).toHaveBeenCalledTimes(1);

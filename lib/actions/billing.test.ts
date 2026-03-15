@@ -329,9 +329,11 @@ describe("billing actions", () => {
     });
 
     it("changePlan throws error when user billing profile cannot be created", async () => {
+      // SELECT must return no profile (data: null, error: null) so the code
+      // proceeds to the RPC call that creates the profile. Only the RPC fails.
       profiles.setResult({
         data: null,
-        error: { message: "Failed to create profile" },
+        error: null,
       });
 
       mockRpc.mockImplementation((fn: string) => {

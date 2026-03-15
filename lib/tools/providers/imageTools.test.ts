@@ -22,7 +22,9 @@ function createMockContext(): ToolExecutionContext {
     messageId: "msg-1",
     supabase: {
       from: mockSupabaseFrom,
-      storage: mockSupabaseStorage,
+      // Source calls db.storage.from(bucket).upload(...), so storage must be
+      // an object with a .from property rather than a bare callable.
+      storage: { from: mockSupabaseStorage },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mock Supabase client
     } as any,
     abortSignal: undefined,
@@ -52,9 +54,7 @@ describe("imageTools", () => {
       });
 
       mockSupabaseStorage.mockReturnValue({
-        from: vi.fn(() => ({
-          upload: vi.fn(async () => ({ error: null })),
-        })),
+        upload: vi.fn(async () => ({ error: null })),
       });
 
       mockSupabaseFrom.mockReturnValue({
@@ -110,9 +110,7 @@ describe("imageTools", () => {
       });
 
       mockSupabaseStorage.mockReturnValue({
-        from: vi.fn(() => ({
-          upload: vi.fn(async () => ({ error: null })),
-        })),
+        upload: vi.fn(async () => ({ error: null })),
       });
 
       mockSupabaseFrom.mockReturnValue({
@@ -150,9 +148,7 @@ describe("imageTools", () => {
       });
 
       mockSupabaseStorage.mockReturnValue({
-        from: vi.fn(() => ({
-          upload: vi.fn(async () => ({ error: null })),
-        })),
+        upload: vi.fn(async () => ({ error: null })),
       });
 
       mockSupabaseFrom.mockReturnValue({
@@ -195,9 +191,7 @@ describe("imageTools", () => {
       });
 
       mockSupabaseStorage.mockReturnValue({
-        from: vi.fn(() => ({
-          upload: vi.fn(async () => ({ error: null })),
-        })),
+        upload: vi.fn(async () => ({ error: null })),
       });
 
       mockSupabaseFrom.mockReturnValue({
@@ -225,7 +219,10 @@ describe("imageTools", () => {
     });
 
     it("throws error when API key missing", async () => {
-      vi.unstubAllEnvs();
+      // Explicitly clear the key regardless of the CI environment's own value.
+      // vi.unstubAllEnvs() would only restore to the pre-stub value which may
+      // still be non-empty in CI, causing a 401 instead of the missing-key error.
+      vi.stubEnv("OPENAI_API_KEY", "");
 
       const context = createMockContext();
 
@@ -276,10 +273,8 @@ describe("imageTools", () => {
       });
 
       mockSupabaseStorage.mockReturnValue({
-        from: vi.fn(() => ({
-          upload: vi.fn(async () => ({
-            error: new Error("Upload failed"),
-          })),
+        upload: vi.fn(async () => ({
+          error: new Error("Upload failed"),
         })),
       });
 
@@ -303,9 +298,7 @@ describe("imageTools", () => {
       });
 
       mockSupabaseStorage.mockReturnValue({
-        from: vi.fn(() => ({
-          upload: vi.fn(async () => ({ error: null })),
-        })),
+        upload: vi.fn(async () => ({ error: null })),
       });
 
       mockSupabaseFrom.mockReturnValue({
@@ -340,9 +333,7 @@ describe("imageTools", () => {
       });
 
       mockSupabaseStorage.mockReturnValue({
-        from: vi.fn(() => ({
-          upload: vi.fn(async () => ({ error: null })),
-        })),
+        upload: vi.fn(async () => ({ error: null })),
       });
 
       const insertMock = vi.fn(() => ({

@@ -7,10 +7,6 @@ const eslintConfig = defineConfig([
   ...nextTs,
   // Override default ignores of eslint-config-next.
   globalIgnores([
-    // node_modules must be explicit in ESLint 9 flat config
-    "node_modules/**",
-    // Git worktrees and Claude session artifacts
-    ".claude/**",
     // Default ignores of eslint-config-next:
     ".next/**",
     "out/**",
