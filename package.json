@@ -19,7 +19,7 @@
     "coverage:critical": "node scripts/check-critical-coverage.mjs",
     "format": "prettier --write . --ignore-unknown",
     "format:check": "prettier --check . --ignore-unknown",
-    "spellcheck": "cspell lint . --no-progress --show-suggestions",
+    "spellcheck": "cspell lint . --no-progress --show-suggestions --config cspell.json",
     "db:push": "npx supabase@latest db push",
     "db:reset": "npx supabase@latest db reset",
     "db:new": "npx supabase@latest migration new",
