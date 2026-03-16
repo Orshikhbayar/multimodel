@@ -1,29 +1,29 @@
 import type { Currency } from "./types";
 import { convertCurrency } from "./utils";
+import { getModelById } from "@/lib/modelCatalog";
+import { estimateTokens } from "@/lib/api/tokenEstimator";
 
-const BASE_RATE_USD_PER_1K = 0.01;
 const DEFAULT_MAX_OUTPUT_TOKENS = 512;
 
-// Cost multipliers relative to BASE_RATE_USD_PER_1K.
-// Keep in sync with MODELS in lib/modelCatalog.ts — only confirmed model IDs belong here.
-const MODEL_MULTIPLIERS: Record<string, number> = {
-  // OpenAI
-  "openai/gpt-4.1": 1.0,
-  "openai/gpt-4o": 1.25,
-  "openai/gpt-4o-mini": 0.35,
-  // Anthropic
-  "anthropic/claude-opus-4": 1.8,
-  "anthropic/claude-sonnet-4": 1.2,
-  "anthropic/claude-3.5": 1.15,
-  // Google
-  "google/gemini-2.5-flash": 1.0,
-  "google/gemini-2.0": 0.9,
-  // xAI
-  "xai/grok-3": 1.1,
-  // DeepSeek
-  "deepseek/deepseek-reasoner": 0.85,
-  "deepseek/deepseek-chat": 0.6,
-};
+/**
+ * Derive per-1M-token costs from the model catalog.
+ * Falls back to a conservative generic rate when pricing data is missing.
+ */
+function getModelRates(modelId: string): {
+  inputPer1M: number;
+  outputPer1M: number;
+} {
+  const model = getModelById(modelId);
+  if (model?.inputCostPer1M !== undefined && model?.outputCostPer1M !== undefined) {
+    return {
+      inputPer1M: model.inputCostPer1M,
+      outputPer1M: model.outputCostPer1M,
+    };
+  }
+
+  // Fallback: $0.01 / 1K tokens (blended) — equivalent to the old BASE_RATE
+  return { inputPer1M: 10.0, outputPer1M: 10.0 };
+}
 
 const IMAGE_BASE_USD: Record<string, number> = {
   small: 0.06,
@@ -44,14 +44,19 @@ export function estimateChatCost({
   maxOutputTokens?: number;
   currency: Currency;
 }) {
-  const multiplier = MODEL_MULTIPLIERS[modelId] ?? 1;
-  const inputTokens = Math.max(1, Math.ceil(input.length / 4));
-  const totalTokens = inputTokens + maxOutputTokens;
-  const costUsd = (totalTokens / 1000) * BASE_RATE_USD_PER_1K * multiplier;
+  const { inputPer1M, outputPer1M } = getModelRates(modelId);
+  const inputTokens = Math.max(1, estimateTokens(input));
+  const inputCostUsd = (inputTokens / 1_000_000) * inputPer1M;
+  const outputCostUsd = (maxOutputTokens / 1_000_000) * outputPer1M;
+  const costUsd = inputCostUsd + outputCostUsd;
   const cost = convertCurrency(costUsd, "USD", currency);
   return Math.max(0.01, Number(cost.toFixed(2)));
 }
 
+/**
+ * Calculate actual cost for a completed run where real token counts are known.
+ * Uses separate input/output rates from the catalog for accuracy.
+ */
 export function estimateTokenCostUsd({
   modelId,
   inputTokens,
@@ -61,10 +66,10 @@ export function estimateTokenCostUsd({
   inputTokens: number;
   outputTokens: number;
 }) {
-  const multiplier = MODEL_MULTIPLIERS[modelId] ?? 1;
-  const totalTokens = Math.max(0, inputTokens) + Math.max(0, outputTokens);
-  const costUsd = (totalTokens / 1000) * BASE_RATE_USD_PER_1K * multiplier;
-  return Math.max(0, Number(costUsd.toFixed(6)));
+  const { inputPer1M, outputPer1M } = getModelRates(modelId);
+  const inputCost = (Math.max(0, inputTokens) / 1_000_000) * inputPer1M;
+  const outputCost = (Math.max(0, outputTokens) / 1_000_000) * outputPer1M;
+  return Math.max(0, Number((inputCost + outputCost).toFixed(6)));
 }
 
 export function estimateChatCostForSlots({
@@ -91,7 +96,13 @@ export function estimateImageCost({
   size: ImageSize;
   currency: Currency;
 }) {
-  const multiplier = MODEL_MULTIPLIERS[modelId] ?? 1;
+  // Image generation pricing doesn't follow per-token rates; keep a flat table.
+  const IMAGE_MULTIPLIERS: Record<string, number> = {
+    "openai/gpt-4.1": 1.0,
+    "openai/gpt-4o": 1.25,
+    "openai/gpt-4o-mini": 0.35,
+  };
+  const multiplier = IMAGE_MULTIPLIERS[modelId] ?? 1.0;
   const costUsd = (IMAGE_BASE_USD[size] ?? 0.1) * multiplier;
   const cost = convertCurrency(costUsd, "USD", currency);
   return Math.max(0.05, Number(cost.toFixed(2)));
