@@ -153,6 +153,12 @@ export async function POST(request: NextRequest) {
 
   const streamId = permission.concurrency.streamId!;
 
+  // Hoisted so the outer catch can release the billing hold if anything throws
+  // after startUsageRunMetering creates a DB record but before the stream starts.
+  let outerMeteringRunId: string | null = null;
+  let outerMeteringModelId = "openai/gpt-4o-mini";
+  let outerMeteringClosed = false;
+
   try {
     const body = (await request.json()) as ChatRequestBody;
     const {
@@ -305,6 +311,7 @@ export async function POST(request: NextRequest) {
 
     let resolvedModelId = modelId || "openai/gpt-4o-mini";
     const meteringRunReferenceId = runId ?? requestId;
+    outerMeteringRunId = meteringRunReferenceId;
     const estimatedPromptTokens = estimatePromptTokensFromMessages(messages);
     let meteringClosed = false;
 
@@ -398,6 +405,8 @@ export async function POST(request: NextRequest) {
       throw error;
     }
 
+    outerMeteringModelId = resolvedModelId;
+
     const resolvedProvider = getProviderFromModelId(resolvedModelId);
 
     const finalizeMetering = async (
@@ -408,6 +417,7 @@ export async function POST(request: NextRequest) {
     ) => {
       if (meteringClosed) return;
       meteringClosed = true;
+      outerMeteringClosed = true;
 
       try {
         await finalizeUsageRunMetering({
@@ -429,7 +439,7 @@ export async function POST(request: NextRequest) {
     };
 
     if (conversationId && runId) {
-      await supabase.from("model_runs").upsert(
+      const { error: upsertErr } = await supabase.from("model_runs").upsert(
         {
           id: runId,
           conversation_id: conversationId,
@@ -440,6 +450,12 @@ export async function POST(request: NextRequest) {
         },
         { onConflict: "id" },
       );
+      if (upsertErr) {
+        log.warn("model_runs upsert failed; stream will continue", {
+          error: upsertErr,
+          runId,
+        });
+      }
     }
 
     const encoder = new TextEncoder();
@@ -666,6 +682,25 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     releaseConcurrencySlot(sessionUserId, streamId);
+
+    // Best-effort: finalize billing hold if the stream never started.
+    if (!outerMeteringClosed && outerMeteringRunId) {
+      try {
+        await finalizeUsageRunMetering({
+          userId: sessionUserId,
+          userEmail: sessionEmail,
+          runReferenceId: outerMeteringRunId,
+          modelId: outerMeteringModelId,
+          promptTokens: 0,
+          completionTokens: 0,
+          status: "failed",
+          failureReason: "pre_stream_server_error",
+        });
+        outerMeteringClosed = true;
+      } catch (finalizeErr) {
+        log.error("Outer-catch metering cleanup failed", finalizeErr, {});
+      }
+    }
 
     const elapsed = Date.now() - startTime;
     log.error("Request failed", error, { durationMs: elapsed });

@@ -3,7 +3,10 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getPlanById, PLANS } from "@/lib/billing/plans";
 import { calculateUsageCostCents } from "@/lib/billing/cost";
 import type { BillingSessionUser, PlanId } from "@/lib/billing/types";
-import { isUnlimitedTesterEmail } from "@/lib/testerAccess";
+import {
+  isUnlimitedTesterEmail,
+  isUnlimitedTesterId,
+} from "@/lib/testerAccess";
 
 type BillingBucket = Database["public"]["Enums"]["billing_bucket"];
 type ProfileRow = Tables<"profiles">;
@@ -46,51 +49,35 @@ const AUTO_ROUTE_PRIORITY = [
   "deepseek/deepseek-chat",
   "google/gemini-2.5-flash",
   "openai/gpt-4o-mini",
-  "openai/gpt-5-mini",
 ] as const;
 
 const MODEL_RETAIL_CENTS_PER_1M: Record<
   string,
   { inputCentsPer1m: number; outputCentsPer1m: number }
 > = {
-  "openai/gpt-4.1": { inputCentsPer1m: 1000, outputCentsPer1m: 3000 },
-  "openai/gpt-5-mini": { inputCentsPer1m: 1200, outputCentsPer1m: 3600 },
-  "openai/gpt-5.2": { inputCentsPer1m: 1800, outputCentsPer1m: 5400 },
-  "openai/gpt-5.2-codex": { inputCentsPer1m: 2000, outputCentsPer1m: 6000 },
-  "openai/gpt-5.1": { inputCentsPer1m: 1600, outputCentsPer1m: 4800 },
+  // OpenAI
+  "openai/gpt-4.1": { inputCentsPer1m: 200, outputCentsPer1m: 800 },
   "openai/gpt-4o": { inputCentsPer1m: 250, outputCentsPer1m: 1000 },
   "openai/gpt-4o-mini": { inputCentsPer1m: 15, outputCentsPer1m: 60 },
+  // Anthropic
+  "anthropic/claude-opus-4": { inputCentsPer1m: 1500, outputCentsPer1m: 7500 },
   "anthropic/claude-sonnet-4": {
     inputCentsPer1m: 1200,
     outputCentsPer1m: 3600,
   },
-  "anthropic/claude-opus-4.1": {
-    inputCentsPer1m: 1850,
-    outputCentsPer1m: 5550,
-  },
   "anthropic/claude-3.5": { inputCentsPer1m: 1150, outputCentsPer1m: 3450 },
-  "anthropic/claude-opus-4": { inputCentsPer1m: 1800, outputCentsPer1m: 5400 },
-  "google/gemini-3-flash-preview": {
-    inputCentsPer1m: 650,
-    outputCentsPer1m: 1950,
-  },
-  "google/gemini-3-pro-preview": {
-    inputCentsPer1m: 1400,
-    outputCentsPer1m: 4200,
-  },
-  "google/gemini-3-pro-image-preview": {
-    inputCentsPer1m: 2000,
-    outputCentsPer1m: 6000,
-  },
-  "google/gemini-2.5-flash": { inputCentsPer1m: 500, outputCentsPer1m: 1500 },
+  // Google
+  "google/gemini-2.5-flash": { inputCentsPer1m: 8, outputCentsPer1m: 30 },
   "google/gemini-2.0": { inputCentsPer1m: 1250, outputCentsPer1m: 3750 },
-  "xai/grok-4": { inputCentsPer1m: 1350, outputCentsPer1m: 4050 },
+  // xAI
   "xai/grok-3": { inputCentsPer1m: 1100, outputCentsPer1m: 3300 },
+  // DeepSeek
   "deepseek/deepseek-reasoner": {
     inputCentsPer1m: 900,
     outputCentsPer1m: 2700,
   },
   "deepseek/deepseek-chat": { inputCentsPer1m: 600, outputCentsPer1m: 1800 },
+  // Fallback
   default: { inputCentsPer1m: 15, outputCentsPer1m: 60 },
 };
 
@@ -649,7 +636,10 @@ export async function startUsageRunMetering(params: {
     return null;
   }
 
-  if (isUnlimitedTesterEmail(params.sessionUser.email)) {
+  if (
+    isUnlimitedTesterId(params.sessionUser.id) ||
+    isUnlimitedTesterEmail(params.sessionUser.email)
+  ) {
     return {
       runReferenceId: params.runReferenceId,
       modelId: params.requestedModelId,
@@ -804,7 +794,10 @@ export async function finalizeUsageRunMetering(params: {
     return null;
   }
 
-  if (isUnlimitedTesterEmail(params.userEmail)) {
+  if (
+    isUnlimitedTesterId(params.userId) ||
+    isUnlimitedTesterEmail(params.userEmail)
+  ) {
     return null;
   }
 
