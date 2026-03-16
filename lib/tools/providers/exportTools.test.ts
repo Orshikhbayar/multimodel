@@ -491,7 +491,7 @@ describe("exportTools", () => {
       });
 
       // Should have called addSlide at least twice (content + references)
-      expect(mockPptx.addSlide).toHaveBeenCalledTimes(expect.any(Number));
+      expect(mockPptx.addSlide).toHaveBeenCalledTimes(3);
     });
   });
 

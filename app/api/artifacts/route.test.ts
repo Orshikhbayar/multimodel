@@ -53,9 +53,12 @@ function createSupabaseMock(
           error: null,
         }));
 
+        // Return object that supports chaining: eq().order().limit() or eq().is().order().limit()
         return {
           order: orderFn,
           limit: limitFn,
+          eq: selectEq,
+          is: selectEq,
         };
       });
 

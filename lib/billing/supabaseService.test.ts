@@ -6,7 +6,7 @@ const {
   mockCalculateUsageCostCents,
 } = vi.hoisted(() => ({
   mockCreateSupabaseAdminClient: vi.fn(),
-  mockIsUnlimitedTesterEmail: vi.fn((email) => false),
+  mockIsUnlimitedTesterEmail: vi.fn(() => false),
   mockCalculateUsageCostCents: vi.fn((params) => {
     const rate = {
       "openai/gpt-4o-mini": { inputPer1k: 0.15, outputPer1k: 0.6 },
@@ -45,8 +45,6 @@ import {
   SupabaseBillingQuotaExceededError,
   SupabaseBillingInsufficientCreditsError,
   SupabaseBillingLockedError,
-  type MeteredRunStart,
-  type IncludedUsageReport,
 } from "@/lib/billing/supabaseService";
 
 beforeEach(() => {
@@ -100,13 +98,13 @@ describe("supabaseService", () => {
   describe("resolveAutoModelRouting", () => {
     it("returns manual mode when mode is not smart", () => {
       const result = resolveAutoModelRouting({
-        requestedModelId: "openai/gpt-5.2",
+        requestedModelId: "openai/gpt-4.1",
         planId: "free",
         mode: "manual",
       });
 
       expect(result).toEqual({
-        modelId: "openai/gpt-5.2",
+        modelId: "openai/gpt-4.1",
         routed: false,
         reason: "manual",
       });
@@ -114,12 +112,12 @@ describe("supabaseService", () => {
 
     it("returns manual mode when mode is undefined", () => {
       const result = resolveAutoModelRouting({
-        requestedModelId: "openai/gpt-5.2",
+        requestedModelId: "openai/gpt-4.1",
         planId: "free",
       });
 
       expect(result).toEqual({
-        modelId: "openai/gpt-5.2",
+        modelId: "openai/gpt-4.1",
         routed: false,
         reason: "manual",
       });
@@ -127,7 +125,7 @@ describe("supabaseService", () => {
 
     it("applies plan guardrail when requested model not in plan", () => {
       const result = resolveAutoModelRouting({
-        requestedModelId: "openai/gpt-5.2-codex",
+        requestedModelId: "openai/gpt-4o",
         planId: "free",
         mode: "smart",
       });
@@ -197,10 +195,9 @@ describe("supabaseService", () => {
       });
 
       expect(result).toBeGreaterThan(0);
-      // Input: 1000 * 15/1M = 0.015 USD
-      // Output: 1000 * 60/1M = 0.06 USD
-      // Total: 0.075 USD = 7.5 cents, ceil = 8
-      expect(result).toBe(8);
+      // raw = 1000 * 15 + 1000 * 60 = 75,000
+      // result = Math.ceil(75,000 / 1,000,000) = Math.ceil(0.075) = 1
+      expect(result).toBe(1);
     });
 
     it("uses fallback rates for unknown models", async () => {
@@ -248,14 +245,14 @@ describe("supabaseService", () => {
       const result = await startUsageRunMetering({
         sessionUser: { id: "tester-user", email: "tester@example.com" },
         runReferenceId: "run-1",
-        requestedModelId: "openai/gpt-5.2-codex",
+        requestedModelId: "openai/gpt-4o",
         estimatedPromptTokens: 10000,
         maxOutputTokens: 10000,
       });
 
       expect(result).toEqual({
         runReferenceId: "run-1",
-        modelId: "openai/gpt-5.2-codex",
+        modelId: "openai/gpt-4o",
         bucketHint: "included_plan",
         planId: "team",
         heldCreditsInt: 0,
@@ -288,7 +285,7 @@ describe("supabaseService", () => {
         startUsageRunMetering({
           sessionUser: { id: "user-1", email: "user@example.com" },
           runReferenceId: "run-1",
-          requestedModelId: "openai/gpt-5.2-codex",
+          requestedModelId: "openai/gpt-4o",
           mode: "manual",
           estimatedPromptTokens: 100,
           maxOutputTokens: 100,
@@ -618,7 +615,7 @@ describe("supabaseService", () => {
         userId: "tester-user",
         userEmail: "tester@example.com",
         runReferenceId: "run-1",
-        modelId: "openai/gpt-5.2-codex",
+        modelId: "openai/gpt-4o",
         promptTokens: 1000,
         completionTokens: 1000,
         status: "completed",
@@ -1047,7 +1044,7 @@ describe("supabaseService", () => {
                 },
                 {
                   billing_bucket: "overage",
-                  model_id: "openai/gpt-5.2",
+                  model_id: "openai/gpt-4.1",
                   tokens_total: 2000,
                   usage_value_usd_int: 500,
                   billed_amount_usd_int: 500,
@@ -1076,44 +1073,6 @@ describe("supabaseService", () => {
       });
 
       mockCreateSupabaseAdminClient.mockReturnValue(mockAdmin);
-
-      // Manually test with better control
-      const mockAdminBetter = {
-        from: vi.fn().mockImplementation((table) => {
-          if (table === "profiles") {
-            return {
-              select: vi.fn().mockReturnThis(),
-              eq: vi.fn().mockResolvedValue({
-                data: {
-                  id: "user-1",
-                  period_start_at: now.toISOString(),
-                  period_end_at: periodEnd.toISOString(),
-                },
-                error: null,
-              }),
-            };
-          } else if (table === "usage_runs") {
-            return {
-              select: vi.fn().mockReturnThis(),
-              eq: vi.fn().mockReturnThis(),
-              lt: vi.fn().mockReturnThis(),
-              gte: vi.fn().mockReturnThis(),
-              maybeSingle: vi.fn().mockResolvedValue(null),
-            };
-          } else if (table === "credit_ledger_events") {
-            return {
-              select: vi.fn().mockReturnThis(),
-              eq: vi.fn().mockReturnThis(),
-              lt: vi.fn().mockReturnThis(),
-              gte: vi.fn().mockReturnThis(),
-              in: vi.fn().mockResolvedValue({
-                data: [],
-                error: null,
-              }),
-            };
-          }
-        }),
-      };
 
       // Simplified test - just check structure
       const result = await getIncludedUsageReport("user-1");

@@ -20,7 +20,6 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    envFile: ".env.test",
     projects: [
       {
         extends: true,

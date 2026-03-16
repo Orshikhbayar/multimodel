@@ -23,7 +23,7 @@ describe("billing plans", () => {
   });
 
   it("finds next plan for model", () => {
-    const plan = getNextPlanForModel("openai/gpt-5.2-codex");
+    const plan = getNextPlanForModel("openai/gpt-4o");
     expect(plan?.id).toBeTruthy();
   });
 

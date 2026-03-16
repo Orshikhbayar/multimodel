@@ -116,6 +116,9 @@ describe("fileTools", () => {
             error: null,
           })),
         })),
+        insert: vi.fn(async () => ({
+          error: null,
+        })),
       });
 
       mockSupabaseStorage.mockReturnValue({
@@ -182,6 +185,9 @@ describe("fileTools", () => {
             error: null,
           })),
         })),
+        insert: vi.fn(async () => ({
+          error: null,
+        })),
       });
 
       mockSupabaseStorage.mockReturnValue({
@@ -245,6 +251,9 @@ describe("fileTools", () => {
             error: null,
           })),
         })),
+        insert: vi.fn(async () => ({
+          error: null,
+        })),
       });
 
       mockSupabaseStorage.mockReturnValue({
@@ -298,6 +307,9 @@ describe("fileTools", () => {
           eq: vi.fn(async () => ({
             error: null,
           })),
+        })),
+        insert: vi.fn(async () => ({
+          error: null,
         })),
       });
 
