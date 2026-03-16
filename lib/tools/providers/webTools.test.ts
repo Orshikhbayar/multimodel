@@ -30,9 +30,15 @@ function createMockContext(): ToolExecutionContext {
         select: () => ({
           // Source calls .eq().eq().eq() (workspace_id, project_scope_key,
           // query_hash) so we need three levels of chaining.
+          // Also supports .gt() which chains to .maybeSingle()
           eq: vi.fn(() => ({
             eq: vi.fn(() => ({
-              eq: mockSupabaseQuery,
+              eq: vi.fn(() => ({
+                gt: vi.fn(() => ({
+                  maybeSingle: mockSupabaseQuery,
+                })),
+                maybeSingle: mockSupabaseQuery,
+              })),
               maybeSingle: mockSupabaseQuery,
             })),
             maybeSingle: mockSupabaseQuery,

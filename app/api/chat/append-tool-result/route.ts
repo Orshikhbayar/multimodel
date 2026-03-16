@@ -133,7 +133,21 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const payload = (await request.json()) as AppendToolResultPayload;
+  let payload: AppendToolResultPayload;
+  try {
+    payload = (await request.json()) as AppendToolResultPayload;
+  } catch (error) {
+    return new Response(
+      JSON.stringify({
+        error: `Failed to parse request body: ${error instanceof Error ? error.message : "unknown error"}`,
+        requestId,
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
+  }
   const conversationId =
     typeof payload.conversation_id === "string" &&
     payload.conversation_id.length > 0

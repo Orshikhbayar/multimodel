@@ -8,6 +8,7 @@ const {
   mockDetectSecrets,
   mockContainsSecret,
   mockRedactSecrets,
+  mockOctokit,
 } = vi.hoisted(() => ({
   mockFetch: vi.fn(),
   mockEncryptToken: vi.fn((token) => Buffer.from(token)),
@@ -15,6 +16,35 @@ const {
   mockDetectSecrets: vi.fn(() => []),
   mockContainsSecret: vi.fn(() => false),
   mockRedactSecrets: vi.fn((text) => text),
+  mockOctokit: vi.fn(() => ({
+    repos: {
+      get: vi.fn(async () => ({
+        data: {
+          id: 1,
+          name: "testrepo",
+          owner: { login: "testuser" },
+          default_branch: "main",
+        },
+      })),
+      getContent: vi.fn(async () => ({
+        data: {
+          content: Buffer.from("file content").toString("base64"),
+          sha: "abc123",
+        },
+      })),
+    },
+    pulls: {
+      create: vi.fn(async () => ({
+        data: {
+          number: 42,
+          html_url: "https://github.com/testuser/testrepo/pull/42",
+          title: "Test PR",
+          head: { ref: "feature-branch" },
+          base: { ref: "main" },
+        },
+      })),
+    },
+  })),
 }));
 
 vi.stubGlobal("fetch", mockFetch);
@@ -28,6 +58,10 @@ vi.mock("@/lib/security/secrets", () => ({
   detectSecretsInText: mockDetectSecrets,
   containsLikelySecret: mockContainsSecret,
   redactSecretsInText: mockRedactSecrets,
+}));
+
+vi.mock("@octokit/rest", () => ({
+  default: mockOctokit,
 }));
 
 import {
