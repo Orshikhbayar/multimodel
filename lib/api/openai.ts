@@ -40,7 +40,7 @@ export interface StreamResult {
 
 /**
  * Maps internal model IDs (openai/<name>) to the exact string the OpenAI API expects.
- * Only confirmed, released models belong here. Using an unrecognised model ID will
+ * Only confirmed, released models belong here. Using an unrecognized model ID will
  * throw loudly rather than silently billing against gpt-4o-mini.
  */
 const MODEL_MAP: Record<string, string> = {

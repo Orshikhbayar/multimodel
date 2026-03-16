@@ -97,6 +97,8 @@ describe("webTools", () => {
         error: null,
       });
 
+      mockDnsLookup.mockResolvedValue([{ address: "93.184.216.34" }]);
+
       mockFetch.mockResolvedValue({
         ok: true,
         text: async () =>

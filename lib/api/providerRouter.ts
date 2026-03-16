@@ -19,7 +19,7 @@ export type { StreamOptions, StreamEvent };
 
 /**
  * Stream a chat completion from whichever provider owns this model ID.
- * Throws immediately if the provider prefix is unrecognised — no silent fallbacks.
+ * Throws immediately if the provider prefix is unrecognized — no silent fallbacks.
  */
 export async function* streamCompletion(
   options: StreamOptions,

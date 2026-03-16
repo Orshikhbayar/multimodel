@@ -28,7 +28,7 @@ export interface UpstashRateLimiter {
   limit(identifier: string): Promise<UpstashLimitResult>;
 }
 
-let _limiter: UpstashRateLimiter | null | undefined = undefined; // undefined = not yet initialised
+let _limiter: UpstashRateLimiter | null | undefined = undefined; // undefined = not yet initialized
 
 /**
  * Returns an Upstash-backed rate limiter if configured, null otherwise.
@@ -89,7 +89,7 @@ export async function getUpstashRateLimiter(): Promise<UpstashRateLimiter | null
     };
   } catch (err) {
     console.error(
-      "[RateLimit] Failed to initialise Upstash rate limiter. " +
+      "[RateLimit] Failed to initialize Upstash rate limiter. " +
         "Run `npm install @upstash/ratelimit @upstash/redis` and ensure env vars are set. " +
         "Falling back to in-memory limiter.",
       err,

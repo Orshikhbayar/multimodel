@@ -55,6 +55,16 @@ function createMockContext(): ToolExecutionContext {
   };
 }
 
+/** Creates a chainable Supabase query mock (supports .eq()/.in() chaining + await). */
+function createChainableSelect(result: { data: any; error: any }) {
+  const chainable: any = {
+    then: (resolve: any, reject?: any) => Promise.resolve(result).then(resolve, reject),
+    eq: vi.fn(() => chainable),
+    in: vi.fn(() => chainable),
+  };
+  return chainable;
+}
+
 describe("fileTools", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -368,7 +378,7 @@ describe("fileTools", () => {
 
       mockSupabaseFrom.mockReturnValue({
         select: vi.fn(() =>
-          Promise.resolve({
+          createChainableSelect({
             data: [
               {
                 file_id: "file-1",
@@ -400,7 +410,7 @@ describe("fileTools", () => {
 
       mockSupabaseFrom.mockReturnValue({
         select: vi.fn(() =>
-          Promise.resolve({
+          createChainableSelect({
             data: [
               {
                 file_id: "file-1",
@@ -432,7 +442,7 @@ describe("fileTools", () => {
 
       mockSupabaseFrom.mockReturnValue({
         select: vi.fn(() =>
-          Promise.resolve({
+          createChainableSelect({
             data: [
               {
                 file_id: "file-1",
@@ -466,7 +476,7 @@ describe("fileTools", () => {
 
       mockSupabaseFrom.mockReturnValue({
         select: vi.fn(() =>
-          Promise.resolve({
+          createChainableSelect({
             data: [
               {
                 file_id: "file-1",
@@ -495,7 +505,7 @@ describe("fileTools", () => {
 
       mockSupabaseFrom.mockReturnValue({
         select: vi.fn(() =>
-          Promise.resolve({
+          createChainableSelect({
             data: [],
             error: null,
           }),
@@ -514,7 +524,7 @@ describe("fileTools", () => {
 
       mockSupabaseFrom.mockReturnValue({
         select: vi.fn(() =>
-          Promise.resolve({
+          createChainableSelect({
             data: null,
             error: new Error("Database error"),
           }),
@@ -531,7 +541,7 @@ describe("fileTools", () => {
 
       mockSupabaseFrom.mockReturnValue({
         select: vi.fn(() =>
-          Promise.resolve({
+          createChainableSelect({
             data: [
               {
                 file_id: "file-1",
@@ -562,7 +572,7 @@ describe("fileTools", () => {
 
       mockSupabaseFrom.mockReturnValue({
         select: vi.fn(() =>
-          Promise.resolve({
+          createChainableSelect({
             data: [
               {
                 file_id: "file-1",
@@ -602,7 +612,7 @@ describe("fileTools", () => {
 
       mockSupabaseFrom.mockReturnValue({
         select: vi.fn(() =>
-          Promise.resolve({
+          createChainableSelect({
             data: manyChunks,
             error: null,
           }),

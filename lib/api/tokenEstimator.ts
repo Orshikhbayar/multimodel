@@ -2,7 +2,7 @@
  * Token count estimation utilities.
  *
  * For billing pre-checks we need a fast, edge-compatible estimate that does
- * not require a WASM tokeniser. The heuristics here are calibrated against
+ * not require a WASM tokenizer. The heuristics here are calibrated against
  * cl100k_base (GPT-4 / GPT-4o family) and are accurate to ±15% for typical
  * mixed-language inputs.
  *

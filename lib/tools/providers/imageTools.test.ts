@@ -389,9 +389,7 @@ describe("imageTools", () => {
         });
 
         mockSupabaseStorage.mockReturnValue({
-          from: vi.fn(() => ({
-            upload: vi.fn(async () => ({ error: null })),
-          })),
+          upload: vi.fn(async () => ({ error: null })),
         });
 
         mockSupabaseFrom.mockReturnValue({
@@ -431,9 +429,7 @@ describe("imageTools", () => {
       const uploadMock = vi.fn(async () => ({ error: null }));
 
       mockSupabaseStorage.mockReturnValue({
-        from: vi.fn(() => ({
-          upload: uploadMock,
-        })),
+        upload: uploadMock,
       });
 
       mockSupabaseFrom.mockReturnValue({
