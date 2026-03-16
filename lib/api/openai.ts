@@ -39,28 +39,33 @@ export interface StreamResult {
 }
 
 /**
- * Maps internal model IDs to OpenAI model names
+ * Maps internal model IDs (openai/<name>) to the exact string the OpenAI API expects.
+ * Only confirmed, released models belong here. Using an unrecognised model ID will
+ * throw loudly rather than silently billing against gpt-4o-mini.
  */
 const MODEL_MAP: Record<string, string> = {
-  "openai/gpt-5.2": "gpt-5.2",
-  "openai/gpt-5.2-codex": "gpt-5.2-codex",
-  "openai/gpt-5-mini": "gpt-5-mini",
   "openai/gpt-4.1": "gpt-4.1",
-  "openai/gpt-5.1": "gpt-5.2", // Legacy alias
   "openai/gpt-4o": "gpt-4o",
   "openai/gpt-4o-mini": "gpt-4o-mini",
 };
 
+/**
+ * Resolves an internal catalog model ID to an OpenAI API model string.
+ * Throws on unknown IDs so routing failures are visible immediately
+ * instead of silently falling back to a different (cheaper) model.
+ */
 export function getOpenAIModelName(modelId: string): string {
-  return MODEL_MAP[modelId] || "gpt-4o-mini";
+  const name = MODEL_MAP[modelId];
+  if (!name) {
+    throw new Error(
+      `getOpenAIModelName: model "${modelId}" is not in the OpenAI MODEL_MAP. ` +
+        `Either add it or route this request through the correct provider adapter.`,
+    );
+  }
+  return name;
 }
 
 function getTokenLimitParam(modelName: string, maxTokens?: number) {
-  // GPT-5 chat-completions expects max_completion_tokens instead of max_tokens.
-  if (modelName.startsWith("gpt-5")) {
-    return { max_completion_tokens: maxTokens ?? 2048 };
-  }
-
   return { max_tokens: maxTokens ?? 2048 };
 }
 

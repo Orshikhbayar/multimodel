@@ -18,8 +18,8 @@ describe("modelCatalog", () => {
   });
 
   it("resolves model and provider by id", () => {
-    const model = getModelById("openai/gpt-5.2");
-    expect(model?.label).toBe("GPT-5.2");
+    const model = getModelById("openai/gpt-4.1");
+    expect(model?.label).toBe("GPT-4.1");
 
     const provider = getProviderById("openai");
     expect(provider?.name).toBe("OpenAI");
@@ -30,7 +30,22 @@ describe("modelCatalog", () => {
   });
 
   it("resolves glyph from model or provider", () => {
-    expect(getModelGlyphKey("openai/gpt-5.2")).toBe("openai");
+    expect(getModelGlyphKey("openai/gpt-4.1")).toBe("openai");
     expect(getModelGlyphKey(undefined, "misc")).toBe("misc");
+  });
+
+  it("contains no fictional/aspirational model IDs", () => {
+    const bannedPrefixes = ["gpt-5", "gemini-3", "grok-4", "claude-opus-4.1"];
+    for (const model of MODELS) {
+      for (const prefix of bannedPrefixes) {
+        expect(model.id).not.toContain(prefix);
+      }
+    }
+  });
+
+  it("DEFAULT_SLOT_MODEL_IDS are all present in catalog", () => {
+    for (const id of DEFAULT_SLOT_MODEL_IDS) {
+      expect(getModelById(id)).toBeDefined();
+    }
   });
 });

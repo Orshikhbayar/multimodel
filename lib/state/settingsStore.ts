@@ -1,3 +1,8 @@
+/**
+ * @deprecated Import from "@/lib/stores/appSettingsStore" instead.
+ * This file remains as the implementation while the migration to a unified
+ * lib/stores/ directory is in progress.
+ */
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 

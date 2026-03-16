@@ -1,11 +1,9 @@
 import { NextRequest } from "next/server";
 import { nanoid } from "nanoid";
 import * as Sentry from "@sentry/nextjs";
-import {
-  streamOpenAICompletion,
-  getOpenAIModelName,
-  type TokenUsage,
-} from "@/lib/api/openai";
+import { streamCompletion, type StreamOptions } from "@/lib/api/providerRouter";
+import type { TokenUsage } from "@/lib/api/openai";
+import { estimatePromptTokens, estimateTokens } from "@/lib/api/tokenEstimator";
 import {
   withStreamTimeouts,
   StreamTimeoutError,
@@ -13,7 +11,7 @@ import {
   getStreamStatusFromError,
 } from "@/lib/api/streamWithTimeout";
 import {
-  checkStreamPermission,
+  checkStreamPermissionAsync,
   releaseConcurrencySlot,
   getRateLimitHeaders,
 } from "@/lib/rateLimit";
@@ -46,13 +44,8 @@ interface ChatRequestBody {
 }
 
 function estimatePromptTokensFromMessages(messages: ChatMessage[]) {
-  return Math.max(
-    1,
-    messages.reduce(
-      (total, message) => total + Math.ceil(message.content.length / 4),
-      0,
-    ),
-  );
+  // Uses language-aware heuristic from tokenEstimator (handles CJK, code, etc.)
+  return estimatePromptTokens(messages);
 }
 
 export async function GET() {
@@ -96,7 +89,7 @@ export async function POST(request: NextRequest) {
   Sentry.setUser({ id: sessionUserId });
   Sentry.setTag("requestId", requestId);
 
-  const permission = checkStreamPermission(sessionUserId, undefined, {
+  const permission = await checkStreamPermissionAsync(sessionUserId, undefined, {
     email: sessionEmail,
   });
 
@@ -175,6 +168,56 @@ export async function POST(request: NextRequest) {
       return new Response(
         JSON.stringify({ error: "messages array is required", requestId }),
         { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    // ── Content size guards ───────────────────────────────────────────────
+    // Without these, a single malformed request can trigger a 200K-token
+    // upstream call and generate a huge bill before any billing check runs.
+    const MAX_MESSAGES = 100;
+    const MAX_MESSAGE_CHARS = 32_000;
+    const MAX_TOTAL_CHARS = 500_000;
+
+    if (messages.length > MAX_MESSAGES) {
+      releaseConcurrencySlot(sessionUserId, streamId);
+      return new Response(
+        JSON.stringify({
+          error: "Request too large",
+          message: `Maximum ${MAX_MESSAGES} messages per request.`,
+          requestId,
+        }),
+        { status: 413, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    const oversizedMessage = messages.find(
+      (m) => typeof m.content === "string" && m.content.length > MAX_MESSAGE_CHARS,
+    );
+    if (oversizedMessage) {
+      releaseConcurrencySlot(sessionUserId, streamId);
+      return new Response(
+        JSON.stringify({
+          error: "Request too large",
+          message: `Individual messages must be under ${MAX_MESSAGE_CHARS.toLocaleString()} characters.`,
+          requestId,
+        }),
+        { status: 413, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    const totalChars = messages.reduce(
+      (sum, m) => sum + (typeof m.content === "string" ? m.content.length : 0),
+      0,
+    );
+    if (totalChars > MAX_TOTAL_CHARS) {
+      releaseConcurrencySlot(sessionUserId, streamId);
+      return new Response(
+        JSON.stringify({
+          error: "Request too large",
+          message: `Total conversation size must be under ${MAX_TOTAL_CHARS.toLocaleString()} characters.`,
+          requestId,
+        }),
+        { status: 413, headers: { "Content-Type": "application/json" } },
       );
     }
 
@@ -398,20 +441,23 @@ export async function POST(request: NextRequest) {
     let streamClosed = false;
     let fallbackCompletionTokens = 0;
     let accumulatedText = "";
-    const resolvedModel = getOpenAIModelName(resolvedModelId);
+    // For metrics/logging: use the model ID directly rather than a provider-specific
+    // resolved name, since each adapter handles its own name mapping internally.
+    const resolvedModel = resolvedModelId;
 
     let tokenUsage: TokenUsage | undefined;
 
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          const baseGenerator = streamOpenAICompletion({
+          const streamOptions: StreamOptions = {
             model: resolvedModelId,
             messages,
             temperature,
             maxTokens,
             signal: request.signal,
-          });
+          };
+          const baseGenerator = streamCompletion(streamOptions);
 
           const timeoutGenerator = withStreamTimeouts(
             baseGenerator,
@@ -423,10 +469,7 @@ export async function POST(request: NextRequest) {
             if (streamClosed) break;
 
             if (event.type === "token") {
-              fallbackCompletionTokens += Math.max(
-                1,
-                Math.ceil(event.content.length / 4),
-              );
+              fallbackCompletionTokens += estimateTokens(event.content);
               accumulatedText += event.content;
               const data = JSON.stringify({ token: event.content, requestId });
               controller.enqueue(encoder.encode(`data: ${data}\n\n`));

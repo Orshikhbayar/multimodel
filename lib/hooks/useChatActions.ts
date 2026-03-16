@@ -11,6 +11,7 @@ import type { Message, Run, ModelSlot } from "@/lib/types";
 import { analytics } from "@/lib/analytics";
 import { useUsageStore } from "@/lib/analytics/usage";
 import { estimateTokenCostUsd } from "@/lib/billing/estimator";
+import { estimateTokens, estimatePromptTokens } from "@/lib/api/tokenEstimator";
 import { useBillingStore } from "@/lib/billing/store";
 import { useAppSettingsStore } from "@/lib/state/settingsStore";
 import { getLocaleResponseInstruction } from "@/lib/i18n/locale";
@@ -759,10 +760,9 @@ export function useChatActions() {
         syncUnifiedRun();
 
         const inputTokens =
-          result.usage?.promptTokens ?? Math.ceil(content.length / 4);
+          result.usage?.promptTokens ?? estimateTokens(content);
         const outputTokens =
-          result.usage?.completionTokens ??
-          Math.ceil(accumulatedText.length / 4);
+          result.usage?.completionTokens ?? estimateTokens(accumulatedText);
         const estimatedCostUsd =
           result.costUsd ??
           estimateTokenCostUsd({
@@ -1007,13 +1007,9 @@ export function useChatActions() {
         );
 
         const inputTokens =
-          result.usage?.promptTokens ??
-          Math.ceil(
-            synthesisMessages.map((message) => message.content).join("\n")
-              .length / 4,
-          );
+          result.usage?.promptTokens ?? estimatePromptTokens(synthesisMessages);
         const outputTokens =
-          result.usage?.completionTokens ?? Math.ceil(finalText.length / 4);
+          result.usage?.completionTokens ?? estimateTokens(finalText);
         const estimatedCostUsd =
           result.costUsd ??
           estimateTokenCostUsd({

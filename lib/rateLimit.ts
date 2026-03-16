@@ -1,10 +1,22 @@
 /**
- * Rate limiting utilities for API routes
- * Uses in-memory storage (for single-instance deployments)
- * For production with multiple instances, use Redis or similar
+ * Rate limiting utilities for API routes.
+ *
+ * Two implementations run side-by-side:
+ *
+ * 1. In-memory (always active) — fast, local, but instance-scoped. On Vercel
+ *    serverless each cold start has its own map, so this provides ZERO
+ *    protection in production on its own.
+ *
+ * 2. Upstash Redis (activated when UPSTASH_REDIS_REST_URL and
+ *    UPSTASH_REDIS_REST_TOKEN are set) — sliding window, shared across all
+ *    serverless instances. Use checkStreamPermissionAsync() in API routes so
+ *    the Upstash check runs when available.
+ *
+ * Install: npm install @upstash/ratelimit @upstash/redis
  */
-import { isUnlimitedTesterEmail } from "@/lib/testerAccess";
+import { isUnlimitedTesterId, isUnlimitedTesterEmail } from "@/lib/testerAccess";
 import { debug as logDebug } from "@/lib/logger";
+import { getUpstashRateLimiter } from "@/lib/rateLimitUpstash";
 
 // ============================================
 // Types
@@ -263,10 +275,13 @@ export function checkStreamPermission(
   userId: string,
   config = RATE_LIMIT_CONFIG,
   context?: {
-    email?: string | null;
+    email?: string | null; // kept for backward compat; prefer user_id bypass
   },
 ): StreamPermissionResult {
-  if (isUnlimitedTesterEmail(context?.email)) {
+  // Check by immutable user_id first; fall back to email for users not yet
+  // migrated to UNLIMITED_TESTER_USER_IDS. Email bypass is deprecated because
+  // a user can change their email to spoof the check.
+  if (isUnlimitedTesterId(userId) || isUnlimitedTesterEmail(context?.email)) {
     return {
       allowed: true,
       rateLimit: {
@@ -353,6 +368,98 @@ export function checkStreamPermission(
     },
     concurrency: concurrencyResult,
   };
+}
+
+/**
+ * Async version of checkStreamPermission that uses Upstash Redis when
+ * configured, with the in-memory implementation as fallback.
+ *
+ * API routes should call this instead of checkStreamPermission so that
+ * the Upstash sliding-window limiter applies in serverless environments.
+ */
+export async function checkStreamPermissionAsync(
+  userId: string,
+  config = RATE_LIMIT_CONFIG,
+  context?: { email?: string | null },
+): Promise<StreamPermissionResult> {
+  // Tester bypass — same as synchronous version
+  if (isUnlimitedTesterId(userId) || isUnlimitedTesterEmail(context?.email)) {
+    return {
+      allowed: true,
+      rateLimit: {
+        allowed: true,
+        remaining: Number.MAX_SAFE_INTEGER,
+        resetIn: 0,
+        limit: Number.MAX_SAFE_INTEGER,
+      },
+      concurrency: {
+        allowed: true,
+        active: 0,
+        limit: Number.MAX_SAFE_INTEGER,
+        streamId: `${userId}-tester-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      },
+    };
+  }
+
+  // Try Upstash first
+  const upstash = await getUpstashRateLimiter();
+  if (upstash) {
+    const upstashResult = await upstash.limit(userId);
+
+    if (!upstashResult.success) {
+      const resetIn = Math.max(0, Math.ceil((upstashResult.reset - Date.now()) / 1000));
+      return {
+        allowed: false,
+        reason: "rate_limit",
+        rateLimit: {
+          allowed: false,
+          remaining: 0,
+          resetIn,
+          limit: upstashResult.limit,
+        },
+        concurrency: {
+          allowed: false,
+          active: getConcurrencyStatus(userId, config).active,
+          limit: config.maxConcurrentStreams,
+        },
+      };
+    }
+
+    // Rate limit passed via Upstash — still enforce local concurrency
+    const concurrencyStatus = getConcurrencyStatus(userId, config);
+    if (concurrencyStatus.active >= config.maxConcurrentStreams) {
+      return {
+        allowed: false,
+        reason: "concurrency_limit",
+        rateLimit: {
+          allowed: true,
+          remaining: upstashResult.remaining,
+          resetIn: 0,
+          limit: upstashResult.limit,
+        },
+        concurrency: {
+          allowed: false,
+          active: concurrencyStatus.active,
+          limit: config.maxConcurrentStreams,
+        },
+      };
+    }
+
+    const concurrencyResult = acquireConcurrencySlot(userId, config);
+    return {
+      allowed: true,
+      rateLimit: {
+        allowed: true,
+        remaining: upstashResult.remaining,
+        resetIn: 0,
+        limit: upstashResult.limit,
+      },
+      concurrency: concurrencyResult,
+    };
+  }
+
+  // No Upstash configured — fall back to synchronous in-memory check
+  return checkStreamPermission(userId, config, context);
 }
 
 /**

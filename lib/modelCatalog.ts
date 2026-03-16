@@ -40,39 +40,26 @@ export const PROVIDERS: ModelProvider[] = [
   { id: "misc", name: "More", icon: "layers" },
 ];
 
+/**
+ * Canonical model catalog — only models with confirmed API availability.
+ * DO NOT add aspirational or unreleased model IDs. Doing so causes silent
+ * billing failures and incorrect cost attribution.
+ *
+ * OpenAI model names:   https://platform.openai.com/docs/models
+ * Anthropic model names: https://docs.anthropic.com/en/docs/about-claude/models
+ * Google model names:    https://ai.google.dev/gemini-api/docs/models
+ * xAI model names:       https://docs.x.ai/docs/models
+ * DeepSeek model names:  https://platform.deepseek.com/api-docs
+ */
 export const MODELS: CatalogModel[] = [
-  {
-    id: "openai/gpt-5.2",
-    label: "GPT-5.2",
-    providerId: "openai",
-    description: "Top-tier reasoning and coding",
-    tags: ["new"],
-    context: "400K",
-    glyph: "openai",
-  },
-  {
-    id: "openai/gpt-5.2-codex",
-    label: "GPT-5.2 Codex",
-    providerId: "openai",
-    description: "Code-focused GPT-5.2 variant",
-    tags: ["new"],
-    context: "400K",
-    glyph: "openaiCodex",
-  },
-  {
-    id: "openai/gpt-5-mini",
-    label: "GPT-5 mini",
-    providerId: "openai",
-    description: "Lower-latency GPT-5 series",
-    context: "400K",
-    glyph: "openai",
-  },
+  // ── OpenAI ──────────────────────────────────────────────────────────────
   {
     id: "openai/gpt-4.1",
     label: "GPT-4.1",
     providerId: "openai",
-    description: "Balanced reasoning",
-    context: "128K",
+    description: "Balanced reasoning and long-context tasks",
+    tags: ["new"],
+    context: "1M",
     glyph: "openai",
   },
   {
@@ -91,17 +78,11 @@ export const MODELS: CatalogModel[] = [
     context: "128K",
     glyph: "openai",
   },
+
+  // ── Anthropic ────────────────────────────────────────────────────────────
   {
-    id: "openai/gpt-5.1",
-    label: "GPT-5.1",
-    providerId: "openai",
-    description: "Legacy frontier preview",
-    context: "200K",
-    glyph: "openai",
-  },
-  {
-    id: "anthropic/claude-opus-4.1",
-    label: "Claude Opus 4.1",
+    id: "anthropic/claude-opus-4",
+    label: "Claude Opus 4",
     providerId: "anthropic",
     description: "Highest quality long-form reasoning",
     tags: ["new"],
@@ -113,108 +94,74 @@ export const MODELS: CatalogModel[] = [
     label: "Claude Sonnet 4",
     providerId: "anthropic",
     description: "Strong all-round assistant",
+    tags: ["new"],
     context: "200K",
     glyph: "anthropic",
   },
   {
     id: "anthropic/claude-3.5",
-    label: "Claude 3.5",
+    label: "Claude 3.5 Sonnet",
     providerId: "anthropic",
-    description: "Legacy careful writing",
+    description: "Careful writing and analysis",
     context: "200K",
     glyph: "anthropic",
   },
-  {
-    id: "anthropic/claude-opus-4",
-    label: "Claude Opus 4",
-    providerId: "anthropic",
-    description: "Legacy deep analysis",
-    context: "200K",
-    glyph: "anthropic",
-  },
-  {
-    id: "google/gemini-3-pro-preview",
-    label: "Gemini 3 Pro",
-    providerId: "google",
-    description: "Latest flagship multimodal model",
-    tags: ["new"],
-    context: "1M",
-    glyph: "google",
-  },
-  {
-    id: "google/gemini-3-pro-image-preview",
-    label: "Gemini 3 Pro Image",
-    providerId: "google",
-    description: "Gemini 3 Pro tuned for image generation",
-    tags: ["new"],
-    context: "1M",
-    glyph: "google",
-  },
-  {
-    id: "google/gemini-3-flash-preview",
-    label: "Gemini 3 Flash",
-    providerId: "google",
-    description: "Fast Gemini 3 preview model",
-    tags: ["new"],
-    context: "1M",
-    glyph: "google",
-  },
+
+  // ── Google ───────────────────────────────────────────────────────────────
   {
     id: "google/gemini-2.5-flash",
     label: "Gemini 2.5 Flash",
     providerId: "google",
     description: "Fast cost-efficient multimodal",
+    tags: ["new"],
     context: "1M",
     glyph: "google",
   },
   {
     id: "google/gemini-2.0",
-    label: "Gemini 2.0",
+    label: "Gemini 2.0 Flash",
     providerId: "google",
-    description: "Legacy multimodal model",
+    description: "Multimodal with agentic capabilities",
     context: "1M",
     glyph: "google",
   },
+
+  // ── xAI ─────────────────────────────────────────────────────────────────
   {
-    id: "xai/grok-4",
-    label: "Grok 4",
+    id: "xai/grok-3",
+    label: "Grok 3",
     providerId: "xai",
-    description: "Latest general-purpose Grok model",
+    description: "Real-time knowledge, opinionated reasoning",
     tags: ["new"],
+    context: "128K",
     glyph: "xai",
+  },
+
+  // ── DeepSeek ─────────────────────────────────────────────────────────────
+  {
+    id: "deepseek/deepseek-reasoner",
+    label: "DeepSeek Reasoner",
+    providerId: "deepseek",
+    description: "Chain-of-thought reasoning (R1)",
+    tags: ["new"],
+    context: "128K",
+    glyph: "deepseek",
   },
   {
     id: "deepseek/deepseek-chat",
     label: "DeepSeek Chat",
     providerId: "deepseek",
-    description: "V3.2 chat model alias",
+    description: "Efficient general-purpose chat (V3)",
     context: "128K",
     glyph: "deepseek",
-  },
-  {
-    id: "deepseek/deepseek-reasoner",
-    label: "DeepSeek Reasoner",
-    providerId: "deepseek",
-    description: "Reasoning-first V3.2 alias",
-    tags: ["new"],
-    context: "128K",
-    glyph: "deepseek",
-  },
-  {
-    id: "xai/grok-3",
-    label: "Grok 3",
-    providerId: "xai",
-    description: "Opinionated",
-    context: "128K",
-    glyph: "xai",
   },
 ];
 
 export const DEFAULT_SLOT_MODEL_IDS = [
-  "openai/gpt-5.2",
+  "openai/gpt-4.1",
   "anthropic/claude-sonnet-4",
-  "google/gemini-3-pro-preview",
-  "xai/grok-4",
+  "google/gemini-2.5-flash",
+  "xai/grok-3",
 ];
 
 export function getModelById(id: string) {

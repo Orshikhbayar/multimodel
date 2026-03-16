@@ -12,9 +12,19 @@ import {
 } from "@/test/utils/sse";
 
 describe("openai api helpers", () => {
-  it("maps internal model IDs", () => {
-    expect(getOpenAIModelName("openai/gpt-5.2")).toBe("gpt-5.2");
-    expect(getOpenAIModelName("openai/unknown")).toBe("gpt-4o-mini");
+  it("maps known internal model IDs", () => {
+    expect(getOpenAIModelName("openai/gpt-4.1")).toBe("gpt-4.1");
+    expect(getOpenAIModelName("openai/gpt-4o")).toBe("gpt-4o");
+    expect(getOpenAIModelName("openai/gpt-4o-mini")).toBe("gpt-4o-mini");
+  });
+
+  it("throws for unknown model IDs instead of silently falling back", () => {
+    expect(() => getOpenAIModelName("openai/gpt-5.2")).toThrow(
+      'model "openai/gpt-5.2" is not in the OpenAI MODEL_MAP',
+    );
+    expect(() => getOpenAIModelName("openai/unknown")).toThrow(
+      'model "openai/unknown" is not in the OpenAI MODEL_MAP',
+    );
   });
 
   it("streams token and usage events from SSE", async () => {

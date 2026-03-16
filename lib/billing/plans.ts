@@ -2,38 +2,26 @@ import type { Plan, PlanId, TopUpPack, TopUpPackId } from "./types";
 import { convertCurrency } from "./utils";
 import { MODELS } from "@/lib/modelCatalog";
 
-const OPENAI_MODELS_AT_OR_BELOW_GPT_5_2 = [
-  "openai/gpt-5.2",
-  "openai/gpt-5.1",
-  "openai/gpt-5-mini",
-  "openai/gpt-4.1",
-  "openai/gpt-4o",
-  "openai/gpt-4o-mini",
-];
-
+// Model tier access — must only contain IDs present in lib/modelCatalog.ts MODELS.
 const FREE_MODELS = [
-  ...OPENAI_MODELS_AT_OR_BELOW_GPT_5_2,
+  "openai/gpt-4o-mini",
   "anthropic/claude-sonnet-4",
-  "google/gemini-3-pro-preview",
-  "xai/grok-4",
+  "google/gemini-2.5-flash",
   "deepseek/deepseek-chat",
 ];
 
 const PLUS_MODELS = [
   ...FREE_MODELS,
-  "google/gemini-3-flash-preview",
+  "openai/gpt-4o",
+  "openai/gpt-4.1",
   "deepseek/deepseek-reasoner",
   "anthropic/claude-3.5",
-  "google/gemini-2.5-flash",
   "google/gemini-2.0",
   "xai/grok-3",
 ];
 
 const PRO_MODELS = [
   ...PLUS_MODELS,
-  "openai/gpt-5.2-codex",
-  "anthropic/claude-opus-4.1",
-  "google/gemini-3-pro-image-preview",
   "anthropic/claude-opus-4",
 ];
 

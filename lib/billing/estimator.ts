@@ -4,25 +4,25 @@ import { convertCurrency } from "./utils";
 const BASE_RATE_USD_PER_1K = 0.01;
 const DEFAULT_MAX_OUTPUT_TOKENS = 512;
 
+// Cost multipliers relative to BASE_RATE_USD_PER_1K.
+// Keep in sync with MODELS in lib/modelCatalog.ts — only confirmed model IDs belong here.
 const MODEL_MULTIPLIERS: Record<string, number> = {
+  // OpenAI
   "openai/gpt-4.1": 1.0,
-  "openai/gpt-5-mini": 1.35,
-  "openai/gpt-5.2": 1.9,
-  "openai/gpt-5.2-codex": 2.1,
-  "openai/gpt-5.1": 1.6,
-  "anthropic/claude-sonnet-4": 1.2,
-  "anthropic/claude-opus-4.1": 1.95,
-  "anthropic/claude-3.5": 1.15,
+  "openai/gpt-4o": 1.25,
+  "openai/gpt-4o-mini": 0.35,
+  // Anthropic
   "anthropic/claude-opus-4": 1.8,
-  "google/gemini-3-flash-preview": 1.1,
-  "google/gemini-3-pro-preview": 1.5,
-  "google/gemini-3-pro-image-preview": 1.75,
+  "anthropic/claude-sonnet-4": 1.2,
+  "anthropic/claude-3.5": 1.15,
+  // Google
   "google/gemini-2.5-flash": 1.0,
-  "google/gemini-2.0": 1.25,
+  "google/gemini-2.0": 0.9,
+  // xAI
+  "xai/grok-3": 1.1,
+  // DeepSeek
   "deepseek/deepseek-reasoner": 0.85,
   "deepseek/deepseek-chat": 0.6,
-  "xai/grok-4": 1.4,
-  "xai/grok-3": 1.1,
 };
 
 const IMAGE_BASE_USD: Record<string, number> = {
