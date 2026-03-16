@@ -30,6 +30,35 @@ function createSupabaseMock(
     data: { signedUrl: "https://storage.example.com/signed-url" },
   }));
 
+  // Create a chainable query builder that supports arbitrary method chaining
+  const createChain = (terminal = { data: [], error: null }) => {
+    const chain: Record<string, unknown> = {};
+    for (const method of [
+      "select",
+      "eq",
+      "neq",
+      "gt",
+      "gte",
+      "lt",
+      "lte",
+      "is",
+      "in",
+      "not",
+      "or",
+      "and",
+      "order",
+      "limit",
+      "range",
+      "filter",
+      "match",
+    ]) {
+      chain[method] = vi.fn(() => chain);
+    }
+    chain.then = (resolve: (v: unknown) => void) =>
+      Promise.resolve(terminal).then(resolve);
+    return chain;
+  };
+
   return {
     auth: {
       getClaims: vi.fn(async () => ({ data: { claims } })),
@@ -39,37 +68,7 @@ function createSupabaseMock(
         createSignedUrl: createSignedUrlFn,
       })),
     },
-    from: vi.fn((table: string) => {
-      const selectEq = vi.fn(function selectEq(column: string) {
-        const orderFn = vi.fn(() => ({
-          limit: vi.fn(async () => ({
-            data: [],
-            error: null,
-          })),
-        }));
-
-        const limitFn = vi.fn(async () => ({
-          data: [],
-          error: null,
-        }));
-
-        // Return object that supports chaining: eq().order().limit() or eq().is().order().limit()
-        return {
-          order: orderFn,
-          limit: limitFn,
-          eq: selectEq,
-          is: selectEq,
-        };
-      });
-
-      const selectFn = vi.fn(() => ({
-        eq: selectEq,
-      }));
-
-      return {
-        select: selectFn,
-      };
-    }),
+    from: vi.fn(() => createChain()),
   };
 }
 
@@ -98,41 +97,50 @@ describe("/api/artifacts route", () => {
 
   it("returns artifacts with signed URLs", async () => {
     const supabaseMock = createSupabaseMock();
-    const selectEqFn = vi.fn(function selectEq() {
-      const orderFn = vi.fn(() => ({
-        limit: vi.fn(async () => ({
-          data: [
-            {
-              id: "artifact-1",
-              artifact_type: "document",
-              title: "Report.pdf",
-              mime_type: "application/pdf",
-              storage_path: "artifacts/report.pdf",
-              byte_size: 1024,
-              metadata: {},
-              citations: [],
-              created_at: "2026-02-20T00:00:00.000Z",
-              project_id: null,
-              conversation_id: "conv-1",
-              message_id: "msg-1",
-            },
-          ],
-          error: null,
-        })),
-      }));
+    const chainMock: Record<string, unknown> = {};
+    for (const method of [
+      "select",
+      "eq",
+      "neq",
+      "gt",
+      "gte",
+      "lt",
+      "lte",
+      "is",
+      "in",
+      "not",
+      "or",
+      "and",
+      "order",
+      "limit",
+      "range",
+      "filter",
+      "match",
+    ]) {
+      chainMock[method] = vi.fn(() => chainMock);
+    }
+    chainMock.then = (resolve: (v: unknown) => void) =>
+      Promise.resolve({
+        data: [
+          {
+            id: "artifact-1",
+            artifact_type: "document",
+            title: "Report.pdf",
+            mime_type: "application/pdf",
+            storage_path: "artifacts/report.pdf",
+            byte_size: 1024,
+            metadata: {},
+            citations: [],
+            created_at: "2026-02-20T00:00:00.000Z",
+            project_id: null,
+            conversation_id: "conv-1",
+            message_id: "msg-1",
+          },
+        ],
+        error: null,
+      }).then(resolve);
 
-      return {
-        order: orderFn,
-      };
-    });
-
-    const selectFn = vi.fn(() => ({
-      eq: selectEqFn,
-    }));
-
-    supabaseMock.from = vi.fn(() => ({
-      select: selectFn,
-    }));
+    supabaseMock.from = vi.fn(() => chainMock);
 
     mockCreateSupabaseServerClient.mockResolvedValue(supabaseMock);
 
@@ -150,26 +158,35 @@ describe("/api/artifacts route", () => {
 
   it("returns 500 when database query fails", async () => {
     const supabaseMock = createSupabaseMock();
-    const selectEqFn = vi.fn(function selectEq() {
-      const orderFn = vi.fn(() => ({
-        limit: vi.fn(async () => ({
-          data: null,
-          error: { message: "Connection timeout" },
-        })),
-      }));
+    const chainMock: Record<string, unknown> = {};
+    for (const method of [
+      "select",
+      "eq",
+      "neq",
+      "gt",
+      "gte",
+      "lt",
+      "lte",
+      "is",
+      "in",
+      "not",
+      "or",
+      "and",
+      "order",
+      "limit",
+      "range",
+      "filter",
+      "match",
+    ]) {
+      chainMock[method] = vi.fn(() => chainMock);
+    }
+    chainMock.then = (resolve: (v: unknown) => void) =>
+      Promise.resolve({
+        data: null,
+        error: { message: "Connection timeout" },
+      }).then(resolve);
 
-      return {
-        order: orderFn,
-      };
-    });
-
-    const selectFn = vi.fn(() => ({
-      eq: selectEqFn,
-    }));
-
-    supabaseMock.from = vi.fn(() => ({
-      select: selectFn,
-    }));
+    supabaseMock.from = vi.fn(() => chainMock);
 
     mockCreateSupabaseServerClient.mockResolvedValue(supabaseMock);
 
@@ -183,41 +200,33 @@ describe("/api/artifacts route", () => {
 
   it("filters artifacts by project_id parameter", async () => {
     const supabaseMock = createSupabaseMock();
-    let capturedProjectId: string | null = null;
 
-    const selectEqFn = vi.fn(function selectEq(column: string, value: unknown) {
-      if (column === "workspace_id") {
-        capturedProjectId = null;
-        return {
-          eq: selectEqFn,
-          is: vi.fn(() => ({
-            order: vi.fn(() => ({
-              limit: vi.fn(async () => ({ data: [], error: null })),
-            })),
-          })),
-          order: vi.fn(() => ({
-            limit: vi.fn(async () => ({ data: [], error: null })),
-          })),
-        };
-      }
-      if (column === "project_id") {
-        capturedProjectId = String(value);
-      }
-      return {
-        order: vi.fn(() => ({
-          limit: vi.fn(async () => ({ data: [], error: null })),
-        })),
-        eq: selectEqFn,
-      };
-    });
+    const chainMock: Record<string, unknown> = {};
+    for (const method of [
+      "select",
+      "eq",
+      "neq",
+      "gt",
+      "gte",
+      "lt",
+      "lte",
+      "is",
+      "in",
+      "not",
+      "or",
+      "and",
+      "order",
+      "limit",
+      "range",
+      "filter",
+      "match",
+    ]) {
+      chainMock[method] = vi.fn(() => chainMock);
+    }
+    chainMock.then = (resolve: (v: unknown) => void) =>
+      Promise.resolve({ data: [], error: null }).then(resolve);
 
-    const selectFn = vi.fn(() => ({
-      eq: selectEqFn,
-    }));
-
-    supabaseMock.from = vi.fn(() => ({
-      select: selectFn,
-    }));
+    supabaseMock.from = vi.fn(() => chainMock);
 
     mockCreateSupabaseServerClient.mockResolvedValue(supabaseMock);
 
@@ -228,76 +237,89 @@ describe("/api/artifacts route", () => {
 
   it("respects limit parameter with max of 100", async () => {
     const supabaseMock = createSupabaseMock();
-    let capturedLimit = 0;
 
-    const selectEqFn = vi.fn(function selectEq() {
-      const orderFn = vi.fn(() => ({
-        limit: vi.fn((limit: number) => {
-          capturedLimit = limit;
-          return Promise.resolve({
-            data: [],
-            error: null,
-          });
-        }),
-      }));
+    const chainMock: Record<string, unknown> = {};
+    const limitMock = vi.fn(() => chainMock);
+    for (const method of [
+      "select",
+      "eq",
+      "neq",
+      "gt",
+      "gte",
+      "lt",
+      "lte",
+      "is",
+      "in",
+      "not",
+      "or",
+      "and",
+      "order",
+      "range",
+      "filter",
+      "match",
+    ]) {
+      chainMock[method] = vi.fn(() => chainMock);
+    }
+    chainMock.limit = limitMock;
+    chainMock.then = (resolve: (v: unknown) => void) =>
+      Promise.resolve({ data: [], error: null }).then(resolve);
 
-      return {
-        order: orderFn,
-      };
-    });
-
-    const selectFn = vi.fn(() => ({
-      eq: selectEqFn,
-    }));
-
-    supabaseMock.from = vi.fn(() => ({
-      select: selectFn,
-    }));
+    supabaseMock.from = vi.fn(() => chainMock);
 
     mockCreateSupabaseServerClient.mockResolvedValue(supabaseMock);
 
     await GET(createRequest({ limit: "200" }));
 
-    expect(capturedLimit).toBe(100);
+    expect(limitMock).toHaveBeenCalledWith(100);
   });
 
   it("handles artifacts without storage paths", async () => {
     const supabaseMock = createSupabaseMock();
-    const selectEqFn = vi.fn(function selectEq() {
-      const orderFn = vi.fn(() => ({
-        limit: vi.fn(async () => ({
-          data: [
-            {
-              id: "artifact-2",
-              artifact_type: "document",
-              title: "NoPath.pdf",
-              mime_type: "application/pdf",
-              storage_path: null,
-              byte_size: 512,
-              metadata: {},
-              citations: [],
-              created_at: "2026-02-20T00:00:00.000Z",
-              project_id: null,
-              conversation_id: "conv-1",
-              message_id: "msg-1",
-            },
-          ],
-          error: null,
-        })),
-      }));
 
-      return {
-        order: orderFn,
-      };
-    });
+    const chainMock: Record<string, unknown> = {};
+    for (const method of [
+      "select",
+      "eq",
+      "neq",
+      "gt",
+      "gte",
+      "lt",
+      "lte",
+      "is",
+      "in",
+      "not",
+      "or",
+      "and",
+      "order",
+      "limit",
+      "range",
+      "filter",
+      "match",
+    ]) {
+      chainMock[method] = vi.fn(() => chainMock);
+    }
+    chainMock.then = (resolve: (v: unknown) => void) =>
+      Promise.resolve({
+        data: [
+          {
+            id: "artifact-2",
+            artifact_type: "document",
+            title: "NoPath.pdf",
+            mime_type: "application/pdf",
+            storage_path: null,
+            byte_size: 512,
+            metadata: {},
+            citations: [],
+            created_at: "2026-02-20T00:00:00.000Z",
+            project_id: null,
+            conversation_id: "conv-1",
+            message_id: "msg-1",
+          },
+        ],
+        error: null,
+      }).then(resolve);
 
-    const selectFn = vi.fn(() => ({
-      eq: selectEqFn,
-    }));
-
-    supabaseMock.from = vi.fn(() => ({
-      select: selectFn,
-    }));
+    supabaseMock.from = vi.fn(() => chainMock);
 
     mockCreateSupabaseServerClient.mockResolvedValue(supabaseMock);
 

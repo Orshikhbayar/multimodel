@@ -795,9 +795,11 @@ describe("executeToolRequest pipeline", () => {
       expect(timeoutCalls.length).toBeGreaterThan(0);
 
       await vi.advanceTimersByTimeAsync(700);
-      await promise;
+      const result = await promise;
       vi.useRealTimers();
       sleepSpy.mockRestore();
+
+      expect(result.output).toEqual({ ok: true });
     });
   });
 

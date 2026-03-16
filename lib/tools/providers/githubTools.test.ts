@@ -211,6 +211,7 @@ describe("githubTools", () => {
 
       mockFetch.mockResolvedValue({
         ok: true,
+        status: 200,
         text: async () =>
           JSON.stringify({
             tree: [
@@ -218,6 +219,12 @@ describe("githubTools", () => {
               { path: "src/index.ts", type: "blob", sha: "def456", size: 2048 },
             ],
           }),
+        json: async () => ({
+          tree: [
+            { path: "README.md", type: "blob", sha: "abc123", size: 1024 },
+            { path: "src/index.ts", type: "blob", sha: "def456", size: 2048 },
+          ],
+        }),
       });
 
       // Call 3+: indexRepo → delete old cache rows + insert new ones
@@ -421,12 +428,18 @@ describe("githubTools", () => {
 
       mockFetch.mockResolvedValue({
         ok: true,
+        status: 200,
         text: async () =>
           JSON.stringify({
             content: Buffer.from("console.log('test');").toString("base64"),
             sha: "abc123",
             encoding: "base64",
           }),
+        json: async () => ({
+          content: Buffer.from("console.log('test');").toString("base64"),
+          sha: "abc123",
+          encoding: "base64",
+        }),
       });
 
       // Call 3: upsertCachedFile

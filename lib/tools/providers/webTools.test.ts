@@ -513,7 +513,7 @@ describe("webTools", () => {
 
       await expect(
         webFetchTool(context, { url: "https://example.com" }),
-      ).rejects.toThrow("content");
+      ).rejects.toThrow(/readable text/i);
     });
   });
 });

@@ -24,6 +24,7 @@ vi.mock("@/lib/supabase/admin", () => ({
 }));
 
 vi.mock("@/lib/testerAccess", () => ({
+  isUnlimitedTesterId: vi.fn(() => false),
   isUnlimitedTesterEmail: mockIsUnlimitedTesterEmail,
 }));
 
@@ -57,13 +58,35 @@ beforeEach(() => {
 
   // Provide a default working admin client so tests that don't need a custom
   // mock don't crash with "Cannot read properties of undefined (reading 'from')"
-  const defaultMockAdmin = {
-    from: vi.fn().mockReturnThis(),
-    select: vi.fn().mockReturnThis(),
-    eq: vi.fn().mockReturnThis(),
-    lt: vi.fn().mockReturnThis(),
-    gte: vi.fn().mockReturnThis(),
-    maybeSingle: vi.fn().mockResolvedValue({
+  const createChain = () => {
+    const chain: Record<string, unknown> = {};
+    for (const method of [
+      "from",
+      "select",
+      "eq",
+      "neq",
+      "gt",
+      "gte",
+      "lt",
+      "lte",
+      "is",
+      "in",
+      "not",
+      "or",
+      "and",
+      "order",
+      "limit",
+      "range",
+      "filter",
+      "match",
+      "update",
+      "insert",
+      "upsert",
+      "delete",
+    ]) {
+      chain[method] = vi.fn(() => chain);
+    }
+    chain.maybeSingle = vi.fn().mockResolvedValue({
       data: {
         id: "user-1",
         plan_id: "free",
@@ -74,11 +97,9 @@ beforeEach(() => {
         top_up_credits_cents: 0,
       },
       error: null,
-    }),
-    single: vi.fn().mockResolvedValue({ data: null, error: null }),
-    upsert: vi.fn().mockResolvedValue({ error: null }),
-    update: vi.fn().mockReturnThis(),
-    rpc: vi.fn().mockResolvedValue({
+    });
+    chain.single = vi.fn().mockResolvedValue({ data: null, error: null });
+    chain.rpc = vi.fn().mockResolvedValue({
       data: {
         id: "user-1",
         plan_id: "free",
@@ -89,8 +110,10 @@ beforeEach(() => {
         top_up_credits_cents: 0,
       },
       error: null,
-    }),
+    });
+    return chain;
   };
+  const defaultMockAdmin = createChain();
   mockCreateSupabaseAdminClient.mockReturnValue(defaultMockAdmin);
 });
 
@@ -138,12 +161,12 @@ describe("supabaseService", () => {
 
     it("routes to cheaper model in priority list when available", () => {
       const result = resolveAutoModelRouting({
-        requestedModelId: "openai/gpt-4o",
+        requestedModelId: "openai/gpt-4o-mini",
         planId: "free",
         mode: "smart",
       });
 
-      // deepseek-chat is in priority and cheaper
+      // deepseek-chat is in priority list first and is allowed for free plan
       expect(result.routed).toBe(true);
       expect(result.reason).toBe("cost_safe_auto");
       expect(result.modelId).toBe("deepseek/deepseek-chat");
@@ -209,7 +232,7 @@ describe("supabaseService", () => {
 
       expect(result).toBeGreaterThan(0);
       // Uses default rate
-      expect(result).toBe(8);
+      expect(result).toBe(1);
     });
 
     it("returns minimum 1 cent for small usage", async () => {

@@ -116,9 +116,6 @@ describe("fileTools", () => {
             error: null,
           })),
         })),
-        insert: vi.fn(async () => ({
-          error: null,
-        })),
       });
 
       mockSupabaseStorage.mockReturnValue({
@@ -545,7 +542,7 @@ describe("fileTools", () => {
       });
 
       await expect(fileSearchTool(context, { query: "test" })).rejects.toThrow(
-        "database error",
+        /Failed to search file chunks/i,
       );
     });
 
