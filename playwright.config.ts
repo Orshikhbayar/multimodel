@@ -11,18 +11,24 @@ const resolvedBaseUrl =
 
 export default defineConfig({
   testDir: "./e2e",
-  timeout: 30_000,
+  timeout: isCI ? 60_000 : 30_000,
   retries: isCI ? 2 : 1,
   workers: isCI ? 1 : undefined,
   reporter: isCI
     ? [["github"], ["html", { open: "never" }], ["list"]]
     : [["list"], ["html", { open: "never" }]],
 
+  expect: {
+    timeout: isCI ? 15_000 : 5_000,
+  },
+
   use: {
     baseURL: resolvedBaseUrl,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
+    navigationTimeout: isCI ? 60_000 : 30_000,
+    actionTimeout: isCI ? 30_000 : 15_000,
   },
 
   projects: [

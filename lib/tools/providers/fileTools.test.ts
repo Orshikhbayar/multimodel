@@ -58,7 +58,8 @@ function createMockContext(): ToolExecutionContext {
 /** Creates a chainable Supabase query mock (supports .eq()/.in() chaining + await). */
 function createChainableSelect(result: { data: any; error: any }) {
   const chainable: any = {
-    then: (resolve: any, reject?: any) => Promise.resolve(result).then(resolve, reject),
+    then: (resolve: any, reject?: any) =>
+      Promise.resolve(result).then(resolve, reject),
     eq: vi.fn(() => chainable),
     in: vi.fn(() => chainable),
   };
