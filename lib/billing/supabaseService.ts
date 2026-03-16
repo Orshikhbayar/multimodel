@@ -81,9 +81,12 @@ const MODEL_RETAIL_CENTS_PER_1M: Record<
   default: { inputCentsPer1m: 15, outputCentsPer1m: 60 },
 };
 
-const BILLING_DISABLED =
-  process.env.NEXT_PUBLIC_DISABLE_SERVER_BILLING === "true" ||
-  !process.env.SUPABASE_SERVICE_ROLE_KEY;
+function isBillingDisabled(): boolean {
+  return (
+    process.env.NEXT_PUBLIC_DISABLE_SERVER_BILLING === "true" ||
+    !process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
+}
 
 function normalizePlanId(value: string): PlanId {
   if (
@@ -636,7 +639,7 @@ export async function startUsageRunMetering(params: {
   estimatedPromptTokens: number;
   maxOutputTokens: number;
 }) {
-  if (BILLING_DISABLED) {
+  if (isBillingDisabled()) {
     return null;
   }
 
@@ -794,7 +797,7 @@ export async function finalizeUsageRunMetering(params: {
   status: "completed" | "cancelled" | "failed";
   failureReason?: string;
 }) {
-  if (BILLING_DISABLED) {
+  if (isBillingDisabled()) {
     return null;
   }
 
@@ -860,7 +863,7 @@ export async function releaseUsageRunHold(params: {
   runReferenceId: string;
   reason: string;
 }) {
-  if (BILLING_DISABLED) {
+  if (isBillingDisabled()) {
     return null;
   }
 

@@ -95,6 +95,7 @@ function createMockContext(): ToolExecutionContext {
 describe("githubTools", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockFetch.mockReset();
   });
 
   describe("githubConnectRepoTool", () => {
@@ -583,7 +584,7 @@ ${Array.from({ length: 100 }, (_, i) => `+added line ${i}`).join("\n")}`;
     });
 
     it("flags potential secrets in diff", async () => {
-      mockDetectSecrets.mockReturnValue([
+      mockDetectSecrets.mockReturnValueOnce([
         { type: "AWS_KEY", match: "AKIA..." },
       ]);
 
@@ -777,6 +778,9 @@ ${Array.from({ length: 100 }, (_, i) => `+added line ${i}`).join("\n")}`;
             JSON.stringify({
               files: [{ filename: "file.txt", patch: "+new" }],
             }),
+          json: async () => ({
+            files: [{ filename: "file.txt", patch: "+new" }],
+          }),
         })
         .mockResolvedValueOnce({
           ok: true,
@@ -788,6 +792,13 @@ ${Array.from({ length: 100 }, (_, i) => `+added line ${i}`).join("\n")}`;
               head: { ref: "feature-branch" },
               base: { ref: "main" },
             }),
+          json: async () => ({
+            number: 42,
+            html_url: "https://github.com/user/repo/pull/42",
+            title: "New Feature",
+            head: { ref: "feature-branch" },
+            base: { ref: "main" },
+          }),
         });
 
       const result = await createPullRequestTool(context, {

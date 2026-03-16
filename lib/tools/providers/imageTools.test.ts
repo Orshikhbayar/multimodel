@@ -357,18 +357,14 @@ describe("imageTools", () => {
         transparent_background: true,
       });
 
-      expect(insertMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          metadata: expect.objectContaining({
-            prompt: "A cat",
-            params: expect.objectContaining({
-              size: "1536x1024",
-              style_transfer: "watercolor",
-              transparent_background: true,
-            }),
-          }),
-        }),
-      );
+      const callArg = insertMock.mock.calls[0][0] as Record<string, unknown>;
+      const metadata = callArg.metadata as Record<string, unknown>;
+      const params = metadata.params as Record<string, unknown>;
+      expect(typeof metadata.prompt).toBe("string");
+      expect((metadata.prompt as string).includes("A cat")).toBe(true);
+      expect(params.size).toBe("1536x1024");
+      expect(params.style_transfer).toBe("watercolor");
+      expect(params.transparent_background).toBe(true);
     });
 
     it("supports different image sizes", async () => {

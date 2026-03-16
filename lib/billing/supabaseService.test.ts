@@ -3,15 +3,17 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 const {
   mockCreateSupabaseAdminClient,
   mockIsUnlimitedTesterEmail,
+  mockIsUnlimitedTesterId,
   mockCalculateUsageCostCents,
 } = vi.hoisted(() => ({
   mockCreateSupabaseAdminClient: vi.fn(),
   mockIsUnlimitedTesterEmail: vi.fn(() => false),
-  mockCalculateUsageCostCents: vi.fn((params) => {
+  mockIsUnlimitedTesterId: vi.fn(() => false),
+  mockCalculateUsageCostCents: vi.fn((params: { modelId: string; promptTokens: number; completionTokens: number }) => {
     const rate = {
       "openai/gpt-4o-mini": { inputPer1k: 0.15, outputPer1k: 0.6 },
       default: { inputPer1k: 0.15, outputPer1k: 0.6 },
-    }[params.modelId] || { inputPer1k: 0.15, outputPer1k: 0.6 };
+    }[params.modelId as string] || { inputPer1k: 0.15, outputPer1k: 0.6 };
     const usd =
       (params.promptTokens / 1000) * rate.inputPer1k +
       (params.completionTokens / 1000) * rate.outputPer1k;
@@ -24,7 +26,7 @@ vi.mock("@/lib/supabase/admin", () => ({
 }));
 
 vi.mock("@/lib/testerAccess", () => ({
-  isUnlimitedTesterId: vi.fn(() => false),
+  isUnlimitedTesterId: mockIsUnlimitedTesterId,
   isUnlimitedTesterEmail: mockIsUnlimitedTesterEmail,
 }));
 
@@ -49,12 +51,24 @@ import {
 } from "@/lib/billing/supabaseService";
 
 beforeEach(() => {
-  vi.clearAllMocks();
+  vi.resetAllMocks();
   vi.unstubAllGlobals();
-  // Reset environment variables for each test
-  delete process.env.NEXT_PUBLIC_DISABLE_SERVER_BILLING;
-  delete process.env.SUPABASE_SERVICE_ROLE_KEY;
-  process.env.SUPABASE_SERVICE_ROLE_KEY = "test-key";
+  // Use vi.stubEnv for reliable env var management (restored by vi.unstubAllEnvs in afterEach)
+  vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "test-key");
+
+  // Re-establish default implementations after resetAllMocks
+  mockIsUnlimitedTesterId.mockImplementation(() => false);
+  mockIsUnlimitedTesterEmail.mockImplementation(() => false);
+  mockCalculateUsageCostCents.mockImplementation((params: { modelId: string; promptTokens: number; completionTokens: number }) => {
+    const rate = {
+      "openai/gpt-4o-mini": { inputPer1k: 0.15, outputPer1k: 0.6 },
+      default: { inputPer1k: 0.15, outputPer1k: 0.6 },
+    }[params.modelId] || { inputPer1k: 0.15, outputPer1k: 0.6 };
+    const usd =
+      (params.promptTokens / 1000) * rate.inputPer1k +
+      (params.completionTokens / 1000) * rate.outputPer1k;
+    return Math.max(1, Math.round(usd * 100));
+  });
 
   // Provide a default working admin client so tests that don't need a custom
   // mock don't crash with "Cannot read properties of undefined (reading 'from')"
@@ -275,7 +289,7 @@ describe("supabaseService", () => {
 
   describe("startUsageRunMetering", () => {
     it("returns null when billing is disabled", async () => {
-      process.env.NEXT_PUBLIC_DISABLE_SERVER_BILLING = "true";
+      vi.stubEnv("NEXT_PUBLIC_DISABLE_SERVER_BILLING", "true");
 
       const result = await startUsageRunMetering({
         sessionUser: { id: "user-1", email: "user@example.com" },
@@ -315,6 +329,7 @@ describe("supabaseService", () => {
         from: vi.fn().mockReturnThis(),
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
+        upsert: vi.fn().mockResolvedValue({ error: null }),
         maybeSingle: vi.fn().mockResolvedValue({
           data: {
             id: "user-1",
@@ -351,49 +366,34 @@ describe("supabaseService", () => {
         lt: vi.fn().mockReturnThis(),
         gte: vi.fn().mockReturnThis(),
         maybeSingle: vi.fn(),
+        upsert: vi.fn().mockResolvedValue({ error: null }),
         rpc: vi.fn(),
       };
 
       // Setup profile response
-      let callCount = 0;
-      mockAdmin.maybeSingle.mockImplementation(async () => {
-        callCount++;
-        if (callCount === 1) {
-          return {
-            data: {
-              id: "user-1",
-              plan_id: "free",
-              period_start_at: new Date().toISOString(),
-              period_end_at: new Date(Date.now() + 86400000).toISOString(),
-              included_credits_cents: 100,
-              bonus_credits_cents: 0,
-              top_up_credits_cents: 0,
-            },
-            error: null,
-          };
-        }
-        return { data: null, error: null };
+      mockAdmin.maybeSingle.mockResolvedValue({
+        data: {
+          id: "user-1",
+          plan_id: "free",
+          period_start_at: new Date().toISOString(),
+          period_end_at: new Date(Date.now() + 86400000).toISOString(),
+          included_credits_cents: 100,
+          bonus_credits_cents: 0,
+          top_up_credits_cents: 0,
+        },
+        error: null,
       });
 
-      // Setup daily quota exceeded
+      // Setup daily quota exceeded — chain must be thenable so Promise.all direct-await
+      // in checkTokenQuota returns { data: [{ tokens_total: 2000 }], error: null }
+      const quotaResult = { data: [{ tokens_total: 2000 }], error: null };
       mockAdmin.select.mockReturnValue({
         eq: vi.fn().mockReturnThis(),
         lt: vi.fn().mockReturnThis(),
         gte: vi.fn().mockReturnThis(),
         maybeSingle: mockAdmin.maybeSingle,
-        single: vi.fn().mockResolvedValue({ data: null, error: null }),
-        select: vi.fn(() => ({
-          eq: vi.fn().mockReturnThis(),
-          lt: vi.fn().mockReturnThis(),
-          gte: vi.fn().mockReturnThis(),
-          maybeSingle: mockAdmin.maybeSingle,
-          single: vi.fn().mockResolvedValue({
-            data: [
-              { tokens_total: 2000 }, // At daily cap for free plan
-            ],
-            error: null,
-          }),
-        })),
+        single: vi.fn().mockResolvedValue(quotaResult),
+        then: (resolve: (v: unknown) => void) => resolve(quotaResult),
       });
 
       mockCreateSupabaseAdminClient.mockReturnValue(mockAdmin);
@@ -669,6 +669,15 @@ describe("supabaseService", () => {
 
       mockAdmin.upsert.mockResolvedValue({ error: null });
 
+      mockAdmin.rpc.mockResolvedValue({
+        data: {
+          bucket: "included_auto",
+          held_credits_int: 0,
+          auto_reserved_value_usd_int: 0,
+        },
+        error: null,
+      });
+
       mockCreateSupabaseAdminClient.mockReturnValue(mockAdmin);
 
       const result = await startUsageRunMetering({
@@ -687,7 +696,7 @@ describe("supabaseService", () => {
 
   describe("finalizeUsageRunMetering", () => {
     it("returns null when billing is disabled", async () => {
-      process.env.NEXT_PUBLIC_DISABLE_SERVER_BILLING = "true";
+      vi.stubEnv("NEXT_PUBLIC_DISABLE_SERVER_BILLING", "true");
 
       const result = await finalizeUsageRunMetering({
         userId: "user-1",
@@ -719,6 +728,11 @@ describe("supabaseService", () => {
 
     it("bills completed run with actual token usage", async () => {
       const mockAdmin = {
+        from: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+        }),
         rpc: vi.fn().mockResolvedValue({
           data: { finalized: true },
           error: null,
@@ -751,6 +765,11 @@ describe("supabaseService", () => {
 
     it("charges zero for cancelled run", async () => {
       const mockAdmin = {
+        from: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+        }),
         rpc: vi.fn().mockResolvedValue({
           data: { finalized: true },
           error: null,
@@ -780,6 +799,11 @@ describe("supabaseService", () => {
 
     it("charges zero for failed run", async () => {
       const mockAdmin = {
+        from: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+        }),
         rpc: vi.fn().mockResolvedValue({
           data: { finalized: true },
           error: null,
@@ -810,6 +834,11 @@ describe("supabaseService", () => {
 
     it("throws billing locked error from RPC", async () => {
       const mockAdmin = {
+        from: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+        }),
         rpc: vi.fn().mockResolvedValue({
           data: null,
           error: {
@@ -836,6 +865,11 @@ describe("supabaseService", () => {
 
     it("throws unavailable error for other RPC failures", async () => {
       const mockAdmin = {
+        from: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+        }),
         rpc: vi.fn().mockResolvedValue({
           data: null,
           error: { message: "Database error" },
@@ -860,7 +894,7 @@ describe("supabaseService", () => {
 
   describe("releaseUsageRunHold", () => {
     it("returns null when billing is disabled", async () => {
-      process.env.NEXT_PUBLIC_DISABLE_SERVER_BILLING = "true";
+      vi.stubEnv("NEXT_PUBLIC_DISABLE_SERVER_BILLING", "true");
 
       const result = await releaseUsageRunHold({
         userId: "user-1",
@@ -1294,6 +1328,14 @@ describe("supabaseService", () => {
     });
 
     it("throws unavailable error for non-schema errors", async () => {
+      const errorResult = {
+        data: null,
+        error: {
+          code: "42601",
+          message: "Unexpected error",
+        },
+      };
+
       const mockAdmin = {
         from: vi.fn().mockReturnThis(),
         select: vi.fn().mockReturnThis(),
@@ -1311,24 +1353,18 @@ describe("supabaseService", () => {
         }),
       };
 
+      // The production code awaits the chain directly (no .single()/.maybeSingle()),
+      // so the chain must be "thenable" to properly return { data, error }.
       mockAdmin.select.mockReturnValue({
         eq: vi.fn().mockReturnThis(),
         lt: vi.fn().mockReturnThis(),
         gte: vi.fn().mockReturnThis(),
         maybeSingle: mockAdmin.maybeSingle,
-        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        // When the chain is awaited (usage_runs query), resolve to the error
+        then: vi.fn((resolve: (v: unknown) => void) => resolve(errorResult)),
         in: vi.fn(() => ({
-          eq: vi.fn().mockReturnThis(),
-          lt: vi.fn().mockReturnThis(),
-          gte: vi.fn().mockReturnThis(),
-          maybeSingle: mockAdmin.maybeSingle,
-          single: vi.fn().mockResolvedValue({
-            data: null,
-            error: {
-              code: "42601",
-              message: "Unexpected error",
-            },
-          }),
+          // When the nested chain is awaited (credit_ledger query), also resolve to error
+          then: vi.fn((resolve: (v: unknown) => void) => resolve(errorResult)),
         })),
       });
 
@@ -1476,7 +1512,7 @@ describe("supabaseService", () => {
 
   describe("environment variable handling", () => {
     it("disables billing when NEXT_PUBLIC_DISABLE_SERVER_BILLING is true", async () => {
-      process.env.NEXT_PUBLIC_DISABLE_SERVER_BILLING = "true";
+      vi.stubEnv("NEXT_PUBLIC_DISABLE_SERVER_BILLING", "true");
 
       const result = await startUsageRunMetering({
         sessionUser: { id: "user-1", email: "user@example.com" },
@@ -1490,7 +1526,7 @@ describe("supabaseService", () => {
     });
 
     it("disables billing when SUPABASE_SERVICE_ROLE_KEY is missing", async () => {
-      delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+      vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "");
 
       const result = await startUsageRunMetering({
         sessionUser: { id: "user-1", email: "user@example.com" },
