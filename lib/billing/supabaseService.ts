@@ -410,9 +410,13 @@ export async function calculateUsageValueUsdInt(params: {
   }
 
   const rate = await getModelRetailRate(params.modelId);
+  const inputRate =
+    rate?.inputCentsPer1m ?? MODEL_RETAIL_CENTS_PER_1M.default.inputCentsPer1m;
+  const outputRate =
+    rate?.outputCentsPer1m ?? MODEL_RETAIL_CENTS_PER_1M.default.outputCentsPer1m;
   const raw =
-    params.tokensIn * rate.inputCentsPer1m +
-    params.tokensOut * rate.outputCentsPer1m;
+    params.tokensIn * inputRate + params.tokensOut * outputRate;
+  if (!Number.isFinite(raw)) return 1;
   return Math.max(1, Math.ceil(raw / 1_000_000));
 }
 

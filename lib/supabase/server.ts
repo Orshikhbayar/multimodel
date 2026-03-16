@@ -43,14 +43,20 @@ export async function createSupabaseServerClient(): Promise<
         signOut: async () => ({ error: null }),
         exchangeCodeForSession: async () => ({ data: {}, error: null }),
       },
-      from: () => ({
-        upsert: async () => ({ data: null, error: null }),
-        update: () => ({
-          eq: () => ({
-            eq: async () => ({ data: null, error: null }),
-          }),
-        }),
-      }),
+      from: (_table: string) => {
+        const handler: ProxyHandler<object> = {
+          get(_target, prop: string | symbol) {
+            if (prop === "then") return undefined; // not a thenable itself
+            if (prop === "single" || prop === "maybeSingle") {
+              return async () => ({ data: null, error: null });
+            }
+            // Any other method returns a function that returns another Proxy
+            return (..._args: unknown[]) => new Proxy({}, handler);
+          },
+        };
+        return new Proxy({}, handler);
+      },
+      rpc: async () => ({ data: null, error: null }),
     } as unknown as SupabaseClient<Database>;
   }
 

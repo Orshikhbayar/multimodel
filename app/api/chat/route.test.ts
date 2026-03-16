@@ -81,6 +81,7 @@ vi.mock("@/lib/api/streamWithTimeout", () => ({
 }));
 vi.mock("@/lib/rateLimit", () => ({
   checkStreamPermission: mockCheckStreamPermission,
+  checkStreamPermissionAsync: mockCheckStreamPermission,
   releaseConcurrencySlot: mockReleaseConcurrencySlot,
   getRateLimitHeaders: mockGetRateLimitHeaders,
 }));
