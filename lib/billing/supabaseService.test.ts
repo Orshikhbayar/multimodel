@@ -113,6 +113,33 @@ beforeEach(() => {
     });
     return chain;
   };
+
+  // Helper to create a chainable mock object that always returns itself for any method
+  // except maybeSingle/single which resolve to data
+  const createChainableProxy = (
+    terminalValue: Record<string, unknown> | null = null,
+  ) => {
+    const handler: ProxyHandler<object> = {
+      get(_target: object, prop: string | symbol) {
+        if (prop === "maybeSingle") {
+          return vi.fn().mockResolvedValue({
+            data: terminalValue,
+            error: null,
+          });
+        }
+        if (prop === "single") {
+          return vi.fn().mockResolvedValue({
+            data: terminalValue,
+            error: null,
+          });
+        }
+        // All other methods return a new Proxy that chains back
+        return vi.fn(() => new Proxy({}, handler));
+      },
+    };
+    return new Proxy({}, handler);
+  };
+
   const defaultMockAdmin = createChain();
   mockCreateSupabaseAdminClient.mockReturnValue(defaultMockAdmin);
 });
@@ -353,12 +380,20 @@ describe("supabaseService", () => {
         eq: vi.fn().mockReturnThis(),
         lt: vi.fn().mockReturnThis(),
         gte: vi.fn().mockReturnThis(),
-        select: vi.fn().mockResolvedValue({
-          data: [
-            { tokens_total: 2000 }, // At daily cap for free plan
-          ],
-          error: null,
-        }),
+        maybeSingle: mockAdmin.maybeSingle,
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        select: vi.fn(() => ({
+          eq: vi.fn().mockReturnThis(),
+          lt: vi.fn().mockReturnThis(),
+          gte: vi.fn().mockReturnThis(),
+          maybeSingle: mockAdmin.maybeSingle,
+          single: vi.fn().mockResolvedValue({
+            data: [
+              { tokens_total: 2000 }, // At daily cap for free plan
+            ],
+            error: null,
+          }),
+        })),
       });
 
       mockCreateSupabaseAdminClient.mockReturnValue(mockAdmin);
@@ -406,10 +441,18 @@ describe("supabaseService", () => {
         eq: vi.fn().mockReturnThis(),
         lt: vi.fn().mockReturnThis(),
         gte: vi.fn().mockReturnThis(),
-        select: vi.fn().mockResolvedValue({
-          data: [],
-          error: null,
-        }),
+        maybeSingle: mockAdmin.maybeSingle,
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        select: vi.fn(() => ({
+          eq: vi.fn().mockReturnThis(),
+          lt: vi.fn().mockReturnThis(),
+          gte: vi.fn().mockReturnThis(),
+          maybeSingle: mockAdmin.maybeSingle,
+          single: vi.fn().mockResolvedValue({
+            data: [],
+            error: null,
+          }),
+        })),
       });
 
       mockAdmin.upsert.mockResolvedValue({ error: null });
@@ -459,10 +502,18 @@ describe("supabaseService", () => {
         eq: vi.fn().mockReturnThis(),
         lt: vi.fn().mockReturnThis(),
         gte: vi.fn().mockReturnThis(),
-        select: vi.fn().mockResolvedValue({
-          data: [],
-          error: null,
-        }),
+        maybeSingle: mockAdmin.maybeSingle,
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        select: vi.fn(() => ({
+          eq: vi.fn().mockReturnThis(),
+          lt: vi.fn().mockReturnThis(),
+          gte: vi.fn().mockReturnThis(),
+          maybeSingle: mockAdmin.maybeSingle,
+          single: vi.fn().mockResolvedValue({
+            data: [],
+            error: null,
+          }),
+        })),
       });
 
       mockAdmin.upsert.mockResolvedValue({ error: null });
@@ -519,10 +570,18 @@ describe("supabaseService", () => {
         eq: vi.fn().mockReturnThis(),
         lt: vi.fn().mockReturnThis(),
         gte: vi.fn().mockReturnThis(),
-        select: vi.fn().mockResolvedValue({
-          data: [],
-          error: null,
-        }),
+        maybeSingle: mockAdmin.maybeSingle,
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        select: vi.fn(() => ({
+          eq: vi.fn().mockReturnThis(),
+          lt: vi.fn().mockReturnThis(),
+          gte: vi.fn().mockReturnThis(),
+          maybeSingle: mockAdmin.maybeSingle,
+          single: vi.fn().mockResolvedValue({
+            data: [],
+            error: null,
+          }),
+        })),
       });
 
       mockAdmin.upsert.mockResolvedValue({ error: null });
@@ -589,7 +648,18 @@ describe("supabaseService", () => {
         eq: vi.fn().mockReturnThis(),
         lt: vi.fn().mockReturnThis(),
         gte: vi.fn().mockReturnThis(),
-        count: vi.fn().mockReturnThis(),
+        maybeSingle: mockAdmin.maybeSingle,
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        count: vi.fn(() => ({
+          eq: vi.fn().mockReturnThis(),
+          lt: vi.fn().mockReturnThis(),
+          gte: vi.fn().mockReturnThis(),
+          head: vi.fn().mockResolvedValue({
+            data: [],
+            count: 0,
+            error: null,
+          }),
+        })),
         head: vi.fn().mockResolvedValue({
           data: [],
           count: 0,
@@ -1003,10 +1073,18 @@ describe("supabaseService", () => {
         eq: vi.fn().mockReturnThis(),
         lt: vi.fn().mockReturnThis(),
         gte: vi.fn().mockReturnThis(),
-        in: vi.fn().mockResolvedValue({
-          data: [],
-          error: null,
-        }),
+        maybeSingle: mockAdmin.maybeSingle,
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        in: vi.fn(() => ({
+          eq: vi.fn().mockReturnThis(),
+          lt: vi.fn().mockReturnThis(),
+          gte: vi.fn().mockReturnThis(),
+          maybeSingle: mockAdmin.maybeSingle,
+          single: vi.fn().mockResolvedValue({
+            data: [],
+            error: null,
+          }),
+        })),
       });
 
       mockCreateSupabaseAdminClient.mockReturnValue(mockAdmin);
@@ -1044,11 +1122,15 @@ describe("supabaseService", () => {
       mockAdmin.select.mockImplementation(() => {
         selectCallCount++;
         if (selectCallCount === 1) {
+          // ensureBillingProfile query - needs maybeSingle
+          return mockAdmin;
+        } else if (selectCallCount === 2) {
           // usage_runs query
           return {
             eq: vi.fn().mockReturnThis(),
             lt: vi.fn().mockReturnThis(),
             gte: vi.fn().mockReturnThis(),
+            maybeSingle: mockAdmin.maybeSingle,
             mockResolvedValue: async () => ({
               data: [
                 {
@@ -1082,15 +1164,22 @@ describe("supabaseService", () => {
             eq: vi.fn().mockReturnThis(),
             lt: vi.fn().mockReturnThis(),
             gte: vi.fn().mockReturnThis(),
-            in: vi.fn().mockResolvedValue({
-              data: [
-                {
-                  amount_usd_int: 1000,
-                  type: "subscription_charge",
-                },
-              ],
-              error: null,
-            }),
+            maybeSingle: mockAdmin.maybeSingle,
+            in: vi.fn(() => ({
+              eq: vi.fn().mockReturnThis(),
+              lt: vi.fn().mockReturnThis(),
+              gte: vi.fn().mockReturnThis(),
+              maybeSingle: mockAdmin.maybeSingle,
+              single: vi.fn().mockResolvedValue({
+                data: [
+                  {
+                    amount_usd_int: 1000,
+                    type: "subscription_charge",
+                  },
+                ],
+                error: null,
+              }),
+            })),
           };
         }
       });
@@ -1131,15 +1220,23 @@ describe("supabaseService", () => {
         eq: vi.fn().mockReturnThis(),
         lt: vi.fn().mockReturnThis(),
         gte: vi.fn().mockReturnThis(),
-        in: vi.fn().mockResolvedValue({
-          data: [
-            {
-              amount_usd_int: 1900,
-              type: "subscription_charge",
-            },
-          ],
-          error: null,
-        }),
+        maybeSingle: mockAdmin.maybeSingle,
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        in: vi.fn(() => ({
+          eq: vi.fn().mockReturnThis(),
+          lt: vi.fn().mockReturnThis(),
+          gte: vi.fn().mockReturnThis(),
+          maybeSingle: mockAdmin.maybeSingle,
+          single: vi.fn().mockResolvedValue({
+            data: [
+              {
+                amount_usd_int: 1900,
+                type: "subscription_charge",
+              },
+            ],
+            error: null,
+          }),
+        })),
       });
 
       mockCreateSupabaseAdminClient.mockReturnValue(mockAdmin);
@@ -1171,13 +1268,21 @@ describe("supabaseService", () => {
         eq: vi.fn().mockReturnThis(),
         lt: vi.fn().mockReturnThis(),
         gte: vi.fn().mockReturnThis(),
-        in: vi.fn().mockResolvedValue({
-          data: null,
-          error: {
-            code: "42P01",
-            message: "relation does not exist",
-          },
-        }),
+        maybeSingle: mockAdmin.maybeSingle,
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        in: vi.fn(() => ({
+          eq: vi.fn().mockReturnThis(),
+          lt: vi.fn().mockReturnThis(),
+          gte: vi.fn().mockReturnThis(),
+          maybeSingle: mockAdmin.maybeSingle,
+          single: vi.fn().mockResolvedValue({
+            data: null,
+            error: {
+              code: "42P01",
+              message: "relation does not exist",
+            },
+          }),
+        })),
       });
 
       mockCreateSupabaseAdminClient.mockReturnValue(mockAdmin);
@@ -1210,13 +1315,21 @@ describe("supabaseService", () => {
         eq: vi.fn().mockReturnThis(),
         lt: vi.fn().mockReturnThis(),
         gte: vi.fn().mockReturnThis(),
-        in: vi.fn().mockResolvedValue({
-          data: null,
-          error: {
-            code: "42601",
-            message: "Unexpected error",
-          },
-        }),
+        maybeSingle: mockAdmin.maybeSingle,
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        in: vi.fn(() => ({
+          eq: vi.fn().mockReturnThis(),
+          lt: vi.fn().mockReturnThis(),
+          gte: vi.fn().mockReturnThis(),
+          maybeSingle: mockAdmin.maybeSingle,
+          single: vi.fn().mockResolvedValue({
+            data: null,
+            error: {
+              code: "42601",
+              message: "Unexpected error",
+            },
+          }),
+        })),
       });
 
       mockCreateSupabaseAdminClient.mockReturnValue(mockAdmin);
@@ -1251,10 +1364,18 @@ describe("supabaseService", () => {
         eq: vi.fn().mockReturnThis(),
         lt: vi.fn().mockReturnThis(),
         gte: vi.fn().mockReturnThis(),
-        in: vi.fn().mockResolvedValue({
-          data: [],
-          error: null,
-        }),
+        maybeSingle: mockAdmin.maybeSingle,
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        in: vi.fn(() => ({
+          eq: vi.fn().mockReturnThis(),
+          lt: vi.fn().mockReturnThis(),
+          gte: vi.fn().mockReturnThis(),
+          maybeSingle: mockAdmin.maybeSingle,
+          single: vi.fn().mockResolvedValue({
+            data: [],
+            error: null,
+          }),
+        })),
       });
 
       mockCreateSupabaseAdminClient.mockReturnValue(mockAdmin);

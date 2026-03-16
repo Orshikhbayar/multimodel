@@ -27,6 +27,7 @@ export async function createSupabaseServerClient(): Promise<
             claims: {
               sub: bypassIdentity.id,
               email: bypassIdentity.email,
+              role: "authenticated",
             },
           },
           error: null,
