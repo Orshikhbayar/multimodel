@@ -46,13 +46,14 @@ describe("streamAnthropicCompletion", () => {
     vi.stubEnv("ANTHROPIC_API_KEY", "sk-ant-test");
 
     const encoder = new TextEncoder();
-    const events = [
-      `data: ${JSON.stringify({ type: "message_start", message: { usage: { input_tokens: 10 } } })}`,
-      `data: ${JSON.stringify({ type: "content_block_delta", delta: { type: "text_delta", text: "hello" } })}`,
-      `data: ${JSON.stringify({ type: "content_block_delta", delta: { type: "text_delta", text: " world" } })}`,
-      `data: ${JSON.stringify({ type: "message_delta", usage: { output_tokens: 5 } })}`,
-      `data: ${JSON.stringify({ type: "message_stop" })}`,
-    ].join("\n") + "\n";
+    const events =
+      [
+        `data: ${JSON.stringify({ type: "message_start", message: { usage: { input_tokens: 10 } } })}`,
+        `data: ${JSON.stringify({ type: "content_block_delta", delta: { type: "text_delta", text: "hello" } })}`,
+        `data: ${JSON.stringify({ type: "content_block_delta", delta: { type: "text_delta", text: " world" } })}`,
+        `data: ${JSON.stringify({ type: "message_delta", usage: { output_tokens: 5 } })}`,
+        `data: ${JSON.stringify({ type: "message_stop" })}`,
+      ].join("\n") + "\n";
 
     vi.stubGlobal(
       "fetch",

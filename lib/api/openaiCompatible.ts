@@ -33,7 +33,9 @@ const PROVIDER_CONFIGS: Record<
   },
 };
 
-export function getCompatibleProviderConfig(modelId: string): OpenAICompatibleProviderConfig {
+export function getCompatibleProviderConfig(
+  modelId: string,
+): OpenAICompatibleProviderConfig {
   const providerName = modelId.split("/")[0];
   const config = PROVIDER_CONFIGS[providerName];
 
@@ -61,7 +63,9 @@ export function getCompatibleProviderConfig(modelId: string): OpenAICompatiblePr
 export async function* streamOpenAICompatibleCompletion(
   options: StreamOptions,
 ): AsyncGenerator<StreamEvent, void, unknown> {
-  const { baseUrl, apiKey, modelName } = getCompatibleProviderConfig(options.model);
+  const { baseUrl, apiKey, modelName } = getCompatibleProviderConfig(
+    options.model,
+  );
 
   const response = await fetch(`${baseUrl}/chat/completions`, {
     method: "POST",

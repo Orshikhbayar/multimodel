@@ -6,7 +6,11 @@
  * Adding a new provider means adding a case here and an adapter file.
  */
 
-import { type StreamOptions, type StreamEvent, streamOpenAICompletion } from "./openai";
+import {
+  type StreamOptions,
+  type StreamEvent,
+  streamOpenAICompletion,
+} from "./openai";
 import { streamAnthropicCompletion } from "./anthropic";
 import { streamGoogleCompletion } from "./google";
 import { streamOpenAICompatibleCompletion } from "./openaiCompatible";

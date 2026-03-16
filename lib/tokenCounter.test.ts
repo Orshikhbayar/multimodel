@@ -26,8 +26,8 @@ describe("tokenCounter", () => {
     });
 
     it("gives CJK text more tokens per character than ASCII", () => {
-      const ascii = "a".repeat(40);       // 40 ASCII chars
-      const cjk   = "中".repeat(40);      // 40 CJK chars — each ≈ 1 token
+      const ascii = "a".repeat(40); // 40 ASCII chars
+      const cjk = "中".repeat(40); // 40 CJK chars — each ≈ 1 token
       expect(countTokens(cjk)).toBeGreaterThan(countTokens(ascii));
     });
 
@@ -71,44 +71,64 @@ describe("tokenCounter", () => {
     });
 
     it("returns a positive number for non-zero tokens", () => {
-      expect(calculateRunCostUsd("openai/gpt-4o", 1000, 500)).toBeGreaterThan(0);
+      expect(calculateRunCostUsd("openai/gpt-4o", 1000, 500)).toBeGreaterThan(
+        0,
+      );
     });
 
     it("charges more for output than input on high-cost models", () => {
       // claude-opus-4: $15/1M input vs $75/1M output
-      const inputOnly  = calculateRunCostUsd("anthropic/claude-opus-4", 1000, 0);
-      const outputOnly = calculateRunCostUsd("anthropic/claude-opus-4", 0, 1000);
+      const inputOnly = calculateRunCostUsd("anthropic/claude-opus-4", 1000, 0);
+      const outputOnly = calculateRunCostUsd(
+        "anthropic/claude-opus-4",
+        0,
+        1000,
+      );
       expect(outputOnly).toBeGreaterThan(inputOnly);
     });
 
     it("costs less for gpt-4o-mini than gpt-4o for same token count", () => {
       const tokens = { inputTokens: 1000, outputTokens: 500 };
-      const mini = calculateRunCostUsd("openai/gpt-4o-mini", tokens.inputTokens, tokens.outputTokens);
-      const full = calculateRunCostUsd("openai/gpt-4o", tokens.inputTokens, tokens.outputTokens);
+      const mini = calculateRunCostUsd(
+        "openai/gpt-4o-mini",
+        tokens.inputTokens,
+        tokens.outputTokens,
+      );
+      const full = calculateRunCostUsd(
+        "openai/gpt-4o",
+        tokens.inputTokens,
+        tokens.outputTokens,
+      );
       expect(mini).toBeLessThan(full);
     });
 
     it("falls back gracefully for unknown model ID", () => {
-      expect(() => calculateRunCostUsd("unknown/model", 100, 100)).not.toThrow();
-      expect(calculateRunCostUsd("unknown/model", 100, 100)).toBeGreaterThanOrEqual(0);
+      expect(() =>
+        calculateRunCostUsd("unknown/model", 100, 100),
+      ).not.toThrow();
+      expect(
+        calculateRunCostUsd("unknown/model", 100, 100),
+      ).toBeGreaterThanOrEqual(0);
     });
   });
 
   describe("estimateMessageCostUsd", () => {
     it("returns a positive number for non-empty content", () => {
-      expect(estimateMessageCostUsd("Hello world", "openai/gpt-4o")).toBeGreaterThan(0);
+      expect(
+        estimateMessageCostUsd("Hello world", "openai/gpt-4o"),
+      ).toBeGreaterThan(0);
     });
 
     it("longer messages cost more than shorter ones", () => {
       const short = estimateMessageCostUsd("Hi", "openai/gpt-4o");
-      const long  = estimateMessageCostUsd("Hi ".repeat(500), "openai/gpt-4o");
+      const long = estimateMessageCostUsd("Hi ".repeat(500), "openai/gpt-4o");
       expect(long).toBeGreaterThan(short);
     });
   });
 
   describe("verifyTokenEstimate", () => {
     it("returns zero error when estimate matches actual", () => {
-      const actual    = countTokens("hello world");
+      const actual = countTokens("hello world");
       const { errorPercent } = verifyTokenEstimate("hello world", actual);
       expect(errorPercent).toBe(0);
     });

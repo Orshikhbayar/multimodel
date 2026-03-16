@@ -16,7 +16,7 @@ import { estimateTokens, estimatePromptTokens } from "@/lib/api/tokenEstimator";
 import { estimateTokenCostUsd } from "@/lib/billing/estimator";
 import { getModelById } from "@/lib/modelCatalog";
 
-export type { } from "@/lib/api/tokenEstimator"; // re-export nothing — just document the dependency
+export type {} from "@/lib/api/tokenEstimator"; // re-export nothing — just document the dependency
 
 /**
  * Estimate the number of tokens in a text string.
@@ -70,7 +70,10 @@ export function calculateRunCostUsd(
  * @param modelId  - Catalog model ID
  * @returns Estimated cost in USD
  */
-export function estimateMessageCostUsd(content: string, modelId: string): number {
+export function estimateMessageCostUsd(
+  content: string,
+  modelId: string,
+): number {
   const model = getModelById(modelId);
   const inputTokens = countTokens(content);
   const outputTokens = model?.maxOutputTokens ?? 2048;

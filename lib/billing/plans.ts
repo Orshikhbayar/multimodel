@@ -20,10 +20,7 @@ const PLUS_MODELS = [
   "xai/grok-3",
 ];
 
-const PRO_MODELS = [
-  ...PLUS_MODELS,
-  "anthropic/claude-opus-4",
-];
+const PRO_MODELS = [...PLUS_MODELS, "anthropic/claude-opus-4"];
 
 const TEAM_MODELS = MODELS.map((model) => model.id);
 

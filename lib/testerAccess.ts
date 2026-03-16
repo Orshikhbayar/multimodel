@@ -23,7 +23,9 @@ export function getUnlimitedTesterUserIds(): string[] {
  * Returns true if the given Supabase user ID is a rate-limit bypass user.
  * This is the authoritative check — use it in checkStreamPermission.
  */
-export function isUnlimitedTesterId(userId: string | null | undefined): boolean {
+export function isUnlimitedTesterId(
+  userId: string | null | undefined,
+): boolean {
   if (!userId) return false;
   return getUnlimitedTesterUserIds().includes(userId);
 }

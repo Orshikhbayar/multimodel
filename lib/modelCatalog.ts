@@ -273,7 +273,7 @@ export function isValidModel(modelId: string): boolean {
 export function getModelCostPer1kTokens(modelId: string): number | undefined {
   const model = getModelById(modelId);
   if (!model?.inputCostPer1M || !model?.outputCostPer1M) return undefined;
-  return ((model.inputCostPer1M + model.outputCostPer1M) / 2) / 1000;
+  return (model.inputCostPer1M + model.outputCostPer1M) / 2 / 1000;
 }
 
 /** Returns all model IDs in the catalog (flat list). */

@@ -1,9 +1,6 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 
-import {
-  getGoogleModelName,
-  streamGoogleCompletion,
-} from "@/lib/api/google";
+import { getGoogleModelName, streamGoogleCompletion } from "@/lib/api/google";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -41,10 +38,11 @@ describe("streamGoogleCompletion", () => {
     vi.stubEnv("GOOGLE_API_KEY", "goog-test");
 
     const encoder = new TextEncoder();
-    const events = [
-      `data: ${JSON.stringify({ candidates: [{ content: { parts: [{ text: "hello " }] } }] })}`,
-      `data: ${JSON.stringify({ candidates: [{ content: { parts: [{ text: "world" }] } }], usageMetadata: { promptTokenCount: 5, candidatesTokenCount: 2, totalTokenCount: 7 } })}`,
-    ].join("\n") + "\n";
+    const events =
+      [
+        `data: ${JSON.stringify({ candidates: [{ content: { parts: [{ text: "hello " }] } }] })}`,
+        `data: ${JSON.stringify({ candidates: [{ content: { parts: [{ text: "world" }] } }], usageMetadata: { promptTokenCount: 5, candidatesTokenCount: 2, totalTokenCount: 7 } })}`,
+      ].join("\n") + "\n";
 
     vi.stubGlobal(
       "fetch",

@@ -14,7 +14,10 @@
  *
  * Install: npm install @upstash/ratelimit @upstash/redis
  */
-import { isUnlimitedTesterId, isUnlimitedTesterEmail } from "@/lib/testerAccess";
+import {
+  isUnlimitedTesterId,
+  isUnlimitedTesterEmail,
+} from "@/lib/testerAccess";
 import { debug as logDebug } from "@/lib/logger";
 import { getUpstashRateLimiter } from "@/lib/rateLimitUpstash";
 
@@ -407,7 +410,10 @@ export async function checkStreamPermissionAsync(
     const upstashResult = await upstash.limit(userId);
 
     if (!upstashResult.success) {
-      const resetIn = Math.max(0, Math.ceil((upstashResult.reset - Date.now()) / 1000));
+      const resetIn = Math.max(
+        0,
+        Math.ceil((upstashResult.reset - Date.now()) / 1000),
+      );
       return {
         allowed: false,
         reason: "rate_limit",

@@ -58,7 +58,8 @@ export async function* streamAnthropicCompletion(
   // Anthropic requires system messages to be passed separately.
   const systemMessages = options.messages.filter((m) => m.role === "system");
   const userMessages = options.messages.filter((m) => m.role !== "system");
-  const systemPrompt = systemMessages.map((m) => m.content).join("\n") || undefined;
+  const systemPrompt =
+    systemMessages.map((m) => m.content).join("\n") || undefined;
 
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -82,7 +83,8 @@ export async function* streamAnthropicCompletion(
     const errorData = await response.json().catch(() => ({}));
     throw new Error(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (errorData as any).error?.message || `Anthropic API error: ${response.status}`,
+      (errorData as any).error?.message ||
+        `Anthropic API error: ${response.status}`,
     );
   }
 
@@ -110,7 +112,10 @@ export async function* streamAnthropicCompletion(
         try {
           const event = JSON.parse(trimmed.slice(6)) as AnthropicStreamEvent;
 
-          if (event.type === "content_block_delta" && event.delta?.type === "text_delta") {
+          if (
+            event.type === "content_block_delta" &&
+            event.delta?.type === "text_delta"
+          ) {
             if (event.delta.text) {
               yield { type: "token", content: event.delta.text };
             }

@@ -14,7 +14,10 @@ function getModelRates(modelId: string): {
   outputPer1M: number;
 } {
   const model = getModelById(modelId);
-  if (model?.inputCostPer1M !== undefined && model?.outputCostPer1M !== undefined) {
+  if (
+    model?.inputCostPer1M !== undefined &&
+    model?.outputCostPer1M !== undefined
+  ) {
     return {
       inputPer1M: model.inputCostPer1M,
       outputPer1M: model.outputCostPer1M,

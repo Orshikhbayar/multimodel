@@ -58,7 +58,9 @@ export async function* streamGoogleCompletion(
   // Convert OpenAI-style messages to Gemini contents format.
   // System messages become a systemInstruction, others become contents.
   const systemMessages = options.messages.filter((m) => m.role === "system");
-  const conversationMessages = options.messages.filter((m) => m.role !== "system");
+  const conversationMessages = options.messages.filter(
+    (m) => m.role !== "system",
+  );
   const systemInstruction =
     systemMessages.length > 0
       ? { parts: [{ text: systemMessages.map((m) => m.content).join("\n") }] }
@@ -91,7 +93,8 @@ export async function* streamGoogleCompletion(
     const errorData = await response.json().catch(() => ({}));
     throw new Error(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (errorData as any).error?.message || `Google API error: ${response.status}`,
+      (errorData as any).error?.message ||
+        `Google API error: ${response.status}`,
     );
   }
 

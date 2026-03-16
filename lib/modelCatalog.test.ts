@@ -89,7 +89,9 @@ describe("modelCatalog", () => {
   it("output rate is always >= input rate (models charge more for generation)", () => {
     for (const model of MODELS) {
       if (model.inputCostPer1M && model.outputCostPer1M) {
-        expect(model.outputCostPer1M).toBeGreaterThanOrEqual(model.inputCostPer1M);
+        expect(model.outputCostPer1M).toBeGreaterThanOrEqual(
+          model.inputCostPer1M,
+        );
       }
     }
   });

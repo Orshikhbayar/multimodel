@@ -89,9 +89,13 @@ export async function POST(request: NextRequest) {
   Sentry.setUser({ id: sessionUserId });
   Sentry.setTag("requestId", requestId);
 
-  const permission = await checkStreamPermissionAsync(sessionUserId, undefined, {
-    email: sessionEmail,
-  });
+  const permission = await checkStreamPermissionAsync(
+    sessionUserId,
+    undefined,
+    {
+      email: sessionEmail,
+    },
+  );
 
   if (!permission.allowed) {
     const headers = getRateLimitHeaders(permission.rateLimit);
@@ -191,7 +195,8 @@ export async function POST(request: NextRequest) {
     }
 
     const oversizedMessage = messages.find(
-      (m) => typeof m.content === "string" && m.content.length > MAX_MESSAGE_CHARS,
+      (m) =>
+        typeof m.content === "string" && m.content.length > MAX_MESSAGE_CHARS,
     );
     if (oversizedMessage) {
       releaseConcurrencySlot(sessionUserId, streamId);

@@ -166,7 +166,8 @@ describe("githubTools", () => {
             maybeSingle: vi.fn(async () => ({
               data: {
                 id: "int-1",
-                encrypted_access_token: Buffer.from("ghp_test_token").toString("base64"),
+                encrypted_access_token:
+                  Buffer.from("ghp_test_token").toString("base64"),
               },
               error: null,
             })),
@@ -238,7 +239,8 @@ describe("githubTools", () => {
             maybeSingle: vi.fn(async () => ({
               data: {
                 id: "int-1",
-                encrypted_access_token: Buffer.from("ghp_test_token").toString("base64"),
+                encrypted_access_token:
+                  Buffer.from("ghp_test_token").toString("base64"),
               },
               error: null,
             })),
@@ -306,7 +308,8 @@ describe("githubTools", () => {
             maybeSingle: vi.fn(async () => ({
               data: {
                 id: "int-1",
-                encrypted_access_token: Buffer.from("ghp_test_token").toString("base64"),
+                encrypted_access_token:
+                  Buffer.from("ghp_test_token").toString("base64"),
               },
               error: null,
             })),
@@ -373,7 +376,8 @@ describe("githubTools", () => {
             maybeSingle: vi.fn(async () => ({
               data: {
                 id: "int-1",
-                encrypted_access_token: Buffer.from("ghp_test_token").toString("base64"),
+                encrypted_access_token:
+                  Buffer.from("ghp_test_token").toString("base64"),
               },
               error: null,
             })),
@@ -443,7 +447,8 @@ describe("githubTools", () => {
             maybeSingle: vi.fn(async () => ({
               data: {
                 id: "int-1",
-                encrypted_access_token: Buffer.from("ghp_test_token").toString("base64"),
+                encrypted_access_token:
+                  Buffer.from("ghp_test_token").toString("base64"),
               },
               error: null,
             })),
@@ -634,7 +639,8 @@ ${Array.from({ length: 100 }, (_, i) => `+added line ${i}`).join("\n")}`;
             maybeSingle: vi.fn(async () => ({
               data: {
                 id: "int-1",
-                encrypted_access_token: Buffer.from("ghp_test_token").toString("base64"),
+                encrypted_access_token:
+                  Buffer.from("ghp_test_token").toString("base64"),
               },
               error: null,
             })),
@@ -708,7 +714,8 @@ ${Array.from({ length: 100 }, (_, i) => `+added line ${i}`).join("\n")}`;
             maybeSingle: vi.fn(async () => ({
               data: {
                 id: "int-1",
-                encrypted_access_token: Buffer.from("ghp_test_token").toString("base64"),
+                encrypted_access_token:
+                  Buffer.from("ghp_test_token").toString("base64"),
               },
               error: null,
             })),
