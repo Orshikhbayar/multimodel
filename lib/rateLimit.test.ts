@@ -1,9 +1,18 @@
 import { describe, expect, it, vi } from "vitest";
 
+vi.mock("@/lib/rateLimitUpstash", () => ({
+  getUpstashRateLimiter: vi.fn().mockResolvedValue(null),
+  _resetUpstashLimiterCache: vi.fn(),
+}));
+
+import * as rateLimitUpstash from "@/lib/rateLimitUpstash";
+import type { UpstashRateLimiter } from "@/lib/rateLimitUpstash";
+
 import {
   acquireConcurrencySlot,
   checkRateLimit,
   checkStreamPermission,
+  checkStreamPermissionAsync,
   consumeRateLimitSlot,
   getConcurrencyStatus,
   getRateLimitHeaders,
@@ -201,5 +210,96 @@ describe("rateLimit", () => {
     expect(getConcurrencyStatus(userId).active).toBe(1);
     resetUserLimits(userId);
     expect(getConcurrencyStatus(userId).active).toBe(0);
+  });
+});
+
+describe("checkStreamPermissionAsync", () => {
+  const mockGetUpstash = vi.mocked(rateLimitUpstash.getUpstashRateLimiter);
+
+  it("bypasses limits for unlimited tester via async path", async () => {
+    resetAllLimits();
+    vi.stubEnv("ADMIN_EMAIL", "orshikhbayar@gmail.com");
+
+    const result = await checkStreamPermissionAsync("async-tester", undefined, {
+      email: "orshikhbayar@gmail.com",
+    });
+
+    expect(result.allowed).toBe(true);
+    expect(result.rateLimit.remaining).toBe(Number.MAX_SAFE_INTEGER);
+    expect(result.concurrency.streamId).toBeTruthy();
+  });
+
+  it("falls back to in-memory check when Upstash is not configured", async () => {
+    resetAllLimits();
+    mockGetUpstash.mockResolvedValue(null);
+
+    const result = await checkStreamPermissionAsync("async-fallback");
+    expect(result.allowed).toBe(true);
+    expect(result.concurrency.streamId).toBeTruthy();
+  });
+
+  it("returns rate_limit denial when Upstash rejects the request", async () => {
+    resetAllLimits();
+    const fakeLimiter: UpstashRateLimiter = {
+      limit: vi.fn().mockResolvedValue({
+        success: false,
+        remaining: 0,
+        reset: Date.now() + 30_000,
+        limit: 20,
+      }),
+    };
+    mockGetUpstash.mockResolvedValue(fakeLimiter);
+
+    const result = await checkStreamPermissionAsync("async-rate-denied");
+    expect(result.allowed).toBe(false);
+    expect(result.reason).toBe("rate_limit");
+    expect(result.rateLimit.remaining).toBe(0);
+
+    mockGetUpstash.mockResolvedValue(null);
+  });
+
+  it("returns concurrency_limit when Upstash passes but concurrency is full", async () => {
+    resetAllLimits();
+    const userId = "async-concurrency-denied";
+    const config = { ...RATE_LIMIT_CONFIG, maxConcurrentStreams: 1 };
+
+    // Fill up concurrency manually
+    acquireConcurrencySlot(userId, config);
+
+    const fakeLimiter: UpstashRateLimiter = {
+      limit: vi.fn().mockResolvedValue({
+        success: true,
+        remaining: 19,
+        reset: Date.now() + 60_000,
+        limit: 20,
+      }),
+    };
+    mockGetUpstash.mockResolvedValue(fakeLimiter);
+
+    const result = await checkStreamPermissionAsync(userId, config);
+    expect(result.allowed).toBe(false);
+    expect(result.reason).toBe("concurrency_limit");
+
+    mockGetUpstash.mockResolvedValue(null);
+  });
+
+  it("allows stream and acquires concurrency when Upstash passes", async () => {
+    resetAllLimits();
+    const fakeLimiter: UpstashRateLimiter = {
+      limit: vi.fn().mockResolvedValue({
+        success: true,
+        remaining: 18,
+        reset: Date.now() + 60_000,
+        limit: 20,
+      }),
+    };
+    mockGetUpstash.mockResolvedValue(fakeLimiter);
+
+    const result = await checkStreamPermissionAsync("async-allowed");
+    expect(result.allowed).toBe(true);
+    expect(result.concurrency.streamId).toBeTruthy();
+    expect(result.rateLimit.remaining).toBe(18);
+
+    mockGetUpstash.mockResolvedValue(null);
   });
 });
