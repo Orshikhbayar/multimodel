@@ -485,6 +485,9 @@ describe("executeToolRequest pipeline", () => {
           tool_name: "read_tool",
           input: {},
         });
+        // Attach a handler immediately so the rejection is never "unhandled"
+        // while fake timers are advancing (before the expect below runs).
+        void promise.catch(() => {});
 
         // Advance past DEFAULT_TIMEOUT_MS (90_000) so the executor's
         // internal timer fires and rejects the promise.

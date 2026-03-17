@@ -9,16 +9,22 @@ const {
   mockCreateSupabaseAdminClient: vi.fn(),
   mockIsUnlimitedTesterEmail: vi.fn(() => false),
   mockIsUnlimitedTesterId: vi.fn(() => false),
-  mockCalculateUsageCostCents: vi.fn((params: { modelId: string; promptTokens: number; completionTokens: number }) => {
-    const rate = {
-      "openai/gpt-4o-mini": { inputPer1k: 0.15, outputPer1k: 0.6 },
-      default: { inputPer1k: 0.15, outputPer1k: 0.6 },
-    }[params.modelId as string] || { inputPer1k: 0.15, outputPer1k: 0.6 };
-    const usd =
-      (params.promptTokens / 1000) * rate.inputPer1k +
-      (params.completionTokens / 1000) * rate.outputPer1k;
-    return Math.max(1, Math.round(usd * 100));
-  }),
+  mockCalculateUsageCostCents: vi.fn(
+    (params: {
+      modelId: string;
+      promptTokens: number;
+      completionTokens: number;
+    }) => {
+      const rate = {
+        "openai/gpt-4o-mini": { inputPer1k: 0.15, outputPer1k: 0.6 },
+        default: { inputPer1k: 0.15, outputPer1k: 0.6 },
+      }[params.modelId as string] || { inputPer1k: 0.15, outputPer1k: 0.6 };
+      const usd =
+        (params.promptTokens / 1000) * rate.inputPer1k +
+        (params.completionTokens / 1000) * rate.outputPer1k;
+      return Math.max(1, Math.round(usd * 100));
+    },
+  ),
 }));
 
 vi.mock("@/lib/supabase/admin", () => ({
@@ -59,16 +65,22 @@ beforeEach(() => {
   // Re-establish default implementations after resetAllMocks
   mockIsUnlimitedTesterId.mockImplementation(() => false);
   mockIsUnlimitedTesterEmail.mockImplementation(() => false);
-  mockCalculateUsageCostCents.mockImplementation((params: { modelId: string; promptTokens: number; completionTokens: number }) => {
-    const rate = {
-      "openai/gpt-4o-mini": { inputPer1k: 0.15, outputPer1k: 0.6 },
-      default: { inputPer1k: 0.15, outputPer1k: 0.6 },
-    }[params.modelId] || { inputPer1k: 0.15, outputPer1k: 0.6 };
-    const usd =
-      (params.promptTokens / 1000) * rate.inputPer1k +
-      (params.completionTokens / 1000) * rate.outputPer1k;
-    return Math.max(1, Math.round(usd * 100));
-  });
+  mockCalculateUsageCostCents.mockImplementation(
+    (params: {
+      modelId: string;
+      promptTokens: number;
+      completionTokens: number;
+    }) => {
+      const rate = {
+        "openai/gpt-4o-mini": { inputPer1k: 0.15, outputPer1k: 0.6 },
+        default: { inputPer1k: 0.15, outputPer1k: 0.6 },
+      }[params.modelId] || { inputPer1k: 0.15, outputPer1k: 0.6 };
+      const usd =
+        (params.promptTokens / 1000) * rate.inputPer1k +
+        (params.completionTokens / 1000) * rate.outputPer1k;
+      return Math.max(1, Math.round(usd * 100));
+    },
+  );
 
   // Provide a default working admin client so tests that don't need a custom
   // mock don't crash with "Cannot read properties of undefined (reading 'from')"

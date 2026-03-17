@@ -10,7 +10,11 @@ import {
   extractOAuthAvatarUrl,
   getOAuthProviderRequiringAvatar,
 } from "@/lib/supabase/oauthProfile";
-import { useConversationStore, useWorkspaceStore } from "@/lib/stores";
+import {
+  useConversationStore,
+  useSettingsStore,
+  useWorkspaceStore,
+} from "@/lib/stores";
 import { useSessionStore } from "@/lib/state/sessionStore";
 import { useUserStore } from "@/lib/state/userStore";
 import { getInitialFromName } from "@/lib/state/utils";
@@ -91,6 +95,7 @@ export function SupabaseBootstrap() {
         locale: useUserStore.getState().user.locale,
       });
       useWorkspaceStore.getState().setWorkspaceId("e2e-workspace");
+      useSettingsStore.getState().dismissOnboarding();
       return () => {
         cancelled = true;
       };
