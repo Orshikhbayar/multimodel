@@ -5,7 +5,10 @@ import type { PptxData, SlideData } from "./pptxTypes";
  * Runs CLIENT-SIDE — no model cooperation needed.
  * Each ## header becomes a slide. Bullets become slide content.
  */
-export function markdownToPptxData(markdown: string, fallbackTitle?: string): PptxData | null {
+export function markdownToPptxData(
+  markdown: string,
+  fallbackTitle?: string,
+): PptxData | null {
   const lines = markdown.split("\n");
   const slides: SlideData[] = [];
   let deckTitle = fallbackTitle || "Presentation";
@@ -39,7 +42,11 @@ export function markdownToPptxData(markdown: string, fallbackTitle?: string): Pp
       currentSlide.bullets.push(cleanMarkdown(bulletMatch[1]));
     } else if (numberedMatch && currentSlide) {
       currentSlide.bullets.push(cleanMarkdown(numberedMatch[1]));
-    } else if (line.trim() && currentSlide && currentSlide.bullets.length === 0) {
+    } else if (
+      line.trim() &&
+      currentSlide &&
+      currentSlide.bullets.length === 0
+    ) {
       // Non-bullet text goes as a bullet too if it's not empty
       currentSlide.bullets.push(cleanMarkdown(line.trim()));
     }

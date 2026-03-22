@@ -6,7 +6,13 @@ import type { PptxData } from "@/lib/utils/pptxTypes";
 
 type Status = "idle" | "generating" | "done" | "error";
 
-export default function PptxBlock({ json, compact }: { json: string; compact?: boolean }) {
+export default function PptxBlock({
+  json,
+  compact,
+}: {
+  json: string;
+  compact?: boolean;
+}) {
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string>("");
 
@@ -46,7 +52,9 @@ export default function PptxBlock({ json, compact }: { json: string; compact?: b
   }
 
   return (
-    <div className={`rounded-xl border border-border/60 bg-[hsl(var(--app-panel-2)/0.6)] ${compact ? "p-3" : "p-4"}`}>
+    <div
+      className={`rounded-xl border border-border/60 bg-[hsl(var(--app-panel-2)/0.6)] ${compact ? "p-3" : "p-4"}`}
+    >
       <div className="flex items-center gap-3">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-orange-500/15">
           <FileText className="h-5 w-5 text-orange-400" />
@@ -54,7 +62,8 @@ export default function PptxBlock({ json, compact }: { json: string; compact?: b
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium">{parsed.title}</p>
           <p className="text-xs text-muted-foreground">
-            {parsed.slides.length} slide{parsed.slides.length !== 1 ? "s" : ""} &middot; PowerPoint
+            {parsed.slides.length} slide{parsed.slides.length !== 1 ? "s" : ""}{" "}
+            &middot; PowerPoint
           </p>
         </div>
         <button
@@ -69,7 +78,11 @@ export default function PptxBlock({ json, compact }: { json: string; compact?: b
           ) : (
             <Download className="h-3.5 w-3.5" />
           )}
-          {status === "generating" ? "Generating..." : status === "done" ? "Download again" : "Download .pptx"}
+          {status === "generating"
+            ? "Generating..."
+            : status === "done"
+              ? "Download again"
+              : "Download .pptx"}
         </button>
       </div>
       {status === "error" && (

@@ -1287,13 +1287,19 @@ export function useChatActions() {
 
     // Build ONE consolidated system message (locale + viz + pptx)
     const localeInstruction = getLocaleResponseInstruction(locale);
-    const consolidatedPrompt = buildConsolidatedSystemPrompt(content, localeInstruction);
+    const consolidatedPrompt = buildConsolidatedSystemPrompt(
+      content,
+      localeInstruction,
+    );
     const apiMessages: {
       role: "system" | "user" | "assistant";
       content: string;
     }[] = [];
     if (instructions.trim()) {
-      apiMessages.push({ role: "system", content: `${instructions}\n\n${consolidatedPrompt}` });
+      apiMessages.push({
+        role: "system",
+        content: `${instructions}\n\n${consolidatedPrompt}`,
+      });
     } else {
       apiMessages.push({ role: "system", content: consolidatedPrompt });
     }
@@ -1445,13 +1451,19 @@ export function useChatActions() {
 
     // Build ONE consolidated system message (locale + viz + pptx)
     const localeInstruction2 = getLocaleResponseInstruction(locale);
-    const consolidatedPrompt2 = buildConsolidatedSystemPrompt(content, localeInstruction2);
+    const consolidatedPrompt2 = buildConsolidatedSystemPrompt(
+      content,
+      localeInstruction2,
+    );
     const apiMessages: {
       role: "system" | "user" | "assistant";
       content: string;
     }[] = [];
     if (instructions.trim()) {
-      apiMessages.push({ role: "system", content: `${instructions}\n\n${consolidatedPrompt2}` });
+      apiMessages.push({
+        role: "system",
+        content: `${instructions}\n\n${consolidatedPrompt2}`,
+      });
     } else {
       apiMessages.push({ role: "system", content: consolidatedPrompt2 });
     }

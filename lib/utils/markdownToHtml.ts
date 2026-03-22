@@ -11,9 +11,7 @@ export function markdownToInteractiveHtml(markdown: string): string {
     return "";
   }
 
-  const title = sections[0].isHeader
-    ? sections[0].title
-    : "Interactive Guide";
+  const title = sections[0].isHeader ? sections[0].title : "Interactive Guide";
 
   const tabsHtml = sections
     .filter((s) => s.isHeader)
@@ -36,11 +34,7 @@ export function markdownToInteractiveHtml(markdown: string): string {
   // If only 1 section (no headers), render as a single card
   if (sections.filter((s) => s.isHeader).length <= 1) {
     const content = sections.map((s) => renderSectionContent(s)).join("\n");
-    return buildHtmlDoc(
-      title,
-      `<div class="card">${content}</div>`,
-      false,
-    );
+    return buildHtmlDoc(title, `<div class="card">${content}</div>`, false);
   }
 
   return buildHtmlDoc(
@@ -121,11 +115,7 @@ function escHtml(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
-function buildHtmlDoc(
-  title: string,
-  body: string,
-  hasTabs: boolean,
-): string {
+function buildHtmlDoc(title: string, body: string, hasTabs: boolean): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -155,12 +145,16 @@ code{background:#0f3460;padding:2px 6px;border-radius:4px;font-size:.85em;color:
 <body>
 <h1>${escHtml(title)}</h1>
 ${body}
-${hasTabs ? `<script>
+${
+  hasTabs
+    ? `<script>
 function showTab(idx){
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===idx));
   document.querySelectorAll('.panel').forEach((p,i)=>p.classList.toggle('active',i===idx));
 }
-</script>` : ""}
+</script>`
+    : ""
+}
 </body>
 </html>`;
 }
