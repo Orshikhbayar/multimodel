@@ -166,7 +166,7 @@ export default function InteractiveBlock({
     return (
       <div className="my-3 rounded-xl border border-yellow-500/30 bg-yellow-500/5 p-4">
         <p className="text-xs text-yellow-400 mb-2 font-medium">
-          Visualization couldn&apos;t render — showing code instead
+          Visualization could not render — showing code instead
         </p>
         <pre className="overflow-auto rounded-lg bg-muted/20 p-3 text-xs font-mono text-foreground/80 max-h-[400px]">
           <code>{html}</code>
