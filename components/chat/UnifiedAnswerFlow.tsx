@@ -168,7 +168,7 @@ export function UnifiedAnswerFlow({
           <p className="mb-2 font-semibold">{t("chat.unifiedAnswer")}:</p>
           <div className="chat-markdown prose prose-sm dark:prose-invert max-w-none">
             {splitInteractiveBlocks(
-              unifiedRun.text || t("chat.unifiedCollecting")
+              unifiedRun.text || t("chat.unifiedCollecting"),
             ).map((segment, i) =>
               segment.type === "pptx" ? (
                 <PptxBlock key={i} jsonString={segment.content} />
@@ -209,12 +209,14 @@ export function UnifiedAnswerFlow({
                         />
                       );
                     },
-                    pre: ({ children }) => <pre className="my-2">{children}</pre>,
+                    pre: ({ children }) => (
+                      <pre className="my-2">{children}</pre>
+                    ),
                   }}
                 >
                   {segment.content}
                 </ReactMarkdown>
-              )
+              ),
             )}
           </div>
         </div>

@@ -8,7 +8,10 @@ interface InteractiveBlockProps {
   compact?: boolean;
 }
 
-export default function InteractiveBlock({ html, compact }: InteractiveBlockProps) {
+export default function InteractiveBlock({
+  html,
+  compact,
+}: InteractiveBlockProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState(compact ? 300 : 400);
@@ -45,15 +48,24 @@ export default function InteractiveBlock({ html, compact }: InteractiveBlockProp
 
   useEffect(() => {
     const handler = (event: MessageEvent) => {
-      if (event.data?.type === 'interactive-block-resize' && typeof event.data.height === 'number') {
-        if (iframeRef.current && event.source === iframeRef.current.contentWindow) {
-          const newHeight = Math.min(Math.max(event.data.height + 20, 200), 2000);
+      if (
+        event.data?.type === "interactive-block-resize" &&
+        typeof event.data.height === "number"
+      ) {
+        if (
+          iframeRef.current &&
+          event.source === iframeRef.current.contentWindow
+        ) {
+          const newHeight = Math.min(
+            Math.max(event.data.height + 20, 200),
+            2000,
+          );
           setHeight(newHeight);
         }
       }
     };
-    window.addEventListener('message', handler);
-    return () => window.removeEventListener('message', handler);
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
   }, []);
 
   // Lazy loading via IntersectionObserver
@@ -66,7 +78,7 @@ export default function InteractiveBlock({ html, compact }: InteractiveBlockProp
           observer.disconnect();
         }
       },
-      { rootMargin: '200px' },
+      { rootMargin: "200px" },
     );
     observer.observe(containerRef.current);
     return () => observer.disconnect();
@@ -104,7 +116,11 @@ export default function InteractiveBlock({ html, compact }: InteractiveBlockProp
                 className="p-1.5 rounded-md hover:bg-muted/50 text-muted-foreground transition"
                 title="Copy HTML"
               >
-                {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                {copied ? (
+                  <Check className="h-4 w-4 text-emerald-400" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
               </button>
               <button
                 onClick={() => setFullscreen(false)}
@@ -137,7 +153,9 @@ export default function InteractiveBlock({ html, compact }: InteractiveBlockProp
   if (renderError) {
     return (
       <div className="my-3 rounded-xl border border-yellow-500/30 bg-yellow-500/5 p-4">
-        <p className="text-xs text-yellow-400 mb-2 font-medium">Visualization couldn&apos;t render — showing code instead</p>
+        <p className="text-xs text-yellow-400 mb-2 font-medium">
+          Visualization couldn&apos;t render — showing code instead
+        </p>
         <pre className="overflow-auto rounded-lg bg-muted/20 p-3 text-xs font-mono text-foreground/80 max-h-[400px]">
           <code>{html}</code>
         </pre>
@@ -172,7 +190,11 @@ export default function InteractiveBlock({ html, compact }: InteractiveBlockProp
             className="p-1 rounded hover:bg-muted/50 text-muted-foreground transition"
             title="Copy HTML"
           >
-            {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+            {copied ? (
+              <Check className="h-3.5 w-3.5 text-emerald-400" />
+            ) : (
+              <Copy className="h-3.5 w-3.5" />
+            )}
           </button>
         </div>
       </div>
@@ -192,7 +214,10 @@ export default function InteractiveBlock({ html, compact }: InteractiveBlockProp
           onError={handleIframeError}
         />
       ) : (
-        <div style={{ height: `${height}px` }} className="rounded-xl border border-white/[0.06] bg-muted/10 animate-pulse" />
+        <div
+          style={{ height: `${height}px` }}
+          className="rounded-xl border border-white/[0.06] bg-muted/10 animate-pulse"
+        />
       )}
     </div>
   );

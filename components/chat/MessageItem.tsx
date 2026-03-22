@@ -207,7 +207,7 @@ export function MessageItem({
                         ? t("chat.waitingForSlot")
                         : selectedRun?.status === "streaming"
                           ? t("chat.thinking")
-                          : "")
+                          : ""),
                   ).map((segment, i) =>
                     segment.type === "pptx" ? (
                       <PptxBlock key={i} jsonString={segment.content} />
@@ -237,14 +237,16 @@ export function MessageItem({
                             const language =
                               className?.replace("language-", "") ?? "text";
                             const code = String(children).replace(/\n$/, "");
-                            return <CodeBlock code={code} language={language} />;
+                            return (
+                              <CodeBlock code={code} language={language} />
+                            );
                           },
                           pre: ({ children }) => <>{children}</>,
                         }}
                       >
                         {segment.content}
                       </ReactMarkdown>
-                    )
+                    ),
                   )}
                 </>
               )}
