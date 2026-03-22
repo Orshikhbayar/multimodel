@@ -206,19 +206,10 @@ describe("billing actions", () => {
     );
   });
 
-  it("purchases top up", async () => {
-    const result = await purchaseTopUp({
-      packId: "starter",
-      displayCurrency: "USD",
-    });
-    expect(result?.topUpCreditsCents).toBeGreaterThan(50);
-    expect(mockRpc).toHaveBeenCalledWith(
-      "billing_purchase_topup_manual",
-      expect.objectContaining({
-        p_credit_delta_int: 1000,
-        p_currency: "USD",
-      }),
-    );
+  it("rejects unknown top-up pack", async () => {
+    await expect(
+      purchaseTopUp({ packId: "starter", displayCurrency: "USD" }),
+    ).rejects.toThrow("Invalid top-up pack");
   });
 
   it("sets billing currency", async () => {
@@ -264,20 +255,10 @@ describe("billing actions", () => {
       expect(mockRpc).not.toHaveBeenCalled();
     });
 
-    it("purchaseTopUp throws error when RPC fails", async () => {
-      mockRpc.mockImplementation((fn: string) => {
-        if (fn === "billing_purchase_topup_manual") {
-          return Promise.resolve({
-            data: null,
-            error: { message: "Insufficient credits for transaction" },
-          });
-        }
-        return Promise.resolve({ data: null, error: null });
-      });
-
+    it("purchaseTopUp throws error for invalid pack", async () => {
       await expect(
         purchaseTopUp({ packId: "starter", displayCurrency: "USD" }),
-      ).rejects.toThrow("Failed to apply top-up");
+      ).rejects.toThrow("Invalid top-up pack");
     });
 
     it("purchaseTopUp returns null when user is not authenticated", async () => {

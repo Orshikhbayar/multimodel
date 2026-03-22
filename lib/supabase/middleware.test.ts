@@ -48,7 +48,7 @@ describe("supabase middleware", () => {
     mockGetClaims.mockResolvedValue({ data: { claims: null } });
 
     const response = await updateSession(
-      createMockRequest("http://localhost:3000/projects") as never,
+      createMockRequest("http://localhost:3000/chat") as never,
     );
 
     expect(response.status).toBe(307);

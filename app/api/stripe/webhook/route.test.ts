@@ -95,7 +95,7 @@ describe("stripe webhook route", () => {
     expect(mockRpc).not.toHaveBeenCalled();
   });
 
-  it("handles top-up checkout completion idempotently", async () => {
+  it("ignores top-up checkout when pack is not found", async () => {
     mockParseEvent.mockReturnValue({
       id: "evt_topup",
       type: "checkout.session.completed",
@@ -113,19 +113,8 @@ describe("stripe webhook route", () => {
     const response = await POST(requestWithSignature("{}"));
 
     expect(response.status).toBe(200);
-    expect(mockRpc).toHaveBeenCalledWith("apply_topup_webhook", {
-      p_user_id: "user-1",
-      p_credit_delta_int: 1000,
-      p_amount_usd_int: 1200,
-      p_stripe_event_id: "evt_topup",
-      p_stripe_object_id: "pi_topup",
-      p_reference_id: "checkout:cs_topup",
-      p_metadata: {
-        checkout_session_id: "cs_topup",
-        pack_id: "starter",
-      },
-    });
-    expect(stripeEvents.insert).toHaveBeenCalled();
+    // TOP_UP_PACKS is empty, so the webhook returns early without calling RPC
+    expect(mockRpc).not.toHaveBeenCalled();
   });
 
   it("applies reversal and lock metadata for disputes", async () => {
