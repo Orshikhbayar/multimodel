@@ -20,20 +20,6 @@ import Metrics from "@/lib/metrics";
 import type { ChatMessage } from "@/lib/api/types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-const VISUALIZATION_SYSTEM_PROMPT = `You are a helpful AI assistant with a special visualization capability.
-
-When the user asks for anything visual or uses words like "visualize", "visualized", "visual", "interactive", "diagram", "chart", or "dashboard", you MUST respond with an interactive HTML artifact wrapped in a fenced code block tagged \`interactive-html\`.
-
-Example format:
-\`\`\`interactive-html
-<!DOCTYPE html>
-<html>
-<head><style>body{margin:0;font-family:system-ui;background:#1a1a2e;color:#e0e0e0}</style></head>
-<body><!-- interactive content --><script>/* interactivity */</script></body>
-</html>
-\`\`\`
-
-Rules: Self-contained HTML only (inline CSS/JS). Use dark theme (#1a1a2e background). Make it interactive (tabs, accordions, hover effects). Allowed CDN: Chart.js, Mermaid. No alert/confirm/prompt. You may add markdown text before or after the block.`;
 import { getProviderFromModelId } from "@/lib/supabase/chatPersistence";
 import { estimateTokenCostUsd } from "@/lib/billing/estimator";
 import {
@@ -486,16 +472,9 @@ export async function POST(request: NextRequest) {
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          // Build messages array with system prompt for interactive visualization
-          const systemMessage: ChatMessage = {
-            role: "system",
-            content: VISUALIZATION_SYSTEM_PROMPT,
-          };
-          const messagesWithSystem = [systemMessage, ...messages];
-
           const streamOptions: StreamOptions = {
             model: resolvedModelId,
-            messages: messagesWithSystem,
+            messages,
             temperature,
             maxTokens,
             signal: request.signal,

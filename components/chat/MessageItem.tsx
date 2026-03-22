@@ -19,6 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ContentColumn } from "@/components/layout";
 import InteractiveBlock from "./InteractiveBlock";
+import PptxBlock from "./PptxBlock";
 import { splitInteractiveBlocks } from "@/lib/utils/interactiveBlocks";
 import { ExpandableMessage } from "./ExpandableMessage";
 import { UnifiedAnswerFlow } from "./UnifiedAnswerFlow";
@@ -210,6 +211,8 @@ export function MessageItem({
                   ).map((segment, i) =>
                     segment.type === "interactive" ? (
                       <InteractiveBlock key={i} html={segment.content} />
+                    ) : segment.type === "pptx" ? (
+                      <PptxBlock key={i} json={segment.content} />
                     ) : (
                       <ReactMarkdown
                         key={i}

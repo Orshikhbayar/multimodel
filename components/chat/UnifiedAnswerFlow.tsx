@@ -10,6 +10,7 @@ import { useI18n } from "@/lib/i18n";
 import type { Run } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import InteractiveBlock from "./InteractiveBlock";
+import PptxBlock from "./PptxBlock";
 import { splitInteractiveBlocks } from "@/lib/utils/interactiveBlocks";
 import {
   PrismLight,
@@ -171,6 +172,8 @@ export function UnifiedAnswerFlow({
             ).map((segment, i) =>
               segment.type === "interactive" ? (
                 <InteractiveBlock key={i} html={segment.content} compact />
+              ) : segment.type === "pptx" ? (
+                <PptxBlock key={i} json={segment.content} compact />
               ) : (
                 <ReactMarkdown
                   key={i}

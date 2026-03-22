@@ -1,11 +1,12 @@
 /**
- * Splits a message string into segments of plain text and interactive-html blocks.
- * Returns an array of { type: 'text' | 'interactive', content: string } objects.
+ * Splits a message string into segments of plain text, interactive-html blocks,
+ * and pptx-slides blocks.
  */
-export function splitInteractiveBlocks(
-  content: string,
-): Array<{ type: "text" | "interactive"; content: string }> {
-  const segments: Array<{ type: "text" | "interactive"; content: string }> = [];
+export type SegmentType = "text" | "interactive" | "pptx";
+export type Segment = { type: SegmentType; content: string };
+
+export function splitInteractiveBlocks(content: string): Segment[] {
+  const segments: Segment[] = [];
 
   // Convert ```mermaid blocks to interactive-html blocks
   content = content.replace(
@@ -28,9 +29,9 @@ export function splitInteractiveBlocks(
     },
   );
 
-  // Match ```interactive-html ... ``` blocks (case-insensitive, allow variations)
+  // Combined regex: match interactive-html OR pptx-slides blocks
   const regex =
-    /```(?:interactive-html|interactive[-_\s]?html)\s*\n([\s\S]*?)```/gi;
+    /```(?:(interactive-html|interactive[-_\s]?html)|(pptx-slides|pptx[-_\s]?slides))\s*\n([\s\S]*?)```/gi;
   let lastIndex = 0;
   let match;
 
@@ -39,13 +40,13 @@ export function splitInteractiveBlocks(
       const text = content.slice(lastIndex, match.index).trim();
       if (text) segments.push({ type: "text", content: text });
     }
-    segments.push({ type: "interactive", content: match[1].trim() });
+    const blockType: SegmentType = match[1] ? "interactive" : "pptx";
+    segments.push({ type: blockType, content: match[3].trim() });
     lastIndex = match.index + match[0].length;
   }
 
-  // FALLBACK: If no interactive-html blocks found, check for ```html blocks
-  // that contain full HTML documents. Some models output ```html instead of
-  // ```interactive-html despite the instruction.
+  // FALLBACK: If no special blocks found, check for ```html blocks
+  // that contain full HTML documents (some models output ```html instead)
   if (segments.length === 0) {
     const htmlFallbackRegex = /```html\s*\n([\s\S]*?)```/gi;
     let htmlMatch;
@@ -53,7 +54,6 @@ export function splitInteractiveBlocks(
 
     while ((htmlMatch = htmlFallbackRegex.exec(content)) !== null) {
       const htmlContent = htmlMatch[1].trim();
-      // Only treat as interactive if it looks like a full HTML document
       if (htmlContent.match(/<!doctype\s+html|<html|<head[\s>]|<body[\s>]/i)) {
         if (htmlMatch.index > lastIndex) {
           const text = content.slice(lastIndex, htmlMatch.index).trim();
@@ -64,13 +64,11 @@ export function splitInteractiveBlocks(
       }
     }
 
-    // Remaining text after fallback matches
     if (lastIndex > 0 && lastIndex < content.length) {
       const text = content.slice(lastIndex).trim();
       if (text) segments.push({ type: "text", content: text });
     }
   } else {
-    // Remaining text after primary matches
     if (lastIndex < content.length) {
       const text = content.slice(lastIndex).trim();
       if (text) segments.push({ type: "text", content: text });
