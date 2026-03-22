@@ -50,7 +50,7 @@ function buildConsolidatedSystemPrompt(
   // Tell model to use clear structure (headers + bullets) so client-side
   // transformation produces good results
   const VIZ_TRIGGERS =
-    /\b(visualiz|visual|interactive|diagram|chart|dashboard|infographic|flowchart|graph|timeline)\b/i;
+    /\b(visualiz\w*|interactive|diagram|chart|dashboard|infographic|flowchart|graph|timeline)\b/i;
   const PPTX_TRIGGERS =
     /\b(presentation|slide|pptx|powerpoint|deck|pitch\s*deck)\b/i;
 
