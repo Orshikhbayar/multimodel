@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Check, Copy } from "lucide-react";
+import { Check, Copy, ThumbsUp } from "lucide-react";
 import { Brain, Cloud, Cpu, Flame, Layers, Sparkles } from "lucide-react";
 
 import { useI18n } from "@/lib/i18n";
@@ -54,6 +54,7 @@ export function UnifiedAnswerFlow({
   perspectiveRuns,
 }: UnifiedAnswerFlowProps) {
   const { t } = useI18n();
+  const [bestAnswerRunId, setBestAnswerRunId] = useState<string | null>(null);
 
   const visibleRuns = useMemo(
     () => perspectiveRuns.slice(0, MAX_PERSPECTIVE_CARDS),
@@ -99,18 +100,38 @@ export function UnifiedAnswerFlow({
                     run.status === "streaming" &&
                       "unified-flow__perspective-card--streaming",
                     run.status === "error" && "border-destructive/40",
+                    bestAnswerRunId === run.id && "border-emerald-400/60 bg-emerald-50/10 ring-1 ring-emerald-400/30",
                   )}
                 >
                   <div className="mb-1 flex items-center gap-2 text-xs font-semibold">
                     <span className="flex h-6 w-6 items-center justify-center rounded-full border bg-muted/40">
                       <Icon className="h-3.5 w-3.5" />
                     </span>
-                    <span className="line-clamp-1">{run.model}</span>
+                    <span className="line-clamp-1 flex-1">{run.model}</span>
                     {run.status === "queued" ? (
                       <span className="rounded-full border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
                         {t("chat.queued")}
                       </span>
                     ) : null}
+                    {run.status === "done" && (
+                      <button
+                        type="button"
+                        title="Mark as best answer"
+                        onClick={() =>
+                          setBestAnswerRunId((prev) =>
+                            prev === run.id ? null : run.id,
+                          )
+                        }
+                        className={cn(
+                          "flex h-5 w-5 items-center justify-center rounded-full transition-all",
+                          bestAnswerRunId === run.id
+                            ? "bg-emerald-500/20 text-emerald-500"
+                            : "text-muted-foreground hover:text-foreground",
+                        )}
+                      >
+                        <ThumbsUp className="h-3 w-3" />
+                      </button>
+                    )}
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {sentencePreview(

@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
-  BookmarkPlus,
   Check,
   Copy,
   ExternalLink,
@@ -29,13 +28,8 @@ import {
 import { useI18n } from "@/lib/i18n";
 import type { Message, Run, ToolCall } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { analytics } from "@/lib/analytics";
 import { useChatActions } from "@/lib/hooks/useChatActions";
-import {
-  useConversationStore,
-  useSettingsStore,
-  useWorkspaceStore,
-} from "@/lib/stores";
+import { useConversationStore } from "@/lib/stores";
 
 interface MessageItemProps {
   message: Message;
@@ -74,14 +68,8 @@ export function MessageItem({
   const { sendMessage, respondToEditedMessage } = useChatActions();
   const { t, formatTime } = useI18n();
   const { updateMessageContent } = useConversationStore();
-  const workspaceId = useWorkspaceStore((state) => state.workspaceId);
-  const selectedWorkflowPackId = useSettingsStore(
-    (state) => state.selectedWorkflowPackId,
-  );
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(message.content);
-  const [savingTemplate, setSavingTemplate] = useState(false);
-  const [savedTemplate, setSavedTemplate] = useState(false);
   const editRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -101,56 +89,6 @@ export function MessageItem({
 
   const displayContent = isUser ? message.content : text;
   const displayLineCount = displayContent.split("\n").length;
-
-  const saveAsTemplate = async () => {
-    if (isUser || !workspaceId) return;
-    const contentToSave = text.trim();
-    if (!contentToSave) return;
-    setSavingTemplate(true);
-
-    try {
-      const response = await fetch("/api/templates", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          workspaceId,
-          workflowPackId: selectedWorkflowPackId ?? "importer-solo-seller",
-          title: `Saved Output ${new Date().toLocaleString()}`,
-          description: "Saved from chat output",
-          bodyMd: contentToSave,
-          inputSchema: [],
-          isSystem: false,
-          changeNote: "Saved from assistant output",
-        }),
-      });
-      const payload = (await response.json()) as {
-        error?: string;
-        template?: { id: string };
-      };
-      if (!response.ok || !payload.template?.id) {
-        throw new Error(payload.error ?? "Failed to save as template");
-      }
-
-      analytics.track("asset_saved", {
-        workspace_id: workspaceId,
-        asset_type: "template",
-        template_id: payload.template.id,
-        is_first_asset: false,
-      });
-      analytics.track("template_created", {
-        workspace_id: workspaceId,
-        template_id: payload.template.id,
-        pack_id: selectedWorkflowPackId ?? "importer-solo-seller",
-        is_system: false,
-      });
-      setSavedTemplate(true);
-      setTimeout(() => setSavedTemplate(false), 1500);
-    } catch {
-      setSavedTemplate(false);
-    } finally {
-      setSavingTemplate(false);
-    }
-  };
 
   return (
     <ContentColumn withPadding={false} className="w-full">
@@ -355,23 +293,6 @@ export function MessageItem({
             <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
               <div className="flex items-center gap-2">
                 <CopyButton text={text} />
-                <button
-                  type="button"
-                  className="hover:text-foreground transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-                  title={savedTemplate ? "Saved" : "Save as template"}
-                  onClick={() => void saveAsTemplate()}
-                  disabled={
-                    savingTemplate || !workspaceId || text.trim().length === 0
-                  }
-                >
-                  {savingTemplate ? (
-                    <LoaderSpinner />
-                  ) : savedTemplate ? (
-                    <Check className="h-4 w-4 text-green-500" />
-                  ) : (
-                    <BookmarkPlus className="h-4 w-4" />
-                  )}
-                </button>
                 <button
                   type="button"
                   className="hover:text-foreground transition-colors"

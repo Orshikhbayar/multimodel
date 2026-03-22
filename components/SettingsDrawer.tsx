@@ -1,12 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import {
-  SlidersHorizontal,
-  Sparkles,
-  UserRound,
-  Megaphone,
-} from "lucide-react";
+import { SlidersHorizontal, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -24,7 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ModelPicker } from "@/components/ModelPicker";
 import { useI18n } from "@/lib/i18n";
 import { MODELS, getProviderById, getModelById } from "@/lib/modelCatalog";
-import { MODE_OPTIONS, WORKFLOW_PRESETS, useChatStore } from "@/lib/store";
+import { MODE_OPTIONS, useChatStore } from "@/lib/store";
 import { useBillingStore } from "@/lib/billing/store";
 import { getNextPlanForSlots, getPlanById } from "@/lib/billing/plans";
 
@@ -40,13 +35,11 @@ export function SettingsDrawer({ open, onOpenChange }: SettingsDrawerProps) {
     activeSlotId,
     mode,
     instructions,
-    workflowPreset,
     setActiveSlot,
     setSlotModel,
     toggleSlot,
     setMode,
     setInstructions,
-    applyWorkflowPreset,
   } = useChatStore();
   const { currentPlanId, openUpgradeModal } = useBillingStore();
   const plan = getPlanById(currentPlanId);
@@ -174,56 +167,6 @@ export function SettingsDrawer({ open, onOpenChange }: SettingsDrawerProps) {
                 <div className="flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-muted-foreground" />
                   <h4 className="text-sm font-semibold">
-                    {t("settings.workflowPreset")}
-                  </h4>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {t("settings.presetsTuneDefaults")}
-                </p>
-                <div className="grid gap-2 sm:grid-cols-3">
-                  {WORKFLOW_PRESETS.map((preset) => (
-                    <button
-                      key={preset.value}
-                      type="button"
-                      onClick={() => applyWorkflowPreset(preset.value)}
-                      className={`rounded-lg border px-3 py-2 text-left text-sm transition ${
-                        workflowPreset === preset.value
-                          ? "border-primary bg-primary/10"
-                          : "bg-muted/30 hover:border-primary"
-                      }`}
-                    >
-                      <div className="mb-1 flex items-center gap-1.5 font-semibold">
-                        {preset.value === "engineer" ? (
-                          <UserRound className="h-3.5 w-3.5" />
-                        ) : preset.value === "marketing" ? (
-                          <Megaphone className="h-3.5 w-3.5" />
-                        ) : (
-                          <Sparkles className="h-3.5 w-3.5" />
-                        )}
-                        <span>
-                          {preset.value === "general"
-                            ? t("settings.presetGeneral")
-                            : preset.value === "engineer"
-                              ? t("settings.presetEngineer")
-                              : t("settings.presetMarketing")}
-                        </span>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {preset.value === "general"
-                          ? t("settings.presetGeneralDescription")
-                          : preset.value === "engineer"
-                            ? t("settings.presetEngineerDescription")
-                            : t("settings.presetMarketingDescription")}
-                      </p>
-                    </button>
-                  ))}
-                </div>
-              </section>
-
-              <section className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-muted-foreground" />
-                  <h4 className="text-sm font-semibold">
                     {t("settings.behavior")}
                   </h4>
                 </div>
@@ -246,103 +189,21 @@ export function SettingsDrawer({ open, onOpenChange }: SettingsDrawerProps) {
                           htmlFor={option.value}
                           className="cursor-pointer"
                         >
-                          {option.value === "smart"
-                            ? t("settings.modeAuto")
-                            : option.value === "conversation"
-                              ? t("settings.modeParallelAnswers")
-                              : option.value === "ensemble"
-                                ? t("settings.modeCombinedAnswer")
-                                : option.value === "expert"
-                                  ? t("settings.modeExpertReview")
-                                  : option.value === "debate"
-                                    ? t("settings.modeProsAndCons")
-                                    : option.value === "simulation"
-                                      ? t("settings.modeRolePlay")
-                                      : t("settings.modeWebBacked")}
+                          {option.label}
                         </Label>
                         <p className="text-xs text-muted-foreground">
-                          {option.value === "smart"
-                            ? t("settings.modeAutoDescription")
-                            : option.value === "conversation"
-                              ? t("settings.modeParallelDescription")
-                              : option.value === "ensemble"
-                                ? t("settings.modeCombinedDescription")
-                                : option.value === "expert"
-                                  ? t("settings.modeExpertDescription")
-                                  : option.value === "debate"
-                                    ? t("settings.modeDebateDescription")
-                                    : option.value === "simulation"
-                                      ? t("settings.modeRoleDescription")
-                                      : t("settings.modeWebDescription")}
+                          {option.description}
                         </p>
                         <p className="mt-1 text-[11px] text-muted-foreground">
-                          {option.value === "smart"
-                            ? t("settings.bestFor", {
-                                text: t("settings.modeAutoBestFor"),
-                              })
-                            : option.value === "conversation"
-                              ? t("settings.bestFor", {
-                                  text: t("settings.modeParallelBestFor"),
-                                })
-                              : option.value === "ensemble"
-                                ? t("settings.bestFor", {
-                                    text: t("settings.modeCombinedBestFor"),
-                                  })
-                                : option.value === "expert"
-                                  ? t("settings.bestFor", {
-                                      text: t("settings.modeExpertBestFor"),
-                                    })
-                                  : option.value === "debate"
-                                    ? t("settings.bestFor", {
-                                        text: t("settings.modeDebateBestFor"),
-                                      })
-                                    : option.value === "simulation"
-                                      ? t("settings.bestFor", {
-                                          text: t("settings.modeRoleBestFor"),
-                                        })
-                                      : t("settings.bestFor", {
-                                          text: t("settings.modeWebBestFor"),
-                                        })}
+                          {option.bestFor}
                         </p>
                         <p className="text-[11px] text-muted-foreground">
-                          {option.value === "smart"
-                            ? t("settings.output", {
-                                text: t("settings.modeAutoOutput"),
-                              })
-                            : option.value === "conversation"
-                              ? t("settings.output", {
-                                  text: t("settings.modeParallelOutput"),
-                                })
-                              : option.value === "ensemble"
-                                ? t("settings.output", {
-                                    text: t("settings.modeCombinedOutput"),
-                                  })
-                                : option.value === "expert"
-                                  ? t("settings.output", {
-                                      text: t("settings.modeExpertOutput"),
-                                    })
-                                  : option.value === "debate"
-                                    ? t("settings.output", {
-                                        text: t("settings.modeDebateOutput"),
-                                      })
-                                    : option.value === "simulation"
-                                      ? t("settings.output", {
-                                          text: t("settings.modeRoleOutput"),
-                                        })
-                                      : t("settings.output", {
-                                          text: t("settings.modeWebOutput"),
-                                        })}
+                          {option.outputStyle}
                         </p>
                       </div>
                     </label>
                   ))}
                 </RadioGroup>
-                {(mode === "ensemble" || mode === "debate") &&
-                enabledModelCount === 1 ? (
-                  <p className="text-xs text-muted-foreground">
-                    {t("chat.needsTwoModelsForUnified")}
-                  </p>
-                ) : null}
                 <div className="space-y-2">
                   <Label htmlFor="settings-shared-instructions">
                     {t("settings.sharedInstructions")}

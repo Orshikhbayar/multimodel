@@ -204,45 +204,15 @@ export function AITeamDrawer({ open, onOpenChange }: DrawerProps) {
                   <RadioGroupItem value={option.value} id={option.value} />
                   <div>
                     <Label htmlFor={option.value} className="cursor-pointer">
-                      {option.value === "smart"
-                        ? t("settings.modeAuto")
-                        : option.value === "conversation"
-                          ? t("settings.modeParallelAnswers")
-                          : option.value === "ensemble"
-                            ? t("settings.modeCombinedAnswer")
-                            : option.value === "expert"
-                              ? t("settings.modeExpertReview")
-                              : option.value === "debate"
-                                ? t("settings.modeProsAndCons")
-                                : option.value === "simulation"
-                                  ? t("settings.modeRolePlay")
-                                  : t("settings.modeWebBacked")}
+                      {option.label}
                     </Label>
                     <p className="text-xs text-muted-foreground">
-                      {option.value === "smart"
-                        ? t("settings.modeAutoDescription")
-                        : option.value === "conversation"
-                          ? t("settings.modeParallelDescription")
-                          : option.value === "ensemble"
-                            ? t("settings.modeCombinedDescription")
-                            : option.value === "expert"
-                              ? t("settings.modeExpertDescription")
-                              : option.value === "debate"
-                                ? t("settings.modeDebateDescription")
-                                : option.value === "simulation"
-                                  ? t("settings.modeRoleDescription")
-                                  : t("settings.modeWebDescription")}
+                      {option.description}
                     </p>
                   </div>
                 </label>
               ))}
             </RadioGroup>
-            {(draftMode === "ensemble" || draftMode === "debate") &&
-            enabledModelCount === 1 ? (
-              <p className="text-xs text-muted-foreground">
-                {t("chat.needsTwoModelsForUnified")}
-              </p>
-            ) : null}
           </div>
 
           <div className="space-y-2">

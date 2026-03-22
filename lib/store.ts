@@ -21,7 +21,6 @@ import {
   useSettingsStore,
   useWorkspaceStore,
   MODE_OPTIONS,
-  WORKFLOW_PRESETS,
 } from "@/lib/stores";
 import { useChatActions } from "@/lib/hooks/useChatActions";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -34,7 +33,7 @@ import {
 import { useAppSettingsStore } from "@/lib/state/settingsStore";
 
 // Re-export MODE_OPTIONS for backwards compatibility
-export { MODE_OPTIONS, WORKFLOW_PRESETS };
+export { MODE_OPTIONS };
 
 /**
  * Combined hook that provides the old useChatStore interface
@@ -141,9 +140,6 @@ export function useChatStore() {
     // Settings state
     mode: settingsStore.mode,
     instructions: settingsStore.instructions,
-    workflowPreset: settingsStore.workflowPreset,
-    selectedWorkflowPackId: settingsStore.selectedWorkflowPackId,
-    onboardingCompleted: settingsStore.onboardingCompleted,
 
     // Stream handles (now managed internally)
     streamHandles: {} as Record<string, () => void>,
@@ -163,12 +159,6 @@ export function useChatStore() {
     // Settings actions
     setMode: settingsStore.setMode,
     setInstructions: settingsStore.setInstructions,
-    setWorkflowPreset: settingsStore.setWorkflowPreset,
-    applyWorkflowPreset: settingsStore.applyWorkflowPreset,
-    selectWorkflowPack: settingsStore.selectWorkflowPack,
-    clearWorkflowPackSelection: settingsStore.clearWorkflowPackSelection,
-    completeOnboarding: settingsStore.completeOnboarding,
-    dismissOnboarding: settingsStore.dismissOnboarding,
     resetSettings: () => {
       settingsStore.resetSettings();
       modelStore.resetSlots();

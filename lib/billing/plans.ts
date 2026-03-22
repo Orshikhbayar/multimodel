@@ -2,7 +2,7 @@ import type { Plan, PlanId, TopUpPack, TopUpPackId } from "./types";
 import { convertCurrency } from "./utils";
 import { MODELS } from "@/lib/modelCatalog";
 
-// Model tier access — must only contain IDs present in lib/modelCatalog.ts MODELS.
+// Free tier: DeepSeek, Gemini Flash, GPT-4o-mini, Claude Sonnet (comparison with free models)
 const FREE_MODELS = [
   "openai/gpt-4o-mini",
   "anthropic/claude-sonnet-4",
@@ -10,20 +10,11 @@ const FREE_MODELS = [
   "deepseek/deepseek-chat",
 ];
 
-const PLUS_MODELS = [
-  ...FREE_MODELS,
-  "openai/gpt-4o",
-  "openai/gpt-4.1",
-  "deepseek/deepseek-reasoner",
-  "anthropic/claude-3.5",
-  "google/gemini-2.0",
-  "xai/grok-3",
-];
+// Pro tier: all models
+const PRO_MODELS = MODELS.map((model) => model.id);
 
-const PRO_MODELS = [...PLUS_MODELS, "anthropic/claude-opus-4"];
-
-const TEAM_MODELS = MODELS.map((model) => model.id);
-
+// Free: $0/mo — 20 comparisons/day, file upload only, free models
+// Pro: $12/mo — unlimited comparisons, all models, web search + image gen + file upload
 export const PLANS: Plan[] = [
   {
     id: "free",
@@ -33,7 +24,7 @@ export const PLANS: Plan[] = [
     includedMonthlyCredits: { USD: 1, MNT: 3450 },
     dailyTokenCap: 2_000,
     monthlyTokenCap: 30_000,
-    maxEnabledModels: 1,
+    maxEnabledModels: 3,
     features: {
       webSearch: false,
       tools: false,
@@ -43,65 +34,28 @@ export const PLANS: Plan[] = [
     allowedModelIds: FREE_MODELS,
   },
   {
-    id: "plus",
-    name: "Plus",
-    monthlyPrice: { USD: 19, MNT: 65550 },
-    annualPrice: { USD: 190, MNT: 655500 },
-    includedMonthlyCredits: { USD: 7, MNT: 24150 },
-    dailyTokenCap: 10_000,
-    monthlyTokenCap: 250_000,
-    maxEnabledModels: 2,
-    features: {
-      webSearch: true,
-      tools: true,
-      images: false,
-      projects: true,
-    },
-    allowedModelIds: PLUS_MODELS,
-  },
-  {
     id: "pro",
     name: "Pro",
-    monthlyPrice: { USD: 49, MNT: 169050 },
-    annualPrice: { USD: 490, MNT: 1690500 },
+    monthlyPrice: { USD: 12, MNT: 41400 },
+    annualPrice: { USD: 120, MNT: 414000 },
     includedMonthlyCredits: { USD: 18, MNT: 62100 },
-    dailyTokenCap: 25_000,
-    monthlyTokenCap: 650_000,
-    maxEnabledModels: 3,
-    features: {
-      webSearch: true,
-      tools: true,
-      images: true,
-      projects: true,
-    },
-    allowedModelIds: PRO_MODELS,
-  },
-  {
-    id: "team",
-    name: "Team",
-    monthlyPrice: { USD: 129, MNT: 445050 },
-    annualPrice: { USD: 1290, MNT: 4450500 },
-    includedMonthlyCredits: { USD: 50, MNT: 172500 },
-    dailyTokenCap: 60_000,
-    monthlyTokenCap: 1_800_000,
+    dailyTokenCap: 0, // unlimited
+    monthlyTokenCap: 0, // unlimited
     maxEnabledModels: 6,
     features: {
       webSearch: true,
       tools: true,
       images: true,
-      projects: true,
+      projects: false,
     },
-    allowedModelIds: TEAM_MODELS,
+    allowedModelIds: PRO_MODELS,
   },
 ];
 
-export const PLAN_ORDER: PlanId[] = ["free", "plus", "pro", "team"];
+// Legacy plan IDs map to Free (for existing DB users on plus/team)
+export const PLAN_ORDER: PlanId[] = ["free", "pro"];
 
-export const TOP_UP_PACKS: TopUpPack[] = [
-  { id: "starter", label: "Starter", payPriceUsd: 12, creditUsd: 10 },
-  { id: "boost", label: "Boost", payPriceUsd: 30, creditUsd: 25 },
-  { id: "power", label: "Power", payPriceUsd: 72, creditUsd: 60 },
-];
+export const TOP_UP_PACKS: TopUpPack[] = [];
 
 export function getPlanById(id: PlanId) {
   return PLANS.find((plan) => plan.id === id) ?? PLANS[0];
@@ -115,11 +69,11 @@ export function getNextPlanForSlots(desiredSlots: number) {
   return PLANS.find((plan) => plan.maxEnabledModels >= desiredSlots);
 }
 
-export function getTopUpPackById(id: TopUpPackId) {
-  return TOP_UP_PACKS.find((pack) => pack.id === id);
+export function getTopUpPackById(_id: TopUpPackId): TopUpPack | undefined {
+  return undefined;
 }
 
-export function getTopUpPayPrice(pack: TopUpPack, currency: "USD" | "MNT") {
-  if (currency === "USD") return pack.payPriceUsd;
-  return Math.round(convertCurrency(pack.payPriceUsd, "USD", "MNT"));
+export function getTopUpPayPrice(_pack: TopUpPack, currency: "USD" | "MNT") {
+  if (currency === "USD") return 0;
+  return 0;
 }

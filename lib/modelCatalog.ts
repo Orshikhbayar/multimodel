@@ -225,11 +225,12 @@ export const MODELS: CatalogModel[] = [
   },
 ];
 
+// Default to 3 free models for the hero compare experience on first load
 export const DEFAULT_SLOT_MODEL_IDS = [
-  "openai/gpt-4.1",
+  "openai/gpt-4o-mini",
   "anthropic/claude-sonnet-4",
   "google/gemini-2.5-flash",
-  "xai/grok-3",
+  "deepseek/deepseek-chat",
 ];
 
 export function getModelById(id: string) {
