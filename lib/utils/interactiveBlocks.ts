@@ -29,7 +29,8 @@ export function splitInteractiveBlocks(
   );
 
   // Match ```interactive-html ... ``` blocks (case-insensitive, allow variations)
-  const regex = /```(?:interactive-html|interactive[-_\s]?html)\s*\n([\s\S]*?)```/gi;
+  const regex =
+    /```(?:interactive-html|interactive[-_\s]?html)\s*\n([\s\S]*?)```/gi;
   let lastIndex = 0;
   let match;
 

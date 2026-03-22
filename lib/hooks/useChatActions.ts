@@ -1279,7 +1279,10 @@ export function useChatActions() {
       apiMessages.push({ role: "system", content: localeWithVizNote });
     }
     apiMessages.push(...historyMessages);
-    apiMessages.push({ role: "user", content: augmentWithVisualizationHint(content) });
+    apiMessages.push({
+      role: "user",
+      content: augmentWithVisualizationHint(content),
+    });
 
     try {
       await startRuns(
@@ -1434,7 +1437,10 @@ export function useChatActions() {
       apiMessages.push({ role: "system", content: localeWithVizNote });
     }
     apiMessages.push(...historyMessages);
-    apiMessages.push({ role: "user", content: augmentWithVisualizationHint(content) });
+    apiMessages.push({
+      role: "user",
+      content: augmentWithVisualizationHint(content),
+    });
 
     await startRuns(
       conversationId,
