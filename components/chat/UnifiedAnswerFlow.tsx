@@ -9,6 +9,8 @@ import { Brain, Cloud, Cpu, Flame, Layers, Sparkles } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import type { Run } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import InteractiveBlock from "./InteractiveBlock";
+import { splitInteractiveBlocks } from "@/lib/utils/interactiveBlocks";
 import {
   PrismLight,
   SUPPORTED_LANGUAGES,
@@ -164,45 +166,56 @@ export function UnifiedAnswerFlow({
         <div className="text-sm leading-relaxed">
           <p className="mb-2 font-semibold">{t("chat.unifiedAnswer")}:</p>
           <div className="chat-markdown prose prose-sm dark:prose-invert max-w-none">
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              skipHtml
-              components={{
-                p: ({ children }) => (
-                  <p className="mb-2 last:mb-0">{children}</p>
-                ),
-                code: ({ className, children, ...props }) => {
-                  const isInline = !className;
-                  if (isInline) {
-                    return (
-                      <code
-                        className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono"
-                        {...props}
-                      >
-                        {children}
-                      </code>
-                    );
-                  }
+            {splitInteractiveBlocks(
+              unifiedRun.text || t("chat.unifiedCollecting"),
+            ).map((segment, i) =>
+              segment.type === "interactive" ? (
+                <InteractiveBlock key={i} html={segment.content} compact />
+              ) : (
+                <ReactMarkdown
+                  key={i}
+                  remarkPlugins={[remarkGfm]}
+                  skipHtml
+                  components={{
+                    p: ({ children }) => (
+                      <p className="mb-2 last:mb-0">{children}</p>
+                    ),
+                    code: ({ className, children, ...props }) => {
+                      const isInline = !className;
+                      if (isInline) {
+                        return (
+                          <code
+                            className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono"
+                            {...props}
+                          >
+                            {children}
+                          </code>
+                        );
+                      }
 
-                  const language =
-                    className?.replace("language-", "") ?? "text";
-                  const code = String(children).replace(/\n$/, "");
-                  return (
-                    <UnifiedCodeBlock
-                      language={language}
-                      code={code}
-                      textLabel={t("common.text")}
-                      copyLabel={t("common.copy")}
-                      copiedLabel={t("common.copied")}
-                      {...props}
-                    />
-                  );
-                },
-                pre: ({ children }) => <pre className="my-2">{children}</pre>,
-              }}
-            >
-              {unifiedRun.text || t("chat.unifiedCollecting")}
-            </ReactMarkdown>
+                      const language =
+                        className?.replace("language-", "") ?? "text";
+                      const code = String(children).replace(/\n$/, "");
+                      return (
+                        <UnifiedCodeBlock
+                          language={language}
+                          code={code}
+                          textLabel={t("common.text")}
+                          copyLabel={t("common.copy")}
+                          copiedLabel={t("common.copied")}
+                          {...props}
+                        />
+                      );
+                    },
+                    pre: ({ children }) => (
+                      <pre className="my-2">{children}</pre>
+                    ),
+                  }}
+                >
+                  {segment.content}
+                </ReactMarkdown>
+              ),
+            )}
           </div>
         </div>
         <p className="mt-2 text-xs text-muted-foreground">

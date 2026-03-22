@@ -19,6 +19,32 @@ import { createRequestLogger } from "@/lib/logger";
 import Metrics from "@/lib/metrics";
 import type { ChatMessage } from "@/lib/api/types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+
+const VISUALIZATION_SYSTEM_PROMPT = `You are a helpful AI assistant. You have a special capability: when the user asks for something visual, interactive, structured, or uses words like "visualize", "visualized", "visual", "interactive", "diagram", "chart", or "dashboard", you MUST output an interactive HTML artifact.
+
+To create an interactive artifact, wrap your HTML in a fenced code block with the language tag \`interactive-html\`:
+
+\`\`\`interactive-html
+<!DOCTYPE html>
+<html>
+<head><style>/* your CSS here */</style></head>
+<body>
+  <!-- your interactive HTML here -->
+  <script>/* your JS here */</script>
+</body>
+</html>
+\`\`\`
+
+Rules for interactive-html blocks:
+1. The HTML MUST be fully self-contained — all CSS inline in <style> tags, all JS inline in <script> tags.
+2. You may use CDN links ONLY for: Chart.js (https://cdn.jsdelivr.net/npm/chart.js), Mermaid (https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js), or KaTeX.
+3. Make it genuinely interactive: use clickable tabs, accordions, expandable sections, hover tooltips, progress bars, sortable tables, animated transitions.
+4. Use a professional dark theme by default: dark backgrounds (#1a1a2e, #16213e, #0f3460), light text (#e0e0e0), accent colors for highlights.
+5. Make it responsive — it will be displayed in an iframe that can be various widths.
+6. NEVER use alert(), confirm(), or prompt() dialogs.
+7. You can mix regular markdown text BEFORE and AFTER the interactive-html block. Use text to explain, and the interactive block to visualize.
+8. If the user's request is simple and doesn't need visualization, just respond with normal text. Don't force interactive blocks when plain text is better.
+9. Keep the HTML concise but functional — aim for under 500 lines of HTML.`;
 import { getProviderFromModelId } from "@/lib/supabase/chatPersistence";
 import { estimateTokenCostUsd } from "@/lib/billing/estimator";
 import {
@@ -471,9 +497,16 @@ export async function POST(request: NextRequest) {
     const stream = new ReadableStream({
       async start(controller) {
         try {
+          // Build messages array with system prompt for interactive visualization
+          const systemMessage: ChatMessage = {
+            role: "system",
+            content: VISUALIZATION_SYSTEM_PROMPT,
+          };
+          const messagesWithSystem = [systemMessage, ...messages];
+
           const streamOptions: StreamOptions = {
             model: resolvedModelId,
-            messages,
+            messages: messagesWithSystem,
             temperature,
             maxTokens,
             signal: request.signal,

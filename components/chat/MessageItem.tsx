@@ -18,6 +18,8 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { ContentColumn } from "@/components/layout";
+import InteractiveBlock from "./InteractiveBlock";
+import { splitInteractiveBlocks } from "@/lib/utils/interactiveBlocks";
 import { ExpandableMessage } from "./ExpandableMessage";
 import { UnifiedAnswerFlow } from "./UnifiedAnswerFlow";
 import {
@@ -197,42 +199,55 @@ export function MessageItem({
                   </div>
                 </div>
               ) : (
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  skipHtml
-                  components={{
-                    p: ({ children }) => (
-                      <p className="mb-2 last:mb-0">{children}</p>
+                <>
+                  {splitInteractiveBlocks(
+                    displayContent ||
+                      (selectedRun?.status === "queued"
+                        ? t("chat.waitingForSlot")
+                        : selectedRun?.status === "streaming"
+                          ? t("chat.thinking")
+                          : ""),
+                  ).map((segment, i) =>
+                    segment.type === "interactive" ? (
+                      <InteractiveBlock key={i} html={segment.content} />
+                    ) : (
+                      <ReactMarkdown
+                        key={i}
+                        remarkPlugins={[remarkGfm]}
+                        skipHtml
+                        components={{
+                          p: ({ children }) => (
+                            <p className="mb-2 last:mb-0">{children}</p>
+                          ),
+                          code: ({ className, children, ...props }) => {
+                            const isInline = !className;
+
+                            if (isInline) {
+                              return (
+                                <code
+                                  className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono"
+                                  {...props}
+                                >
+                                  {children}
+                                </code>
+                              );
+                            }
+
+                            const language =
+                              className?.replace("language-", "") ?? "text";
+                            const code = String(children).replace(/\n$/, "");
+                            return (
+                              <CodeBlock code={code} language={language} />
+                            );
+                          },
+                          pre: ({ children }) => <>{children}</>,
+                        }}
+                      >
+                        {segment.content}
+                      </ReactMarkdown>
                     ),
-                    code: ({ className, children, ...props }) => {
-                      const isInline = !className;
-
-                      if (isInline) {
-                        return (
-                          <code
-                            className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono"
-                            {...props}
-                          >
-                            {children}
-                          </code>
-                        );
-                      }
-
-                      const language =
-                        className?.replace("language-", "") ?? "text";
-                      const code = String(children).replace(/\n$/, "");
-                      return <CodeBlock code={code} language={language} />;
-                    },
-                    pre: ({ children }) => <>{children}</>,
-                  }}
-                >
-                  {displayContent ||
-                    (selectedRun?.status === "queued"
-                      ? t("chat.waitingForSlot")
-                      : selectedRun?.status === "streaming"
-                        ? t("chat.thinking")
-                        : "")}
-                </ReactMarkdown>
+                  )}
+                </>
               )}
             </ExpandableMessage>
           )}
