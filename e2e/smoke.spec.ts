@@ -11,7 +11,10 @@ test("app loads and user menu opens", async ({ page }) => {
     await page.getByRole("button", { name: /sign in with email/i }).click();
   }
 
-  await expect(page.getByText("Chat", { exact: true })).toBeVisible();
+  // Sidebar has a New Chat button in the redesigned layout
+  await expect(
+    page.getByRole("button", { name: /new chat/i }),
+  ).toBeVisible({ timeout: 15_000 });
 
   // Open user menu
   await page.getByRole("button", { name: /demo user|guest/i }).click();

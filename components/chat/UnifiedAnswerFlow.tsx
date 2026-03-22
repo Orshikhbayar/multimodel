@@ -100,7 +100,8 @@ export function UnifiedAnswerFlow({
                     run.status === "streaming" &&
                       "unified-flow__perspective-card--streaming",
                     run.status === "error" && "border-destructive/40",
-                    bestAnswerRunId === run.id && "border-emerald-400/60 bg-emerald-50/10 ring-1 ring-emerald-400/30",
+                    bestAnswerRunId === run.id &&
+                      "border-emerald-400/60 bg-emerald-50/10 ring-1 ring-emerald-400/30",
                   )}
                 >
                   <div className="mb-1 flex items-center gap-2 text-xs font-semibold">

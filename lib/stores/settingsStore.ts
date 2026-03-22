@@ -21,7 +21,8 @@ export const MODE_OPTIONS: ModeOption[] = [
   {
     value: "compare",
     label: "Compare",
-    description: "Multiple models answer simultaneously — compare side by side.",
+    description:
+      "Multiple models answer simultaneously — compare side by side.",
     bestFor: "Finding the best answer and exploring different perspectives.",
     outputStyle: "Multiple responses shown side by side.",
   },
@@ -65,7 +66,11 @@ export const useSettingsStore = create<SettingsStore>()(
         const oldMode = (state as { mode?: string }).mode;
         if (oldMode === "single" || oldMode === "compare") {
           mode = oldMode;
-        } else if (oldMode === "smart" || oldMode === "conversation" || oldMode === "ensemble") {
+        } else if (
+          oldMode === "smart" ||
+          oldMode === "conversation" ||
+          oldMode === "ensemble"
+        ) {
           mode = "compare";
         }
         return {

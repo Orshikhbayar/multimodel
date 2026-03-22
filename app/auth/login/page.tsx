@@ -296,7 +296,9 @@ function AuthForm() {
               <span className="w-full border-t" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card/90 px-2 text-muted-foreground">or sign in manually</span>
+              <span className="bg-card/90 px-2 text-muted-foreground">
+                or sign in manually
+              </span>
             </div>
           </div>
         </div>

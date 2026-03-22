@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowUp, ChevronDown, Globe, Image, Paperclip, Square } from "lucide-react";
+import {
+  ArrowUp,
+  ChevronDown,
+  Globe,
+  Image,
+  Paperclip,
+  Square,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -151,7 +158,9 @@ export function Composer({
               type="button"
               title="Web Search"
               disabled={!plan.features.webSearch}
-              onClick={() => plan.features.webSearch && setWebSearchEnabled((v) => !v)}
+              onClick={() =>
+                plan.features.webSearch && setWebSearchEnabled((v) => !v)
+              }
               className={cn(
                 "flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all",
                 webSearchEnabled && plan.features.webSearch
@@ -168,7 +177,9 @@ export function Composer({
               type="button"
               title="Image Generation"
               disabled={!plan.features.images}
-              onClick={() => plan.features.images && setImageGenEnabled((v) => !v)}
+              onClick={() =>
+                plan.features.images && setImageGenEnabled((v) => !v)
+              }
               className={cn(
                 "flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all",
                 imageGenEnabled && plan.features.images

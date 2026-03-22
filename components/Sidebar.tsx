@@ -167,7 +167,11 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
 
       return [
         { key: "today", label: t("navigation.today"), items: groups.today },
-        { key: "yesterday", label: t("navigation.yesterday"), items: groups.yesterday },
+        {
+          key: "yesterday",
+          label: t("navigation.yesterday"),
+          items: groups.yesterday,
+        },
         { key: "week", label: t("navigation.last7Days"), items: groups.week },
         { key: "month", label: "Previous 30 Days", items: groups.month },
         { key: "older", label: t("navigation.older"), items: groups.older },
@@ -322,8 +326,7 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
                         onDelete={() =>
                           setPendingDelete({
                             id: conv.id,
-                            title:
-                              conv.title || t("navigation.untitledChat"),
+                            title: conv.title || t("navigation.untitledChat"),
                           })
                         }
                       />
