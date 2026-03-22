@@ -26,15 +26,16 @@ import {
   upsertConversation,
 } from "@/lib/supabase/chatPersistence";
 import { generateRuns, UNIFIED_MODEL_NAME } from "@/lib/hooks/runGeneration";
-const VIZ_TRIGGERS =
-  /\b(visualiz|visual|interactive|diagram|chart|dashboard|infographic|flowchart|graph|timeline)\b/i;
-const PPTX_TRIGGERS =
-  /\b(presentation|slide|pptx|powerpoint|deck|pitch\s*deck)\b/i;
-
 /**
- * Builds a single consolidated system prompt based on user intent.
- * Combines locale, visualization, and PPTX instructions into ONE message
- * so weaker models (GPT-4o-mini) don't get confused by multiple system messages.
+ * Builds a simple system prompt. Visualization and PPTX are handled
+ * CLIENT-SIDE — we don't ask the model to output special code blocks
+ * because weaker models (GPT-4o-mini) ignore those instructions.
+ *
+ * For viz: user asks for "visualized" → model responds in markdown →
+ * client transforms markdown into interactive HTML via markdownToHtml.ts
+ *
+ * For PPTX: user asks for "presentation" → model responds in markdown →
+ * client parses markdown into slides via markdownToPptx.ts
  */
 function buildConsolidatedSystemPrompt(
   userContent: string,
@@ -42,25 +43,20 @@ function buildConsolidatedSystemPrompt(
 ): string {
   const parts: string[] = ["You are a helpful AI assistant."];
 
-  // Locale
   if (localeInstruction) {
     parts.push(localeInstruction);
   }
 
-  // Visualization — only when user explicitly asks
-  if (VIZ_TRIGGERS.test(userContent)) {
-    parts.push(
-      `IMPORTANT: The user wants a visual/interactive response. You MUST output a \`\`\`interactive-html code block containing a full self-contained HTML document. Example:\n\`\`\`interactive-html\n<!DOCTYPE html><html><head><style>body{margin:0;font-family:system-ui;background:#1a1a2e;color:#e0e0e0}</style></head><body><h1>Title</h1><script>/*interactivity*/</script></body></html>\n\`\`\`\nRules: inline CSS+JS only, dark theme (#1a1a2e bg), make it interactive (tabs, accordions, hover). CDNs allowed: Chart.js, Mermaid, D3.js. No alert/confirm/prompt. You may add brief text before/after the block.`,
-    );
-    if (localeInstruction) {
-      parts.push("Write HTML/CSS/JS in English. Only visible text content should be in the user's language.");
-    }
-  }
+  // Tell model to use clear structure (headers + bullets) so client-side
+  // transformation produces good results
+  const VIZ_TRIGGERS =
+    /\b(visualiz|visual|interactive|diagram|chart|dashboard|infographic|flowchart|graph|timeline)\b/i;
+  const PPTX_TRIGGERS =
+    /\b(presentation|slide|pptx|powerpoint|deck|pitch\s*deck)\b/i;
 
-  // PPTX — only when user asks for presentations
-  if (PPTX_TRIGGERS.test(userContent)) {
+  if (VIZ_TRIGGERS.test(userContent) || PPTX_TRIGGERS.test(userContent)) {
     parts.push(
-      `IMPORTANT: The user wants a downloadable presentation. You MUST output a \`\`\`pptx-slides JSON code block. Example:\n\`\`\`pptx-slides\n{"title":"My Deck","slides":[{"layout":"title","title":"Welcome","subtitle":"Intro"},{"layout":"content","title":"Key Points","bullets":["Point 1","Point 2"]}]}\n\`\`\`\nValid layouts: "title" (title+subtitle), "content" (title+bullets array), "two-column" (title+left+right arrays), "stat" (title+value+description). You may add brief text before/after the block.`,
+      "Structure your response with clear markdown headers (## Section Title) and bullet points. Use ## for each major section. This helps the user navigate your response.",
     );
   }
 

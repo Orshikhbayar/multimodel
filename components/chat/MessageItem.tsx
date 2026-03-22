@@ -208,6 +208,7 @@ export function MessageItem({
                         : selectedRun?.status === "streaming"
                           ? t("chat.thinking")
                           : ""),
+                    !isUser ? prompt : undefined,
                   ).map((segment, i) =>
                     segment.type === "interactive" ? (
                       <InteractiveBlock key={i} html={segment.content} />

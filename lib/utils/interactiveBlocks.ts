@@ -1,11 +1,25 @@
+import { markdownToInteractiveHtml } from "./markdownToHtml";
+import { markdownToPptxData } from "./markdownToPptx";
+
 /**
  * Splits a message string into segments of plain text, interactive-html blocks,
  * and pptx-slides blocks.
+ *
+ * If `userIntent` is provided and the model didn't output special blocks,
+ * the plain text is auto-transformed client-side (no model cooperation needed).
  */
 export type SegmentType = "text" | "interactive" | "pptx";
 export type Segment = { type: SegmentType; content: string };
 
-export function splitInteractiveBlocks(content: string): Segment[] {
+const VIZ_TRIGGERS =
+  /\b(visualiz|visual|interactive|diagram|chart|dashboard|infographic|flowchart|graph|timeline)\b/i;
+const PPTX_TRIGGERS =
+  /\b(presentation|slide|pptx|powerpoint|deck|pitch\s*deck)\b/i;
+
+export function splitInteractiveBlocks(
+  content: string,
+  userMessage?: string,
+): Segment[] {
   const segments: Segment[] = [];
 
   // Convert ```mermaid blocks to interactive-html blocks
@@ -45,8 +59,7 @@ export function splitInteractiveBlocks(content: string): Segment[] {
     lastIndex = match.index + match[0].length;
   }
 
-  // FALLBACK: If no special blocks found, check for ```html blocks
-  // that contain full HTML documents (some models output ```html instead)
+  // FALLBACK: check for ```html blocks with full HTML documents
   if (segments.length === 0) {
     const htmlFallbackRegex = /```html\s*\n([\s\S]*?)```/gi;
     let htmlMatch;
@@ -75,7 +88,36 @@ export function splitInteractiveBlocks(content: string): Segment[] {
     }
   }
 
-  // If still nothing found, return as plain text
+  // ─── CLIENT-SIDE AUTO-TRANSFORM ───
+  // If the model just output plain text but the user asked for viz/pptx,
+  // transform it here. No model cooperation needed.
+  const hasSpecialBlocks = segments.some(
+    (s) => s.type === "interactive" || s.type === "pptx",
+  );
+
+  if (!hasSpecialBlocks && userMessage && content.trim()) {
+    const wantsViz = VIZ_TRIGGERS.test(userMessage);
+    const wantsPptx = PPTX_TRIGGERS.test(userMessage);
+
+    if (wantsPptx) {
+      const pptxData = markdownToPptxData(content);
+      if (pptxData) {
+        return [
+          { type: "text", content: content.trim() },
+          { type: "pptx", content: JSON.stringify(pptxData) },
+        ];
+      }
+    }
+
+    if (wantsViz) {
+      const html = markdownToInteractiveHtml(content);
+      if (html) {
+        return [{ type: "interactive", content: html }];
+      }
+    }
+  }
+
+  // Default: plain text
   if (segments.length === 0 && content.trim()) {
     segments.push({ type: "text", content: content.trim() });
   }

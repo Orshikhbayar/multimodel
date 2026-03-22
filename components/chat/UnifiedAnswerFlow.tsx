@@ -169,6 +169,7 @@ export function UnifiedAnswerFlow({
           <div className="chat-markdown prose prose-sm dark:prose-invert max-w-none">
             {splitInteractiveBlocks(
               unifiedRun.text || t("chat.unifiedCollecting"),
+              prompt,
             ).map((segment, i) =>
               segment.type === "interactive" ? (
                 <InteractiveBlock key={i} html={segment.content} compact />
