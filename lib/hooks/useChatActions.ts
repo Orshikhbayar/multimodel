@@ -26,6 +26,23 @@ import {
   upsertConversation,
 } from "@/lib/supabase/chatPersistence";
 import { generateRuns, UNIFIED_MODEL_NAME } from "@/lib/hooks/runGeneration";
+/**
+ * Detects if the user's message is requesting a visualization and returns
+ * an augmented version with explicit formatting instructions.
+ */
+function augmentWithVisualizationHint(userContent: string): string {
+  const visualTriggers =
+    /\b(visualiz|visual|interactive|diagram|chart|dashboard|infographic|flowchart|graph|timeline)\b/i;
+
+  if (!visualTriggers.test(userContent)) {
+    return userContent;
+  }
+
+  return `${userContent}
+
+[FORMAT INSTRUCTION: Respond with an interactive HTML visualization. Wrap your HTML in a fenced code block with the language tag \`interactive-html\`. The HTML must be self-contained (inline CSS in <style>, inline JS in <script>). Use a dark theme (background: #1a1a2e, text: #e0e0e0). Make it interactive with tabs, clickable sections, hover effects, or expandable areas. You may include brief markdown text before or after the HTML block, but the main response MUST be the interactive-html block.]`;
+}
+
 const MAX_PARALLEL_STREAMS = 2;
 const CONCURRENCY_RETRY_DELAYS_MS = [800, 1600] as const;
 const DEFAULT_UNIFIED_SYNTHESIS_MODEL_ID = "openai/gpt-5.2";
@@ -1258,10 +1275,11 @@ export function useChatActions() {
     }
     const localeInstruction = getLocaleResponseInstruction(locale);
     if (localeInstruction) {
-      apiMessages.push({ role: "system", content: localeInstruction });
+      const localeWithVizNote = `${localeInstruction} However, when outputting interactive-html code blocks, write the HTML, CSS, and JavaScript in English. Only the visible text content shown to the user should be in the user's language.`;
+      apiMessages.push({ role: "system", content: localeWithVizNote });
     }
     apiMessages.push(...historyMessages);
-    apiMessages.push({ role: "user", content });
+    apiMessages.push({ role: "user", content: augmentWithVisualizationHint(content) });
 
     try {
       await startRuns(
@@ -1412,10 +1430,11 @@ export function useChatActions() {
     }
     const localeInstruction = getLocaleResponseInstruction(locale);
     if (localeInstruction) {
-      apiMessages.push({ role: "system", content: localeInstruction });
+      const localeWithVizNote = `${localeInstruction} However, when outputting interactive-html code blocks, write the HTML, CSS, and JavaScript in English. Only the visible text content shown to the user should be in the user's language.`;
+      apiMessages.push({ role: "system", content: localeWithVizNote });
     }
     apiMessages.push(...historyMessages);
-    apiMessages.push({ role: "user", content });
+    apiMessages.push({ role: "user", content: augmentWithVisualizationHint(content) });
 
     await startRuns(
       conversationId,
