@@ -16,7 +16,6 @@ import { useBillingStore } from "@/lib/billing/store";
 import { useAppSettingsStore } from "@/lib/state/settingsStore";
 import { getLocaleResponseInstruction } from "@/lib/i18n/locale";
 import { t } from "@/lib/i18n/translate";
-import { evaluateGuardrails } from "@/lib/guardrails/flagging";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   createAssistantMessageWithRuns,
@@ -1055,62 +1054,7 @@ export function useChatActions() {
     };
 
     const applyGuardrailFlagging = () => {
-      const selectedPackId = settingsStore.selectedWorkflowPackId;
-      if (!selectedPackId) return;
-
-      const conversation = useConversationStore
-        .getState()
-        .conversations.find((entry) => entry.id === conversationId);
-      const assistantMessage = conversation?.messages.find(
-        (entry) => entry.id === assistantMessageId,
-      );
-      if (!assistantMessage?.runs || assistantMessage.runs.length === 0) return;
-
-      const completedRuns = assistantMessage.runs.filter(
-        (entry) => entry.status === "done" && entry.text.trim().length > 0,
-      );
-      const unifiedCompleted = completedRuns.find(
-        (entry) => entry.model === UNIFIED_MODEL_NAME,
-      );
-      const targetRun = unifiedCompleted ?? completedRuns[0];
-      if (!targetRun) return;
-
-      const guardrail = evaluateGuardrails(selectedPackId, targetRun.text);
-      if (!guardrail.flagged || !guardrail.warningText) return;
-
-      conversationStore.completeRun(
-        conversationId,
-        assistantMessageId,
-        targetRun.id,
-        {
-          status: "done",
-          text: `${targetRun.text.trim()}\n\n${guardrail.warningText}`,
-        },
-      );
-
-      const severityByScore = { low: 1, medium: 2, high: 3 } as const;
-      const highestSeverity = guardrail.flags.reduce<"low" | "medium" | "high">(
-        (highest, current) =>
-          severityByScore[current.severity] > severityByScore[highest]
-            ? current.severity
-            : highest,
-        "low",
-      );
-
-      analytics.track("guardrail_flagged", {
-        workspace_id: workspaceId ?? undefined,
-        pack_id: selectedPackId,
-        policy_id: guardrail.flags.map((flag) => flag.id).join(","),
-        severity: highestSeverity,
-      });
-
-      if (guardrail.safeTemplateId) {
-        analytics.track("safe_template_suggested", {
-          workspace_id: workspaceId ?? undefined,
-          pack_id: selectedPackId,
-          safe_template_id: guardrail.safeTemplateId,
-        });
-      }
+      // Guardrail flagging removed with workflow packs feature
     };
 
     let cursor = 0;

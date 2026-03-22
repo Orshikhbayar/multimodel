@@ -8,7 +8,6 @@ import { Composer } from "@/components/Composer";
 import { DisagreementsDialog } from "@/components/DisagreementsDialog";
 import { SourcesDialog } from "@/components/SourcesDialog";
 import { SettingsDrawer } from "@/components/SettingsDrawer";
-import { ToolDrawer } from "@/components/tools/ToolDrawer";
 import { UpgradeModal } from "@/components/billing/UpgradeModal";
 import { TopUpModal } from "@/components/billing/TopUpModal";
 import { OutOfCreditsModal } from "@/components/billing/OutOfCreditsModal";
@@ -49,7 +48,6 @@ export function ChatWorkspace({
   const { mode } = useSettingsStore();
   const activeTab = activeSlotId ?? slots[0]?.slotId ?? "slot-1";
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [toolsOpen, setToolsOpen] = useState(false);
   const [sourcesRun, setSourcesRun] = useState<Run | null>(null);
   const [disagreementsRun, setDisagreementsRun] = useState<Run | null>(null);
   const { currency, currentPlanId, openUpgradeModal } = useBillingStore();
@@ -95,34 +93,8 @@ export function ChatWorkspace({
     (model) => !plan.allowedModelIds.includes(model.id),
   ).map((model) => model.id);
   const modeOption = MODE_OPTIONS.find((option) => option.value === mode);
-  const modeLabel =
-    modeOption?.value === "smart"
-      ? t("settings.modeAuto")
-      : modeOption?.value === "conversation"
-        ? t("settings.modeParallelAnswers")
-        : modeOption?.value === "ensemble"
-          ? t("settings.modeCombinedAnswer")
-          : modeOption?.value === "expert"
-            ? t("settings.modeExpertReview")
-            : modeOption?.value === "debate"
-              ? t("settings.modeProsAndCons")
-              : modeOption?.value === "simulation"
-                ? t("settings.modeRolePlay")
-                : t("settings.modeWebBacked");
-  const modeOutputStyle =
-    modeOption?.value === "smart"
-      ? t("settings.modeAutoOutput")
-      : modeOption?.value === "conversation"
-        ? t("settings.modeParallelOutput")
-        : modeOption?.value === "ensemble"
-          ? t("settings.modeCombinedOutput")
-          : modeOption?.value === "expert"
-            ? t("settings.modeExpertOutput")
-            : modeOption?.value === "debate"
-              ? t("settings.modeDebateOutput")
-              : modeOption?.value === "simulation"
-                ? t("settings.modeRoleOutput")
-                : t("settings.modeWebOutput");
+  const modeLabel = modeOption?.label ?? mode;
+  const modeOutputStyle = modeOption?.outputStyle ?? "";
   const contextBadgeLabel = isProjectScope
     ? (projectName ?? t("projects.title"))
     : t("navigation.general");
@@ -142,9 +114,6 @@ export function ChatWorkspace({
     if (projectArchived) return;
     sendMessage(value, projectId ?? undefined);
   };
-  const latestMessageId =
-    conversation?.messages?.[conversation.messages.length - 1]?.id;
-
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="surface-enter flex min-h-0 flex-1 flex-col gap-4 px-3 pb-4 pt-3 md:px-6 md:pt-5">
@@ -187,7 +156,6 @@ export function ChatWorkspace({
               {!projectArchived ? (
                 <Composer
                   onSend={handleSend}
-                  onOpenTools={() => setToolsOpen(true)}
                   modelId={activeSlot?.modelId ?? "openai/gpt-5.2"}
                   modelLabel={activeSlot?.label ?? t("topBar.selectModel")}
                   enabledModelIds={enabledModelIds}
@@ -229,7 +197,6 @@ export function ChatWorkspace({
               {!projectArchived ? (
                 <Composer
                   onSend={handleSend}
-                  onOpenTools={() => setToolsOpen(true)}
                   modelId={activeSlot?.modelId ?? "openai/gpt-5.2"}
                   modelLabel={activeSlot?.label ?? t("topBar.selectModel")}
                   enabledModelIds={enabledModelIds}
@@ -252,13 +219,6 @@ export function ChatWorkspace({
       </div>
 
       <SettingsDrawer open={settingsOpen} onOpenChange={setSettingsOpen} />
-      <ToolDrawer
-        open={toolsOpen}
-        onOpenChange={setToolsOpen}
-        projectId={projectId ?? null}
-        conversationId={conversation?.id}
-        currentMessageId={latestMessageId}
-      />
       <SourcesDialog
         open={Boolean(sourcesRun)}
         onOpenChange={(open) => !open && setSourcesRun(null)}

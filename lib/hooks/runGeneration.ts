@@ -14,16 +14,5 @@ export function generateRuns(mode: InteractionMode, slots: ModelSlot[]): Run[] {
     text: "",
   }));
 
-  const shouldAddUnifiedRun =
-    (mode === "ensemble" || mode === "debate") && pickedSlots.length >= 2;
-  if (shouldAddUnifiedRun) {
-    baseRuns.push({
-      id: crypto.randomUUID(),
-      model: UNIFIED_MODEL_NAME,
-      status: "streaming",
-      text: "",
-    });
-  }
-
   return baseRuns;
 }

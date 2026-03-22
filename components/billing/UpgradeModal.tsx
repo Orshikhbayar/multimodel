@@ -28,7 +28,7 @@ export function UpgradeModal() {
   const recommendedPlan =
     (ui.requiredPlanId && getPlanById(ui.requiredPlanId)) ||
     (ui.lockedModelId && getNextPlanForModel(ui.lockedModelId)) ||
-    getPlanById(currentPlanId === "free" ? "plus" : "pro");
+    getPlanById("pro");
 
   return (
     <Dialog

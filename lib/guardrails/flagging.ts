@@ -1,8 +1,3 @@
-import {
-  getWorkflowPackById,
-  type WorkflowPackId,
-} from "@/lib/workflows/packs";
-
 interface GuardrailRule {
   id: string;
   severity: "low" | "medium" | "high";
@@ -43,7 +38,7 @@ const BASE_RULES: GuardrailRule[] = [
 ];
 
 export function evaluateGuardrails(
-  workflowPackId: WorkflowPackId | null,
+  workflowPackId: string | null,
   text: string,
 ): GuardrailResult {
   if (!workflowPackId || !text.trim()) {
@@ -72,14 +67,11 @@ export function evaluateGuardrails(
     };
   }
 
-  const pack = getWorkflowPackById(workflowPackId);
-  const safeTemplateId = pack?.safeTemplateId ?? null;
+  const safeTemplateId = null;
   const warningLines = [
     "[Guardrail flag]",
     ...flags.map((flag) => `- ${flag.id}: ${flag.message}`),
-    safeTemplateId
-      ? `Use safe template: ${safeTemplateId}`
-      : "Use a safe template with fact-only language and explicit assumptions.",
+    "Use a safe template with fact-only language and explicit assumptions.",
   ];
 
   return {

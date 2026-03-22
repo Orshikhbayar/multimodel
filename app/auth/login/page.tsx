@@ -1,8 +1,8 @@
 "use client";
 
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,51 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
 type AuthMode = "signin" | "signup";
+
+const REMEMBERED_ACCOUNTS_KEY = "remembered_accounts";
+const MAX_REMEMBERED = 5;
+
+interface RememberedAccount {
+  email: string;
+  avatarUrl?: string;
+  lastLogin: number;
+}
+
+function getRememberedAccounts(): RememberedAccount[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(REMEMBERED_ACCOUNTS_KEY);
+    return raw ? (JSON.parse(raw) as RememberedAccount[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveRememberedAccount(email: string, avatarUrl?: string) {
+  if (typeof window === "undefined") return;
+  const accounts = getRememberedAccounts().filter((a) => a.email !== email);
+  accounts.unshift({ email, avatarUrl, lastLogin: Date.now() });
+  localStorage.setItem(
+    REMEMBERED_ACCOUNTS_KEY,
+    JSON.stringify(accounts.slice(0, MAX_REMEMBERED)),
+  );
+}
+
+function removeRememberedAccount(email: string) {
+  if (typeof window === "undefined") return;
+  const accounts = getRememberedAccounts().filter((a) => a.email !== email);
+  localStorage.setItem(REMEMBERED_ACCOUNTS_KEY, JSON.stringify(accounts));
+}
+
+function timeAgo(ts: number): string {
+  const diffMs = Date.now() - ts;
+  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (days === 0) return "Today";
+  if (days === 1) return "Yesterday";
+  if (days < 7) return `${days} days ago`;
+  if (days < 30) return `${Math.floor(days / 7)} weeks ago`;
+  return `${Math.floor(days / 30)} months ago`;
+}
 
 function GoogleIcon() {
   return (
@@ -64,6 +109,14 @@ function AuthForm() {
   const [oauthProvider, setOauthProvider] = useState<
     "google" | "github" | null
   >(null);
+  const [rememberedAccounts, setRememberedAccounts] = useState<
+    RememberedAccount[]
+  >([]);
+  const [showAllAccounts, setShowAllAccounts] = useState(false);
+
+  useEffect(() => {
+    setRememberedAccounts(getRememberedAccounts());
+  }, []);
 
   const queryErrorMessage = useMemo(() => {
     switch (errorCode) {
@@ -80,7 +133,6 @@ function AuthForm() {
     if (typeof window === "undefined") {
       return undefined;
     }
-
     const baseUrl = getBrowserAppBaseUrl({
       configuredAppUrl: process.env.NEXT_PUBLIC_APP_URL,
       origin: window.location.origin,
@@ -94,16 +146,12 @@ function AuthForm() {
     setError(null);
     setSuccess(null);
     setOauthProvider(provider);
-
     try {
       const supabase = createSupabaseBrowserClient();
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider,
-        options: {
-          redirectTo,
-        },
+        options: { redirectTo },
       });
-
       if (oauthError) {
         setError(oauthError.message);
       }
@@ -120,7 +168,6 @@ function AuthForm() {
 
   const handleEmailAuth = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
     setError(null);
     setSuccess(null);
 
@@ -128,14 +175,12 @@ function AuthForm() {
       setError("Email and password are required.");
       return;
     }
-
     if (mode === "signup" && password !== confirmPassword) {
       setError("Passwords do not match.");
       return;
     }
 
     setIsSubmitting(true);
-
     try {
       const supabase = createSupabaseBrowserClient();
 
@@ -144,12 +189,11 @@ function AuthForm() {
           email,
           password,
         });
-
         if (signInError) {
           setError(signInError.message);
           return;
         }
-
+        saveRememberedAccount(email);
         router.replace(next.startsWith("/") ? next : "/");
         router.refresh();
         return;
@@ -158,22 +202,18 @@ function AuthForm() {
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          emailRedirectTo: redirectTo,
-        },
+        options: { emailRedirectTo: redirectTo },
       });
-
       if (signUpError) {
         setError(signUpError.message);
         return;
       }
-
       if (data.session) {
+        saveRememberedAccount(email);
         router.replace(next.startsWith("/") ? next : "/");
         router.refresh();
         return;
       }
-
       setSuccess(
         "Account created. Check your email to confirm your account before signing in.",
       );
@@ -191,8 +231,77 @@ function AuthForm() {
   const oauthLoading = oauthProvider !== null;
   const visibleError = error ?? queryErrorMessage;
 
+  const handleSelectAccount = (account: RememberedAccount) => {
+    setEmail(account.email);
+    setShowAllAccounts(false);
+    // Focus password field
+    setTimeout(() => {
+      document.getElementById("password")?.focus();
+    }, 50);
+  };
+
+  const handleRemoveAccount = (email: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    removeRememberedAccount(email);
+    setRememberedAccounts(getRememberedAccounts());
+  };
+
   return (
     <div className="space-y-5">
+      {/* Remembered accounts */}
+      {rememberedAccounts.length > 0 && !showAllAccounts && (
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-muted-foreground">
+            Recent accounts
+          </p>
+          <div className="space-y-1.5">
+            {rememberedAccounts.map((account) => (
+              <button
+                key={account.email}
+                type="button"
+                onClick={() => handleSelectAccount(account)}
+                className="group flex w-full items-center gap-3 rounded-xl border border-border/70 bg-background/60 px-3 py-2.5 text-left transition hover:bg-muted/50"
+              >
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary">
+                  {account.email.charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">
+                    {account.email}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Last used: {timeAgo(account.lastLogin)}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => handleRemoveAccount(account.email, e)}
+                  className="ml-auto flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground opacity-0 transition hover:bg-muted/60 hover:text-foreground group-hover:opacity-100"
+                  aria-label={`Remove ${account.email}`}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowAllAccounts(true)}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Use another account
+          </button>
+          <div className="relative mt-2">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card/90 px-2 text-muted-foreground">or sign in manually</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 rounded-xl border border-border/75 bg-background/65 p-1">
         <button
           type="button"
@@ -395,10 +504,10 @@ export default function LoginPage() {
               <Sparkles className="h-7 w-7 text-primary" aria-hidden="true" />
             </div>
             <h1 className="text-2xl font-semibold tracking-tight">
-              Multi-Model AI
+              MultiModel AI
             </h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              Sign in with Google, GitHub, or your email and password.
+              Compare AI models side by side. Sign in to get started.
             </p>
           </div>
 

@@ -15,14 +15,6 @@ export {
 } from "./conversations";
 
 export {
-  getProjects,
-  getProject,
-  createProject,
-  updateProject,
-  deleteProject,
-} from "./projects";
-
-export {
   getUsageRecords,
   getUsageSummary,
   checkQuota,

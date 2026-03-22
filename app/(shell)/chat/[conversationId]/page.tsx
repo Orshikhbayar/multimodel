@@ -35,22 +35,6 @@ export default function GeneralConversationPage() {
     );
   }
 
-  if (conversation.projectId) {
-    return (
-      <div className="flex min-h-0 flex-1 items-center justify-center p-6">
-        <div className="space-y-3 rounded-xl border bg-card px-5 py-4 text-sm text-muted-foreground">
-          <p>This conversation belongs to a project.</p>
-          <Link
-            href={`/projects/${conversation.projectId}/chat/${conversation.id}`}
-            className="inline-flex items-center rounded-md border px-3 py-2 text-sm font-medium text-foreground transition hover:bg-muted"
-          >
-            Open in project chat
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <ChatErrorBoundary>
       <ChatWorkspace conversationId={conversationId} />

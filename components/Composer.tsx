@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowUp, ChevronDown, Square, Wrench } from "lucide-react";
+import { ArrowUp, ChevronDown, Globe, Image, Paperclip, Square } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,12 +12,13 @@ import { useStreamStore } from "@/lib/stores";
 import { estimateChatCostForSlots } from "@/lib/billing/estimator";
 import { formatCredits } from "@/lib/billing/utils";
 import type { Currency } from "@/lib/billing/types";
-import { useSettingsStore, type WorkflowPreset } from "@/lib/stores";
 import { useI18n } from "@/lib/i18n";
+import { useBillingStore } from "@/lib/billing/store";
+import { getPlanById } from "@/lib/billing/plans";
+import { cn } from "@/lib/utils";
 
 interface ComposerProps {
   onSend?: (value: string) => void;
-  onOpenTools?: () => void;
   modelId: string;
   modelLabel: string;
   enabledModelIds: string[];
@@ -29,7 +30,6 @@ interface ComposerProps {
 
 export function Composer({
   onSend,
-  onOpenTools,
   modelId,
   modelLabel,
   enabledModelIds,
@@ -39,22 +39,17 @@ export function Composer({
   onSelectLocked,
 }: ComposerProps) {
   const { sendMessage, stopAllStreams } = useChatActions();
+  const { currentPlanId } = useBillingStore();
+  const plan = getPlanById(currentPlanId);
+  const [webSearchEnabled, setWebSearchEnabled] = useState(false);
+  const [imageGenEnabled, setImageGenEnabled] = useState(false);
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const maxHeight = 160;
   const activeStreamCount = useStreamStore((state) => state.activeStreams.size);
   const { t, locale } = useI18n();
-  const workflowPreset = useSettingsStore((state) => state.workflowPreset);
   const isStreaming = activeStreamCount > 0;
   const trimmedValue = value.trim();
-  const workflowPresetLabel = useMemo(() => {
-    const labels: Record<WorkflowPreset, string> = {
-      general: t("settings.presetGeneral"),
-      engineer: t("settings.presetEngineer"),
-      marketing: t("settings.presetMarketing"),
-    };
-    return labels[workflowPreset];
-  }, [t, workflowPreset]);
   const quickStartPrompts = useMemo(
     () => [
       {
@@ -80,15 +75,7 @@ export function Composer({
     ],
     [t],
   );
-  const filteredQuickStartPrompts = useMemo(() => {
-    if (workflowPreset === "engineer") {
-      return quickStartPrompts.slice(0, 2);
-    }
-    if (workflowPreset === "marketing") {
-      return quickStartPrompts.slice(2);
-    }
-    return quickStartPrompts;
-  }, [quickStartPrompts, workflowPreset]);
+  const filteredQuickStartPrompts = quickStartPrompts;
   const modelIdsForEstimate = useMemo(
     () => (enabledModelIds.length > 0 ? enabledModelIds : [modelId]),
     [enabledModelIds, modelId],
@@ -127,7 +114,7 @@ export function Composer({
         {value.length === 0 && (
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="text-[11px] text-muted-foreground">
-              {t("composer.quickStart")} {workflowPresetLabel}
+              {t("composer.quickStart")}
             </span>
             {filteredQuickStartPrompts.map((item) => (
               <button
@@ -157,19 +144,54 @@ export function Composer({
             }
           }}
         />
-        <div className="flex items-center gap-2 self-end">
-          {onOpenTools ? (
-            <Button
+        <div className="flex items-center justify-between gap-2">
+          {/* Tool toggles */}
+          <div className="flex items-center gap-1">
+            <button
               type="button"
-              size="sm"
-              variant="outline"
-              onClick={onOpenTools}
-              className="h-9 rounded-xl px-3"
+              title="Web Search"
+              disabled={!plan.features.webSearch}
+              onClick={() => plan.features.webSearch && setWebSearchEnabled((v) => !v)}
+              className={cn(
+                "flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all",
+                webSearchEnabled && plan.features.webSearch
+                  ? "bg-primary/15 text-primary"
+                  : plan.features.webSearch
+                    ? "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                    : "cursor-not-allowed text-muted-foreground/40",
+              )}
             >
-              <Wrench className="mr-1 h-3.5 w-3.5" />
-              Tools
-            </Button>
-          ) : null}
+              <Globe className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Web</span>
+            </button>
+            <button
+              type="button"
+              title="Image Generation"
+              disabled={!plan.features.images}
+              onClick={() => plan.features.images && setImageGenEnabled((v) => !v)}
+              className={cn(
+                "flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all",
+                imageGenEnabled && plan.features.images
+                  ? "bg-primary/15 text-primary"
+                  : plan.features.images
+                    ? "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                    : "cursor-not-allowed text-muted-foreground/40",
+              )}
+            >
+              <Image className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Image</span>
+            </button>
+            <button
+              type="button"
+              title="Attach File"
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-all hover:bg-muted/60 hover:text-foreground"
+            >
+              <Paperclip className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Attach</span>
+            </button>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 self-end">
           <ModelPicker
             value={modelId}
             onChange={onSelectModel}
