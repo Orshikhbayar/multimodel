@@ -52,7 +52,7 @@ function buildConsolidatedSystemPrompt(
   const VIZ_TRIGGERS =
     /\b(visualiz\w*|interactive|diagram|chart|dashboard|infographic|flowchart|graph|timeline)\b/i;
   const PPTX_TRIGGERS =
-    /\b(presentation|slide|pptx|powerpoint|deck|pitch\s*deck)\b/i;
+    /\b(presentation|slides?|pptx|powerpoint|deck|pitch\s*deck)\b/i;
 
   if (VIZ_TRIGGERS.test(userContent) || PPTX_TRIGGERS.test(userContent)) {
     parts.push(
