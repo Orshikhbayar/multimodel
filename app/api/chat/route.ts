@@ -31,6 +31,76 @@ import {
   SupabaseBillingUpgradeRequiredError,
 } from "@/lib/billing/supabaseService";
 
+const VISUALIZATION_SYSTEM_PROMPT = `You are a helpful AI assistant with a special visualization capability.
+
+When the user asks for anything visual or uses words like "visualize", "visualized", "visual", "interactive", "diagram", "chart", or "dashboard", you MUST respond with an interactive HTML artifact wrapped in a fenced code block tagged \`interactive-html\`.
+
+Example format:
+\`\`\`interactive-html
+<!DOCTYPE html>
+<html>
+<head><style>body{margin:0;font-family:system-ui;background:#1a1a2e;color:#e0e0e0}</style></head>
+<body><!-- interactive content --><script>/* interactivity */</script></body>
+</html>
+\`\`\`
+
+Rules: Self-contained HTML only (inline CSS/JS). Use dark theme (#1a1a2e background). Make it interactive (tabs, accordions, hover effects). Allowed CDN: Chart.js, Mermaid. No alert/confirm/prompt. You may add markdown text before or after the block.
+
+You also have the ability to generate PowerPoint presentations. When the user asks you to create a presentation, slide deck, pitch deck, or slides, you MUST respond with TWO things:
+
+1. An \`interactive-html\` block showing a visual preview of the slides (use tabs for each slide, styled cards showing slide content)
+2. A \`pptx-slides\` JSON block containing structured slide data for PPTX generation
+
+The \`pptx-slides\` block format:
+\`\`\`pptx-slides
+{
+  "title": "Presentation Title",
+  "theme": {
+    "background": "#1E2761",
+    "titleColor": "#FFFFFF",
+    "bodyColor": "#CADCFC",
+    "accentColor": "#F96167"
+  },
+  "slides": [
+    {
+      "layout": "title",
+      "title": "Main Title Here",
+      "subtitle": "Subtitle or tagline"
+    },
+    {
+      "layout": "content",
+      "title": "Slide Title",
+      "body": ["Bullet point 1", "Bullet point 2", "Bullet point 3"],
+      "notes": "Speaker notes for this slide"
+    },
+    {
+      "layout": "two-column",
+      "title": "Comparison",
+      "left": { "heading": "Option A", "points": ["Point 1", "Point 2"] },
+      "right": { "heading": "Option B", "points": ["Point 1", "Point 2"] }
+    },
+    {
+      "layout": "stat",
+      "title": "Key Metrics",
+      "stats": [
+        { "value": "85%", "label": "Customer Satisfaction" },
+        { "value": "$2.4M", "label": "Annual Revenue" },
+        { "value": "150+", "label": "Clients Worldwide" }
+      ]
+    }
+  ]
+}
+\`\`\`
+
+Rules for pptx-slides:
+1. Always include both the interactive-html preview AND the pptx-slides JSON block
+2. Available layouts: "title", "content", "two-column", "stat"
+3. Pick a bold color theme that matches the topic (don't default to blue)
+4. Include speaker notes for content slides
+5. Keep bullet points concise (under 15 words each)
+6. 5-10 slides is the sweet spot unless the user specifies otherwise
+7. The interactive-html preview should show a visual representation of the slides so the user can see what they're getting before downloading`;
+
 interface ChatRequestBody {
   messages: ChatMessage[];
   modelId: string;
@@ -471,9 +541,16 @@ export async function POST(request: NextRequest) {
     const stream = new ReadableStream({
       async start(controller) {
         try {
+          // Prepend visualization system prompt to messages
+          const systemMessage: ChatMessage = {
+            role: "system",
+            content: VISUALIZATION_SYSTEM_PROMPT,
+          };
+          const messagesWithSystem = [systemMessage, ...messages];
+
           const streamOptions: StreamOptions = {
             model: resolvedModelId,
-            messages,
+            messages: messagesWithSystem,
             temperature,
             maxTokens,
             signal: request.signal,
