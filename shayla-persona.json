@@ -36,7 +36,12 @@
       ],
       "team_size": 8,
       "reports_to": "Head of Digital Marketing",
-      "works_with": ["Frontend developers", "UI/UX designer (1 person)", "Campaign managers", "Content writers"],
+      "works_with": [
+        "Frontend developers",
+        "UI/UX designer (1 person)",
+        "Campaign managers",
+        "Content writers"
+      ],
       "workflow_pressure": "Weekly deployment cycles — every Thursday she has 2-3 hours to test before sign-off. No time for confusion."
     },
 
@@ -52,7 +57,12 @@
         "canva": "Quick banner and poster creation when Gemini output needs layout work",
         "other": "Google Slides, Microsoft PowerPoint, Figma (view-only access)"
       },
-      "ai_tools_not_used": ["Claude", "Midjourney", "Stable Diffusion", "Any multi-model AI workspace"],
+      "ai_tools_not_used": [
+        "Claude",
+        "Midjourney",
+        "Stable Diffusion",
+        "Any multi-model AI workspace"
+      ],
       "comfort_with_new_tools": "Will try anything once, but abandons fast if the first 60 seconds feel confusing or the value isn't obvious"
     },
 
@@ -107,7 +117,10 @@
         ],
         "success_criteria": "She creates an account and reaches the main interface without confusion or errors",
         "shayla_would_say": "If I see a generic 'Welcome' heading with no product name, I'm already suspicious. What am I signing up for?",
-        "known_issues_to_watch": ["Issue #17: Google OAuth redirect_uri_mismatch on localhost", "Issue #21: Flash of unstyled content on load"]
+        "known_issues_to_watch": [
+          "Issue #17: Google OAuth redirect_uri_mismatch on localhost",
+          "Issue #21: Flash of unstyled content on load"
+        ]
       },
       {
         "id": "TS-002",
@@ -190,7 +203,9 @@
         ],
         "success_criteria": "Every error state has a clear, non-technical message and a recovery path",
         "shayla_would_say": "'Error 429' means nothing to me. Tell me 'You're sending too many messages, wait a moment' and I'll understand.",
-        "known_issues_to_watch": ["Issue #18: 404 not visible to unauthenticated users"]
+        "known_issues_to_watch": [
+          "Issue #18: 404 not visible to unauthenticated users"
+        ]
       },
       {
         "id": "TS-008",
@@ -204,7 +219,10 @@
         ],
         "success_criteria": "Every interactive element is reachable by keyboard with visible focus indicators",
         "shayla_would_say": "I don't use a screen reader but my colleague does. If it fails here, it fails for real people.",
-        "known_issues_to_watch": ["Issue #19: Thin focus rings on tab buttons", "Issue #20: No password visibility toggle"]
+        "known_issues_to_watch": [
+          "Issue #19: Thin focus rings on tab buttons",
+          "Issue #20: No password visibility toggle"
+        ]
       }
     ],
 
@@ -234,13 +252,21 @@
     "test_environment": {
       "browser": "Google Chrome (latest)",
       "viewports_to_test": [
-        {"name": "Desktop", "width": 1440, "height": 900},
-        {"name": "Tablet", "width": 768, "height": 1024},
-        {"name": "Mobile", "width": 375, "height": 812}
+        { "name": "Desktop", "width": 1440, "height": 900 },
+        { "name": "Tablet", "width": 768, "height": 1024 },
+        { "name": "Mobile", "width": 375, "height": 812 }
       ],
-      "network_conditions": ["Normal broadband", "Slow 3G (throttled via DevTools)"],
+      "network_conditions": [
+        "Normal broadband",
+        "Slow 3G (throttled via DevTools)"
+      ],
       "test_execution": "Claude in Chrome — automated browser interaction simulating Shayla's behavior patterns",
-      "accessibility_checks": ["Keyboard navigation", "Focus ring visibility", "ARIA landmarks", "Color contrast (WCAG AA minimum)"]
+      "accessibility_checks": [
+        "Keyboard navigation",
+        "Focus ring visibility",
+        "ARIA landmarks",
+        "Color contrast (WCAG AA minimum)"
+      ]
     },
 
     "reporting_format": {

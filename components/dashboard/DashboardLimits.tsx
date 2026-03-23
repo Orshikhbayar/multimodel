@@ -128,7 +128,10 @@ function UsageMeter({
             )}
           </span>
           {limit === "Unlimited" && (
-            <Badge variant="outline" className="ml-2 text-xs border-emerald-500/30 text-emerald-600">
+            <Badge
+              variant="outline"
+              className="ml-2 text-xs border-emerald-500/30 text-emerald-600"
+            >
               Unlimited
             </Badge>
           )}
@@ -154,9 +157,7 @@ function UsageMeter({
         </div>
       )}
 
-      {subtitle && (
-        <p className="text-xs text-muted-foreground">{subtitle}</p>
-      )}
+      {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
     </div>
   );
 }
@@ -215,7 +216,12 @@ export function DashboardLimits() {
           <CardContent className="py-8 text-center">
             <AlertTriangle className="mx-auto h-8 w-8 text-destructive" />
             <p className="mt-2 text-sm text-destructive">{error}</p>
-            <Button variant="outline" size="sm" className="mt-4" onClick={fetchLimits}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-4"
+              onClick={fetchLimits}
+            >
               Retry
             </Button>
           </CardContent>
@@ -263,7 +269,9 @@ export function DashboardLimits() {
         <div className="flex items-center gap-3 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3">
           <AlertTriangle className="h-5 w-5 shrink-0 text-red-500" />
           <div className="flex-1">
-            <p className="text-sm font-medium text-red-500">Daily limit reached</p>
+            <p className="text-sm font-medium text-red-500">
+              Daily limit reached
+            </p>
             <p className="text-xs text-red-400">
               Resets in {getTimeUntil(data.daily.resetsAt)}.{" "}
               {isFreePlan && "Upgrade to Pro for higher limits."}
@@ -271,7 +279,11 @@ export function DashboardLimits() {
           </div>
           {isFreePlan && (
             <Link href="/dashboard/plans">
-              <Button size="sm" variant="outline" className="border-red-500/30 text-red-500 hover:bg-red-500/10">
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-red-500/30 text-red-500 hover:bg-red-500/10"
+              >
                 Upgrade
                 <ArrowUpRight className="ml-1 h-3 w-3" />
               </Button>
@@ -284,9 +296,12 @@ export function DashboardLimits() {
         <div className="flex items-center gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3">
           <AlertTriangle className="h-5 w-5 shrink-0 text-amber-500" />
           <div className="flex-1">
-            <p className="text-sm font-medium text-amber-600">Approaching daily limit</p>
+            <p className="text-sm font-medium text-amber-600">
+              Approaching daily limit
+            </p>
             <p className="text-xs text-amber-500">
-              {data.daily.percentUsed}% of daily token cap used. Resets in {getTimeUntil(data.daily.resetsAt)}.
+              {data.daily.percentUsed}% of daily token cap used. Resets in{" "}
+              {getTimeUntil(data.daily.resetsAt)}.
             </p>
           </div>
         </div>
@@ -303,9 +318,15 @@ export function DashboardLimits() {
             label="Daily Usage"
             icon={Clock}
             used={formatTokens(data.daily.tokensUsed)}
-            limit={hasTokenLimits ? formatTokens(data.daily.tokenLimit) : "Unlimited"}
+            limit={
+              hasTokenLimits ? formatTokens(data.daily.tokenLimit) : "Unlimited"
+            }
             percent={data.daily.percentUsed}
-            detail={hasTokenLimits ? `Resets in ${getTimeUntil(data.daily.resetsAt)}` : undefined}
+            detail={
+              hasTokenLimits
+                ? `Resets in ${getTimeUntil(data.daily.resetsAt)}`
+                : undefined
+            }
             subtitle={`${data.daily.requestCount} requests today ($${data.daily.costUsd.toFixed(4)})`}
           />
 
@@ -316,7 +337,11 @@ export function DashboardLimits() {
             label="Weekly Usage (7 days)"
             icon={CalendarDays}
             used={formatTokens(data.weekly.tokensUsed)}
-            limit={data.weekly.tokenLimit > 0 ? formatTokens(data.weekly.tokenLimit) : "Unlimited"}
+            limit={
+              data.weekly.tokenLimit > 0
+                ? formatTokens(data.weekly.tokenLimit)
+                : "Unlimited"
+            }
             percent={data.weekly.percentUsed}
             subtitle={`${data.weekly.requestCount} requests ($${data.weekly.costUsd.toFixed(4)})`}
           />
@@ -328,7 +353,11 @@ export function DashboardLimits() {
             label="Monthly Usage"
             icon={Calendar}
             used={formatTokens(data.monthly.tokensUsed)}
-            limit={data.monthly.tokenLimit > 0 ? formatTokens(data.monthly.tokenLimit) : "Unlimited"}
+            limit={
+              data.monthly.tokenLimit > 0
+                ? formatTokens(data.monthly.tokenLimit)
+                : "Unlimited"
+            }
             percent={data.monthly.percentUsed}
             detail={`Period ends ${new Date(data.monthly.periodEnd).toLocaleDateString()}`}
             subtitle={`${data.monthly.requestCount} requests ($${data.monthly.costUsd.toFixed(4)})`}
@@ -348,11 +377,15 @@ export function DashboardLimits() {
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="rounded-lg border border-muted/60 p-3">
               <p className="text-xs text-muted-foreground">Included</p>
-              <p className="text-lg font-semibold">${data.credits.included.toFixed(2)}</p>
+              <p className="text-lg font-semibold">
+                ${data.credits.included.toFixed(2)}
+              </p>
             </div>
             <div className="rounded-lg border border-muted/60 p-3">
               <p className="text-xs text-muted-foreground">Used This Period</p>
-              <p className="text-lg font-semibold">${data.credits.usedThisPeriod.toFixed(4)}</p>
+              <p className="text-lg font-semibold">
+                ${data.credits.usedThisPeriod.toFixed(4)}
+              </p>
             </div>
             <div className="rounded-lg border border-muted/60 p-3">
               <p className="text-xs text-muted-foreground">Remaining</p>
@@ -371,7 +404,9 @@ export function DashboardLimits() {
               <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
                 <div
                   className={`h-full rounded-full transition-all duration-500 ${getBarColor(data.credits.percentUsed)}`}
-                  style={{ width: `${Math.min(100, data.credits.percentUsed)}%` }}
+                  style={{
+                    width: `${Math.min(100, data.credits.percentUsed)}%`,
+                  }}
                 />
               </div>
             </div>
@@ -391,14 +426,19 @@ export function DashboardLimits() {
           <CardContent>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Requests per minute</span>
+                <span className="text-sm text-muted-foreground">
+                  Requests per minute
+                </span>
                 <span className="text-sm font-medium tabular-nums">
-                  {data.rateLimits.requestsPerMinute} / {data.rateLimits.windowSeconds}s
+                  {data.rateLimits.requestsPerMinute} /{" "}
+                  {data.rateLimits.windowSeconds}s
                 </span>
               </div>
               <Separator />
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Concurrent streams</span>
+                <span className="text-sm text-muted-foreground">
+                  Concurrent streams
+                </span>
                 <span className="text-sm font-medium tabular-nums">
                   {data.rateLimits.maxConcurrentStreams}
                 </span>
@@ -417,12 +457,18 @@ export function DashboardLimits() {
           <CardContent>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Max models</span>
-                <span className="text-sm font-medium">{data.plan.maxEnabledModels}</span>
+                <span className="text-sm text-muted-foreground">
+                  Max models
+                </span>
+                <span className="text-sm font-medium">
+                  {data.plan.maxEnabledModels}
+                </span>
               </div>
               <Separator />
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Monthly credits</span>
+                <span className="text-sm text-muted-foreground">
+                  Monthly credits
+                </span>
                 <span className="text-sm font-medium">
                   ${data.plan.includedMonthlyCreditsUsd.toFixed(2)}
                 </span>
@@ -445,7 +491,8 @@ export function DashboardLimits() {
 
       {/* Timestamp */}
       <p className="text-center text-xs text-muted-foreground">
-        Last updated: {new Date(data.timestamp).toLocaleTimeString()} (auto-refreshes every 60s)
+        Last updated: {new Date(data.timestamp).toLocaleTimeString()}{" "}
+        (auto-refreshes every 60s)
       </p>
     </div>
   );

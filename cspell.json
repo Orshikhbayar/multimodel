@@ -24,6 +24,10 @@
     "README.md",
     "TECHNICAL_DOCUMENTATION.md",
     "persona-driven-tech-plan.md",
+    "shayla-test-report.json",
+    "shayla-persona.json",
+    "*_PROMPT.md",
+    "CLAUDE.md",
     "lib/hooks/useChatActions.ts",
     "lib/store.ts",
     "lib/stores/conversationStore.ts",
@@ -170,6 +174,13 @@
     "officia",
     "openxmlformats",
     "doesn",
-    "visualiz"
+    "visualiz",
+    "sandboxed",
+    "katex",
+    "jank",
+    "checkmarks",
+    "shayla",
+    "Shayla",
+    "couldn"
   ]
 }

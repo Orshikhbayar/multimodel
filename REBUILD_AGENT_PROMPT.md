@@ -15,6 +15,7 @@ This rebuild strips the product down to its core and makes the multi-model compa
 ## PHASE 1: REMOVE (Delete these features entirely)
 
 ### 1.1 Remove Insights/Analytics Dashboard
+
 - Delete `/app/(shell)/insights/` directory and all its contents
 - Remove the "Insights" link from the sidebar navigation in `components/Sidebar.tsx`
 - Remove the "Insights" link from `components/MobileSidebar.tsx`
@@ -23,6 +24,7 @@ This rebuild strips the product down to its core and makes the multi-model compa
 - Do NOT remove the underlying usage tracking in `lib/billing/` — that's needed for billing. Only remove the user-facing dashboard.
 
 ### 1.2 Remove Templates System
+
 - Delete `/app/(shell)/templates/` directory
 - Remove template-related API routes in `/app/api/templates/`
 - Remove "Templates" link from sidebar navigation
@@ -33,6 +35,7 @@ This rebuild strips the product down to its core and makes the multi-model compa
 - Clean up any template references in the chat flow
 
 ### 1.3 Remove Projects System
+
 - Delete `/app/(shell)/projects/` directory
 - Remove "Projects" link from sidebar navigation
 - Remove project-scoped conversation grouping from the sidebar
@@ -41,16 +44,19 @@ This rebuild strips the product down to its core and makes the multi-model compa
 - Keep conversation persistence — just remove the project wrapper
 
 ### 1.4 Remove Autopilot/Scheduled Runs
+
 - Delete `/app/(shell)/autopilot/` directory
 - Remove autopilot-related API routes in `/app/api/autopilot/`
 - Remove "Autopilot" link from sidebar navigation
 - Remove any autopilot-related stores, hooks, or utilities
 
 ### 1.5 Remove MVP Badges/Labels
+
 - Search the entire codebase for "MVP" text labels, badges, or markers displayed in the UI
 - Remove all instances. This was internal dev terminology that should never have been user-facing.
 
 ### 1.6 Remove Unused Interaction Modes
+
 - The current codebase defines 7 interaction modes: `smart`, `conversation`, `ensemble`, `expert`, `debate`, `simulation`, `web`
 - **Keep only TWO modes:**
   - `single` — User picks one model, gets one response (default for free tier)
@@ -64,6 +70,7 @@ This rebuild strips the product down to its core and makes the multi-model compa
 ## PHASE 2: SIMPLIFY
 
 ### 2.1 Sidebar — Minimal Like Claude/Cursor
+
 The current sidebar has too many sections: nav links, project-grouped chat history, billing info, theme toggle, user menu.
 
 **New sidebar structure (reference Claude's sidebar for feel):**
@@ -89,6 +96,7 @@ The current sidebar has too many sections: nav links, project-grouped chat histo
 ```
 
 **Rules:**
+
 - NO nav links to other pages (no Templates, Projects, Insights, Autopilot links)
 - Chat history is a flat list grouped by recency (Today, Yesterday, Previous 7 Days, Previous 30 Days, Older)
 - Each chat item shows: title (truncated), and a hover menu with rename/delete
@@ -97,9 +105,11 @@ The current sidebar has too many sections: nav links, project-grouped chat histo
 - Remove billing/credit display from sidebar entirely — move to settings/account page only
 
 ### 2.2 Tools — Simple Toggles Near Input
+
 The current tool system has permissions, cost estimation, result artifacts, and source attribution. Replace with simple capability toggles.
 
 **New tools UX:**
+
 - Small icon buttons displayed in a row above or below the chat input box
 - Available toggles:
   - 🔍 **Web Search** — enables real-time web search augmentation
@@ -114,20 +124,22 @@ The current tool system has permissions, cost estimation, result artifacts, and 
 - Remove tool-related API routes in `/app/api/tools/`
 
 ### 2.3 Pricing — Simplify to Two Tiers
+
 Current state: 4 tiers (Free/Plus/Pro/Team) in code, different pricing on landing page ($29/$99). This is a mess.
 
 **New pricing (2 tiers only):**
 
-| | Free | Pro |
-|---|---|---|
-| **Price** | $0 | $12/month |
-| **Models** | DeepSeek, Gemini Flash, GPT-4o-mini | All models (GPT-4o, Claude Sonnet, Claude Opus, Grok, + free tier models) |
-| **Comparisons** | 20/day | Unlimited |
-| **Single chat** | Unlimited | Unlimited |
-| **Tools** | File upload only | Web search, image gen, file upload |
-| **History** | 30 days | Unlimited |
+|                 | Free                                | Pro                                                                       |
+| --------------- | ----------------------------------- | ------------------------------------------------------------------------- |
+| **Price**       | $0                                  | $12/month                                                                 |
+| **Models**      | DeepSeek, Gemini Flash, GPT-4o-mini | All models (GPT-4o, Claude Sonnet, Claude Opus, Grok, + free tier models) |
+| **Comparisons** | 20/day                              | Unlimited                                                                 |
+| **Single chat** | Unlimited                           | Unlimited                                                                 |
+| **Tools**       | File upload only                    | Web search, image gen, file upload                                        |
+| **History**     | 30 days                             | Unlimited                                                                 |
 
 **Implementation:**
+
 - Update `lib/billing/plans.ts` to define only `free` and `pro` plans
 - Update `lib/billing/cost.ts` and `lib/billing/supabaseService.ts` accordingly
 - Update or simplify the pricing page at `/app/(shell)/pricing/` or `/app/dashboard/plans/`
@@ -141,9 +153,11 @@ Current state: 4 tiers (Free/Plus/Pro/Team) in code, different pricing on landin
 ## PHASE 3: ENHANCE
 
 ### 3.1 Multi-Model Comparison as the Hero Experience
+
 The `UnifiedAnswerFlow.tsx` component already shows multi-model responses with flow visualization. This needs to be THE thing users see and interact with.
 
 **Changes:**
+
 - When a user sends their FIRST message ever, default to compare mode with 3 models (e.g., GPT-4o-mini + Gemini Flash + DeepSeek) so they immediately see the comparison magic
 - The model selector should prominently show a "Compare" toggle/button that's visually distinct
 - In compare mode, the response area should show models side by side (on desktop) or stacked with tabs (on mobile)
@@ -153,6 +167,7 @@ The `UnifiedAnswerFlow.tsx` component already shows multi-model responses with f
 - Remove cost display from individual model cards (users don't care about your costs)
 
 ### 3.2 Interactive In-Chat Visualizations
+
 This is the killer differentiator. When AI responds with data, code, or structured content, render it interactively inline in the chat.
 
 **How Claude.ai does this (our reference implementation):**
@@ -171,6 +186,7 @@ This instruction works with ANY model — GPT-4o-mini, Claude, Gemini, DeepSeek.
 
 **Layer 2: Frontend Renderer — `components/chat/InteractiveBlock.tsx`**
 Create a React component that:
+
 1. Parses the AI response markdown looking for ````interactive-html` fenced code blocks
 2. Extracts the HTML content from those blocks
 3. Renders each block in a sandboxed `<iframe>` with `srcdoc` attribute
@@ -185,6 +201,7 @@ Create a React component that:
 
 **Layer 3: Integration into MessageItem**
 In `components/chat/MessageItem.tsx` (or wherever message content is rendered):
+
 1. Before rendering markdown, scan the message content for ````interactive-html` blocks
 2. Split the message into segments: regular markdown text and interactive blocks
 3. Render text segments with the existing markdown renderer
@@ -192,6 +209,7 @@ In `components/chat/MessageItem.tsx` (or wherever message content is rendered):
 5. This way, a model response can mix text and interactive elements naturally (e.g., some explanation text, then an interactive chart, then more text)
 
 **Additional visualizations to detect and auto-render:**
+
 - **Mermaid diagrams:** Detect ````mermaid` code blocks → render as interactive SVG using Mermaid.js loaded in the iframe
 - **Charts/Graphs:** Detect ````chart` or data-heavy responses → render with Chart.js in the iframe
 - **Math:** Detect LaTeX expressions (`$...$` or `$$...$$`) → render with KaTeX
@@ -204,9 +222,11 @@ When in compare mode, if multiple models output interactive blocks, display them
 **Performance note:** Iframes are heavier than plain text. Lazy-load interactive blocks that are off-screen. Only render the iframe when the block scrolls into view (use IntersectionObserver).
 
 ### 3.3 Login — Remember User Accounts
+
 When a user logs out, remember their account for easy re-login (like Google, Discord, etc.).
 
 **Implementation:**
+
 - On successful login, save the user's email and avatar URL to `localStorage` under a key like `remembered_accounts`
 - Store as an array of `{ email, avatarUrl, lastLogin }` objects (max 5 accounts)
 - On the login page (`/app/auth/login/page.tsx`), if remembered accounts exist, show them as clickable account cards ABOVE the login form
@@ -223,6 +243,7 @@ When a user logs out, remember their account for easy re-login (like Google, Dis
 The current landing page (`/intro/index.html` or `/app/intro/`) needs a complete rewrite.
 
 **Problems with current landing page:**
+
 - Claims "50K+ users" and "1M+ queries" — these are fabricated numbers. Remove immediately.
 - Pricing shows $29/$99 which doesn't match the codebase
 - Too many sections, too much text, tries to sell everything at once
@@ -231,35 +252,42 @@ The current landing page (`/intro/index.html` or `/app/intro/`) needs a complete
 **New landing page requirements:**
 
 **Hero section:**
+
 - Headline: "One Prompt. Multiple AI Models. Compare Instantly." (or similar — focused on comparison)
 - Subheadline: "See how GPT-4, Claude, Gemini, and more answer the same question. Pick the best. Stop guessing which AI to use."
 - CTA button: "Try Free — No Credit Card"
 - Hero visual: An animated or static mockup showing a prompt being sent and 3 model responses appearing side by side
 
 **How it works section (3 steps):**
+
 1. "Type your question" — simple input
 2. "AI models respond simultaneously" — side by side responses streaming
 3. "Pick the best answer" — user selects their favorite
 
 **Model showcase:**
+
 - Show logos/icons of supported models: OpenAI, Anthropic, Google, xAI, DeepSeek
 - One line per model about what it's best at (e.g., "Claude — Best for writing and analysis")
 
 **Interactive visualization callout:**
+
 - Highlight that responses include interactive charts, diagrams, and code execution
 - Show a visual example
 
 **Pricing section:**
+
 - Display the 2 tiers (Free and Pro at $12/month)
 - Must match the actual pricing in the codebase
 - Show MNT equivalent for Mongolian users
 
 **Footer:**
+
 - Simple: links to login, privacy, terms
 - No fake testimonials, no fake user counts
 - Can include "Built in Mongolia 🇲🇳" as a subtle branding element
 
 **Technical implementation:**
+
 - Convert from static HTML to a proper Next.js page if not already
 - Should be the default route for unauthenticated users (`/`)
 - Authenticated users should be redirected to `/chat`
@@ -272,7 +300,9 @@ The current landing page (`/intro/index.html` or `/app/intro/`) needs a complete
 ## PHASE 5: CLEANUP & CONSISTENCY
 
 ### 5.1 Remove Dead Code
+
 After all the above removals, there will be orphaned imports, unused components, dead routes, and stale references. Do a thorough cleanup:
+
 - Run TypeScript compiler to find type errors from removed features
 - Check all imports in remaining files
 - Remove any components that are no longer referenced
@@ -280,7 +310,9 @@ After all the above removals, there will be orphaned imports, unused components,
 - Update `middleware.ts` if it references removed routes
 
 ### 5.2 Fix Pricing Consistency
+
 Ensure the pricing is identical everywhere it appears:
+
 - Landing page
 - Pricing page (if kept as a separate page)
 - Billing/account settings
@@ -288,14 +320,18 @@ Ensure the pricing is identical everywhere it appears:
 - Plan gate checks in the billing service
 
 ### 5.3 Update the Shayla Persona Test
+
 The `shayla-persona.json` test scenarios reference removed features. Update the persona test to reflect the new product:
+
 - Remove test scenarios for templates, projects, autopilot
 - Add test scenario for multi-model comparison first experience
 - Add test scenario for interactive visualization interaction
 - Update success criteria
 
 ### 5.4 Localization Updates
+
 The i18n messages in `lib/i18n/messages.ts` will have dead keys from removed features. Clean up:
+
 - Remove translation keys for Templates, Projects, Insights, Autopilot, MVP
 - Add translation keys for any new UI text (comparison mode labels, tool toggles, landing page content)
 - Ensure both English and Mongolian translations are complete for remaining features
@@ -321,23 +357,23 @@ The i18n messages in `lib/i18n/messages.ts` will have dead keys from removed fea
 
 Key files you'll be working with:
 
-| Area | File Path |
-|---|---|
-| Sidebar | `components/Sidebar.tsx`, `components/MobileSidebar.tsx` |
-| Chat UI | `components/ChatWorkspace.tsx`, `components/chat/UnifiedAnswerFlow.tsx`, `components/chat/MessageItem.tsx`, `components/chat/MessageList.tsx` |
-| Chat API | `app/api/chat/route.ts` |
-| Provider adapters | `lib/api/openai.ts`, `lib/api/anthropic.ts`, `lib/api/google.ts`, `lib/api/providerRouter.ts` |
-| Billing/Plans | `lib/billing/plans.ts`, `lib/billing/cost.ts`, `lib/billing/supabaseService.ts`, `lib/billing/stripe.ts` |
-| Auth | `app/auth/login/page.tsx`, `app/auth/logout/route.ts`, `app/auth/callback/` |
-| Landing page | `intro/index.html` or `app/intro/page.tsx` |
-| Model catalog | `lib/modelCatalog.ts` |
-| i18n | `lib/i18n/messages.ts`, `lib/i18n/translate.ts` |
-| Localization hook | `lib/hooks/` (look for `useI18n`) |
-| Middleware | `middleware.ts` |
-| Persona | `shayla-persona.json`, `SHAYLA_10_10_AGENT_PROMPT.md` |
-| Shell layout | `app/(shell)/layout.tsx` |
-| Onboarding | `components/onboarding/` |
-| Stores | `lib/stores/modelStore.ts` |
+| Area              | File Path                                                                                                                                     |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Sidebar           | `components/Sidebar.tsx`, `components/MobileSidebar.tsx`                                                                                      |
+| Chat UI           | `components/ChatWorkspace.tsx`, `components/chat/UnifiedAnswerFlow.tsx`, `components/chat/MessageItem.tsx`, `components/chat/MessageList.tsx` |
+| Chat API          | `app/api/chat/route.ts`                                                                                                                       |
+| Provider adapters | `lib/api/openai.ts`, `lib/api/anthropic.ts`, `lib/api/google.ts`, `lib/api/providerRouter.ts`                                                 |
+| Billing/Plans     | `lib/billing/plans.ts`, `lib/billing/cost.ts`, `lib/billing/supabaseService.ts`, `lib/billing/stripe.ts`                                      |
+| Auth              | `app/auth/login/page.tsx`, `app/auth/logout/route.ts`, `app/auth/callback/`                                                                   |
+| Landing page      | `intro/index.html` or `app/intro/page.tsx`                                                                                                    |
+| Model catalog     | `lib/modelCatalog.ts`                                                                                                                         |
+| i18n              | `lib/i18n/messages.ts`, `lib/i18n/translate.ts`                                                                                               |
+| Localization hook | `lib/hooks/` (look for `useI18n`)                                                                                                             |
+| Middleware        | `middleware.ts`                                                                                                                               |
+| Persona           | `shayla-persona.json`, `SHAYLA_10_10_AGENT_PROMPT.md`                                                                                         |
+| Shell layout      | `app/(shell)/layout.tsx`                                                                                                                      |
+| Onboarding        | `components/onboarding/`                                                                                                                      |
+| Stores            | `lib/stores/modelStore.ts`                                                                                                                    |
 
 ---
 

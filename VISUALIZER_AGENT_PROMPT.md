@@ -29,6 +29,7 @@ There are exactly 3 things to build:
 **What to do:** Before passing messages to `streamCompletion()`, prepend a system message to the messages array. This system message instructs the model to generate interactive HTML when appropriate.
 
 **Find this code block (around line 474):**
+
 ```typescript
 const streamOptions: StreamOptions = {
   model: resolvedModelId,
@@ -40,6 +41,7 @@ const streamOptions: StreamOptions = {
 ```
 
 **Replace with:**
+
 ```typescript
 // Build messages array with system prompt for interactive visualization
 const systemMessage: ChatMessage = {
@@ -59,6 +61,7 @@ const streamOptions: StreamOptions = {
 ```
 
 **Add this constant near the top of the file (after imports):**
+
 ```typescript
 const VISUALIZATION_SYSTEM_PROMPT = `You are a helpful AI assistant. You have a special capability: when the user asks for something visual, interactive, structured, or uses words like "visualize", "visualized", "visual", "interactive", "diagram", "chart", or "dashboard", you MUST output an interactive HTML artifact.
 
@@ -90,6 +93,7 @@ Rules for interactive-html blocks:
 **Important:** Make sure the `ChatMessage` type import is available. Check `lib/api/types.ts` — the type should already be defined there with `role: "system" | "user" | "assistant"`.
 
 ### Provider-specific note:
+
 The Anthropic adapter (`lib/api/anthropic.ts`) already handles system messages specially — it extracts messages with `role === "system"` and passes them as the `system` parameter in the API call (lines 59-74). The OpenAI and Google adapters pass system messages as-is. So this approach works across all providers without changes to the adapters.
 
 ---
@@ -114,7 +118,10 @@ interface InteractiveBlockProps {
  * Renders self-contained HTML in a sandboxed iframe inline in the chat.
  * Handles auto-resizing, fullscreen expansion, and code view toggle.
  */
-export default function InteractiveBlock({ html, compact }: InteractiveBlockProps) {
+export default function InteractiveBlock({
+  html,
+  compact,
+}: InteractiveBlockProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState(compact ? 300 : 400);
@@ -155,16 +162,25 @@ export default function InteractiveBlock({ html, compact }: InteractiveBlockProp
   // Listen for resize messages from the iframe
   useEffect(() => {
     const handler = (event: MessageEvent) => {
-      if (event.data?.type === 'interactive-block-resize' && typeof event.data.height === 'number') {
+      if (
+        event.data?.type === "interactive-block-resize" &&
+        typeof event.data.height === "number"
+      ) {
         // Only resize if the message came from our iframe
-        if (iframeRef.current && event.source === iframeRef.current.contentWindow) {
-          const newHeight = Math.min(Math.max(event.data.height + 20, 200), 2000);
+        if (
+          iframeRef.current &&
+          event.source === iframeRef.current.contentWindow
+        ) {
+          const newHeight = Math.min(
+            Math.max(event.data.height + 20, 200),
+            2000,
+          );
           setHeight(newHeight);
         }
       }
     };
-    window.addEventListener('message', handler);
-    return () => window.removeEventListener('message', handler);
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
   }, []);
 
   // Handle iframe load errors
@@ -202,7 +218,11 @@ export default function InteractiveBlock({ html, compact }: InteractiveBlockProp
                 className="p-1.5 rounded-md hover:bg-muted/50 text-muted-foreground transition"
                 title="Copy HTML"
               >
-                {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                {copied ? (
+                  <Check className="h-4 w-4 text-emerald-400" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
               </button>
               <button
                 onClick={() => setFullscreen(false)}
@@ -237,7 +257,9 @@ export default function InteractiveBlock({ html, compact }: InteractiveBlockProp
   if (renderError) {
     return (
       <div className="my-3 rounded-xl border border-yellow-500/30 bg-yellow-500/5 p-4">
-        <p className="text-xs text-yellow-400 mb-2 font-medium">Visualization couldn&apos;t render — showing code instead</p>
+        <p className="text-xs text-yellow-400 mb-2 font-medium">
+          Visualization couldn&apos;t render — showing code instead
+        </p>
         <pre className="overflow-auto rounded-lg bg-muted/20 p-3 text-xs font-mono text-foreground/80 max-h-[400px]">
           <code>{html}</code>
         </pre>
@@ -274,7 +296,11 @@ export default function InteractiveBlock({ html, compact }: InteractiveBlockProp
             className="p-1 rounded hover:bg-muted/50 text-muted-foreground transition"
             title="Copy HTML"
           >
-            {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+            {copied ? (
+              <Check className="h-3.5 w-3.5 text-emerald-400" />
+            ) : (
+              <Copy className="h-3.5 w-3.5" />
+            )}
           </button>
         </div>
       </div>
@@ -309,18 +335,20 @@ export default function InteractiveBlock({ html, compact }: InteractiveBlockProp
 The message content is currently rendered by `ReactMarkdown` at approximately lines 200-235. We need to intercept the content BEFORE ReactMarkdown, split it into text segments and interactive-html segments, and render each appropriately.
 
 **3a. Add import at the top of MessageItem.tsx:**
+
 ```typescript
 import InteractiveBlock from "./InteractiveBlock";
 ```
 
 **3b. Add this helper function** inside the file (before the component, or in a utils file):
-```typescript
+
+````typescript
 /**
  * Splits a message string into segments of plain text and interactive-html blocks.
  * Returns an array of { type: 'text' | 'interactive', content: string } objects.
  */
 function splitInteractiveBlocks(
-  content: string
+  content: string,
 ): Array<{ type: "text" | "interactive"; content: string }> {
   const segments: Array<{ type: "text" | "interactive"; content: string }> = [];
   // Match ```interactive-html ... ``` blocks (with optional whitespace)
@@ -352,7 +380,7 @@ function splitInteractiveBlocks(
 
   return segments;
 }
-```
+````
 
 **3c. Replace the ReactMarkdown rendering block.** Find the section (approximately lines 199-236) that looks like:
 
@@ -387,6 +415,7 @@ function splitInteractiveBlocks(
 ```
 
 **Replace with:**
+
 ```tsx
 ) : (
   <>
@@ -446,6 +475,7 @@ function splitInteractiveBlocks(
 This component renders multi-model comparison responses. It also uses ReactMarkdown to render each model's output. Apply the same pattern:
 
 **4a. Import InteractiveBlock and the splitInteractiveBlocks function:**
+
 ```typescript
 import InteractiveBlock from "./InteractiveBlock";
 ```
@@ -453,9 +483,10 @@ import InteractiveBlock from "./InteractiveBlock";
 Copy or import the `splitInteractiveBlocks` function. If you want to avoid duplication, extract it to a shared utility:
 
 **Create file: `lib/utils/interactiveBlocks.ts`**
+
 ```typescript
 export function splitInteractiveBlocks(
-  content: string
+  content: string,
 ): Array<{ type: "text" | "interactive"; content: string }> {
   // (same implementation as above)
 }
@@ -464,6 +495,7 @@ export function splitInteractiveBlocks(
 Then import it in both MessageItem.tsx and UnifiedAnswerFlow.tsx.
 
 **4b. In UnifiedAnswerFlow.tsx**, find wherever ReactMarkdown renders model response text and apply the same split pattern. Each model's response in compare mode should render interactive blocks with the `compact` prop:
+
 ```tsx
 <InteractiveBlock html={segment.content} compact />
 ```
@@ -478,25 +510,31 @@ In addition to explicit `interactive-html` blocks, detect and auto-render these 
 
 ### In the `splitInteractiveBlocks` function, extend the regex to also catch mermaid blocks:
 
-```typescript
+````typescript
 // Also detect ```mermaid blocks and convert them to interactive-html
 const mermaidRegex = /```mermaid\s*\n([\s\S]*?)```/g;
 
 // Before the main regex pass, convert mermaid blocks to interactive-html blocks:
 content = content.replace(mermaidRegex, (_, mermaidCode) => {
-  return '```interactive-html\n' +
-    '<!DOCTYPE html><html><head>' +
+  return (
+    "```interactive-html\n" +
+    "<!DOCTYPE html><html><head>" +
     '<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>' +
-    '<style>body{background:#1a1a2e;display:flex;justify-content:center;padding:20px;margin:0}' +
-    '.mermaid{color:#e0e0e0}</style>' +
-    '</head><body><div class="mermaid">' + mermaidCode + '</div>' +
+    "<style>body{background:#1a1a2e;display:flex;justify-content:center;padding:20px;margin:0}" +
+    ".mermaid{color:#e0e0e0}</style>" +
+    '</head><body><div class="mermaid">' +
+    mermaidCode +
+    "</div>" +
     '<script>mermaid.initialize({theme:"dark",startOnLoad:true});</script>' +
-    '</body></html>\n```';
+    "</body></html>\n```"
+  );
 });
-```
+````
 
 ### For LaTeX math expressions:
+
 Install KaTeX if not already present:
+
 ```bash
 npm install katex
 ```
@@ -523,7 +561,7 @@ useEffect(() => {
         observer.disconnect();
       }
     },
-    { rootMargin: '200px' } // Start loading 200px before visible
+    { rootMargin: "200px" }, // Start loading 200px before visible
   );
   observer.observe(containerRef.current);
   return () => observer.disconnect();
@@ -531,6 +569,7 @@ useEffect(() => {
 ```
 
 Then conditionally render the iframe:
+
 ```tsx
 {isVisible ? (
   <iframe ... />
@@ -563,20 +602,22 @@ After implementing all steps, verify the following:
 
 ## Files Modified/Created Summary
 
-| Action | File |
-|--------|------|
-| MODIFIED | `app/api/chat/route.ts` — Add VISUALIZATION_SYSTEM_PROMPT and inject as system message |
-| CREATED | `components/chat/InteractiveBlock.tsx` — Iframe renderer with toolbar |
-| CREATED | `lib/utils/interactiveBlocks.ts` — splitInteractiveBlocks utility |
+| Action   | File                                                                                         |
+| -------- | -------------------------------------------------------------------------------------------- |
+| MODIFIED | `app/api/chat/route.ts` — Add VISUALIZATION_SYSTEM_PROMPT and inject as system message       |
+| CREATED  | `components/chat/InteractiveBlock.tsx` — Iframe renderer with toolbar                        |
+| CREATED  | `lib/utils/interactiveBlocks.ts` — splitInteractiveBlocks utility                            |
 | MODIFIED | `components/chat/MessageItem.tsx` — Import and use InteractiveBlock + splitInteractiveBlocks |
-| MODIFIED | `components/chat/UnifiedAnswerFlow.tsx` — Same integration for compare mode |
+| MODIFIED | `components/chat/UnifiedAnswerFlow.tsx` — Same integration for compare mode                  |
 
 **Do NOT modify:**
+
 - Provider adapters (they already handle system messages correctly)
 - Billing/billing logic
 - Sidebar, Composer, or other UI components
 - Database schema
 
 **Dependencies to install (if not already present):**
+
 - None required for the core feature. Mermaid and Chart.js load from CDN inside the iframe.
 - Optional: `katex` for LaTeX rendering (lower priority)

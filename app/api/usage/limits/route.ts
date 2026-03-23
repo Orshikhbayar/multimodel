@@ -18,7 +18,10 @@ export async function GET() {
   const claims = data?.claims;
 
   if (!claims?.sub) {
-    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    return NextResponse.json(
+      { error: "Authentication required" },
+      { status: 401 },
+    );
   }
 
   const userId = claims.sub;
@@ -27,12 +30,16 @@ export async function GET() {
     // 1. Get user profile to determine plan
     const { data: profile } = await supabase
       .from("profiles")
-      .select("plan_id, included_credits_cents, bonus_credits_cents, top_up_credits_cents, period_start_at, period_end_at")
+      .select(
+        "plan_id, included_credits_cents, bonus_credits_cents, top_up_credits_cents, period_start_at, period_end_at",
+      )
       .eq("id", userId)
       .maybeSingle();
 
     const planId: PlanId = profile?.plan_id
-      ? (["free", "plus", "pro", "team"].includes(profile.plan_id) ? profile.plan_id as PlanId : "free")
+      ? ["free", "plus", "pro", "team"].includes(profile.plan_id)
+        ? (profile.plan_id as PlanId)
+        : "free"
       : "free";
     const plan = getPlanById(planId);
 
@@ -122,9 +129,13 @@ export async function GET() {
         tokenLimit: plan.dailyTokenCap,
         requestCount: dailyRequestCount,
         costUsd: Number(dailyCostUsd.toFixed(4)),
-        percentUsed: plan.dailyTokenCap > 0
-          ? Math.min(100, Math.round((dailyTokensUsed / plan.dailyTokenCap) * 100))
-          : 0,
+        percentUsed:
+          plan.dailyTokenCap > 0
+            ? Math.min(
+                100,
+                Math.round((dailyTokensUsed / plan.dailyTokenCap) * 100),
+              )
+            : 0,
         resetsAt: new Date(dayStart.getTime() + 86_400_000).toISOString(),
       },
       weekly: {
@@ -133,18 +144,26 @@ export async function GET() {
         costUsd: Number(weeklyCostUsd.toFixed(4)),
         // Weekly soft limit = daily cap * 7 (informational, not enforced)
         tokenLimit: plan.dailyTokenCap > 0 ? plan.dailyTokenCap * 7 : 0,
-        percentUsed: plan.dailyTokenCap > 0
-          ? Math.min(100, Math.round((weeklyTokensUsed / (plan.dailyTokenCap * 7)) * 100))
-          : 0,
+        percentUsed:
+          plan.dailyTokenCap > 0
+            ? Math.min(
+                100,
+                Math.round((weeklyTokensUsed / (plan.dailyTokenCap * 7)) * 100),
+              )
+            : 0,
       },
       monthly: {
         tokensUsed: monthlyTokensUsed,
         tokenLimit: plan.monthlyTokenCap,
         requestCount: monthlyRequestCount,
         costUsd: Number(monthlyCostUsd.toFixed(4)),
-        percentUsed: plan.monthlyTokenCap > 0
-          ? Math.min(100, Math.round((monthlyTokensUsed / plan.monthlyTokenCap) * 100))
-          : 0,
+        percentUsed:
+          plan.monthlyTokenCap > 0
+            ? Math.min(
+                100,
+                Math.round((monthlyTokensUsed / plan.monthlyTokenCap) * 100),
+              )
+            : 0,
         periodStart: periodStart.toISOString(),
         periodEnd: periodEnd.toISOString(),
       },
@@ -154,10 +173,13 @@ export async function GET() {
         topUp: Number(topUpCredits.toFixed(2)),
         total: Number(totalCredits.toFixed(2)),
         usedThisPeriod: Number(monthlyCostUsd.toFixed(4)),
-        remainingEstimate: Number(Math.max(0, totalCredits - monthlyCostUsd).toFixed(2)),
-        percentUsed: totalCredits > 0
-          ? Math.min(100, Math.round((monthlyCostUsd / totalCredits) * 100))
-          : 0,
+        remainingEstimate: Number(
+          Math.max(0, totalCredits - monthlyCostUsd).toFixed(2),
+        ),
+        percentUsed:
+          totalCredits > 0
+            ? Math.min(100, Math.round((monthlyCostUsd / totalCredits) * 100))
+            : 0,
       },
       rateLimits: {
         requestsPerMinute: RATE_LIMIT_CONFIG.maxRequests,

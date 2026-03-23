@@ -68,38 +68,47 @@ supabase/
 ## Key Architecture Decisions
 
 ### Streaming
+
 All chat completions stream via SSE from `app/api/chat/route.ts`. The endpoint handles auth, rate limiting, billing holds, provider routing, token counting, and metering in a single request lifecycle. Concurrency slots are released in a `finally` block.
 
 ### Billing
+
 Dual-accounting credit system: included credits (from plan) + top-up credits. A "hold" is created before streaming starts, then finalized with actual token usage when the stream completes. Plan-specific auto-policies limit tokens per request, requests per minute, and daily spend.
 
 ### Visualizations (Client-Side)
+
 Models are NOT asked to produce special code blocks. Instead, the client detects user intent via regex triggers (e.g., "dashboard", "chart", "presentation") and transforms plain markdown into interactive HTML or PPTX data. This avoids model-cooperation problems (GPT-4o-mini ignoring system prompts).
 
 Key regex patterns in `interactiveBlocks.ts` and `useChatActions.ts`:
+
 ```typescript
-const VIZ_TRIGGERS = /\b(visualiz\w*|interactive|diagram|chart|dashboard|...)\b/i;
+const VIZ_TRIGGERS =
+  /\b(visualiz\w*|interactive|diagram|chart|dashboard|...)\b/i;
 const PPTX_TRIGGERS = /\b(presentation|slides?|pptx|powerpoint|deck|...)\b/i;
 ```
 
 ### Rate Limiting
+
 Two layers: (1) in-memory fixed-window (20 req/60s, 2 concurrent) for local dev, (2) Upstash Redis sliding window for production. Tester bypass via `UNLIMITED_TESTER_EMAILS` env var.
 
 ## Environment Variables
 
 Required:
+
 - `OPENAI_API_KEY` — OpenAI API key
 - `NEXT_PUBLIC_SUPABASE_URL` — Supabase project URL
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` — Supabase anon key
 - `SUPABASE_SERVICE_ROLE_KEY` — For admin/billing operations
 
 Optional provider keys:
+
 - `ANTHROPIC_API_KEY` — Anthropic (Claude)
 - `GOOGLE_AI_API_KEY` — Google (Gemini)
 - `XAI_API_KEY` — xAI (Grok)
 - `DEEPSEEK_API_KEY` — DeepSeek
 
 Optional infrastructure:
+
 - `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` — Distributed rate limiting
 - `SENTRY_DSN` — Error tracking
 - `NEXT_PUBLIC_DISABLE_SERVER_BILLING` — Disable billing (for testing)
@@ -108,14 +117,14 @@ Optional infrastructure:
 
 ## Plans
 
-| Feature | Free | Pro ($12/mo) |
-|---------|------|-------------|
-| Daily token cap | 2,000 | Unlimited |
-| Monthly token cap | 30,000 | Unlimited |
-| Max models | 3 | 6 |
-| Monthly credits | $1 | $18 |
-| Web search | No | Yes |
-| Image generation | No | Yes |
+| Feature           | Free   | Pro ($12/mo) |
+| ----------------- | ------ | ------------ |
+| Daily token cap   | 2,000  | Unlimited    |
+| Monthly token cap | 30,000 | Unlimited    |
+| Max models        | 3      | 6            |
+| Monthly credits   | $1     | $18          |
+| Web search        | No     | Yes          |
+| Image generation  | No     | Yes          |
 
 ## Common Commands
 
@@ -130,6 +139,7 @@ npm run test:e2e     # Playwright e2e tests
 ## Database
 
 Supabase Postgres with RLS. Key tables:
+
 - `profiles` — User plan, credits, billing period
 - `conversations` — Chat threads
 - `messages` — Individual messages

@@ -9,6 +9,7 @@ The interactive visualization feature was implemented (InteractiveBlock componen
 Two issues are causing this:
 
 ### Issue 1: Competing System Prompts
+
 The client (`lib/hooks/useChatActions.ts`) sends its own system messages before the user message — specifically a Mongolian locale instruction: "Respond in Mongolian (Cyrillic) by default." The server then PREPENDS another system message (VISUALIZATION_SYSTEM_PROMPT). So the model receives:
 
 1. System: VISUALIZATION_SYSTEM_PROMPT (long, 9 rules, ~300 words)
@@ -18,6 +19,7 @@ The client (`lib/hooks/useChatActions.ts`) sends its own system messages before 
 Smaller models like GPT-4o-mini can't reliably follow two competing system instructions. They prioritize the shorter, simpler Mongolian instruction and ignore the complex visualization format rules.
 
 ### Issue 2: System Prompt is Too Passive for Small Models
+
 The system prompt says "when the user asks for something visual... you MUST output an interactive HTML artifact." This works for powerful models (Claude Sonnet, GPT-4o) but GPT-4o-mini doesn't reliably follow long conditional instructions in system prompts. It needs explicit, immediate reinforcement in the user message itself.
 
 ## The Fix — Two Changes
@@ -62,7 +64,8 @@ This is the critical fix. When the user's message contains visualization keyword
  * Returns the original message unchanged if no visualization is detected.
  */
 function augmentWithVisualizationHint(userContent: string): string {
-  const visualTriggers = /\b(visualiz|visual|interactive|diagram|chart|dashboard|infographic|flowchart|graph|timeline)\b/i;
+  const visualTriggers =
+    /\b(visualiz|visual|interactive|diagram|chart|dashboard|infographic|flowchart|graph|timeline)\b/i;
 
   if (!visualTriggers.test(userContent)) {
     return userContent;
@@ -77,16 +80,22 @@ function augmentWithVisualizationHint(userContent: string): string {
 **Step 2b: Apply the augmentation.** Find all places in `useChatActions.ts` where the user message content is added to the `apiMessages` array. There are multiple code paths (single mode and compare mode). In each one, apply the augmentation to the user content.
 
 Look for lines like:
+
 ```typescript
 apiMessages.push({ role: "user", content });
 ```
 
 Replace with:
+
 ```typescript
-apiMessages.push({ role: "user", content: augmentWithVisualizationHint(content) });
+apiMessages.push({
+  role: "user",
+  content: augmentWithVisualizationHint(content),
+});
 ```
 
 **IMPORTANT:** There are multiple places in useChatActions.ts where user messages are pushed. You need to find ALL of them. Based on the current code, these are approximately at:
+
 - Around line 1264 (single/compare mode initial send)
 - Around line 1419 (any other send paths)
 - Do NOT augment the synthesis/unified answer call (~line 419) — that's the internal model-to-model call, not a user message
@@ -121,7 +130,7 @@ This ensures the Mongolian instruction doesn't override the visualization format
 
 Some models might output slight variations of the code block tag. Make the regex more forgiving:
 
-```typescript
+````typescript
 export function splitInteractiveBlocks(
   content: string,
 ): Array<{ type: "text" | "interactive"; content: string }> {
@@ -151,7 +160,8 @@ export function splitInteractiveBlocks(
   // Match ```interactive-html ... ``` blocks
   // Case-insensitive, allow optional whitespace, also match ```html if it contains
   // full HTML document structure (<!DOCTYPE or <html)
-  const regex = /```(?:interactive-html|interactive[-_\s]?html)\s*\n([\s\S]*?)```/gi;
+  const regex =
+    /```(?:interactive-html|interactive[-_\s]?html)\s*\n([\s\S]*?)```/gi;
   let lastIndex = 0;
   let match;
 
@@ -205,22 +215,23 @@ export function splitInteractiveBlocks(
 
   return segments;
 }
-```
+````
 
 Key changes:
+
 - Case-insensitive regex matching (`/gi`)
 - Matches variations: `interactive-html`, `interactive_html`, `interactive html`
-- **Critical fallback**: If no `interactive-html` blocks found, scans for `\`\`\`html` blocks that contain full HTML documents (`<!DOCTYPE`, `<html>`, `<head>`, `<body>`) and treats them as interactive too — because many models will output `\`\`\`html` instead of `\`\`\`interactive-html` despite the instruction
+- **Critical fallback**: If no `interactive-html` blocks found, scans for `\`\`\`html` blocks that contain full HTML documents (`<!DOCTYPE`, `<html>`, `<head>`, `<body>`) and treats them as interactive too — because many models will output `\`\`\`html`instead of`\`\`\`interactive-html` despite the instruction
 
 ---
 
 ## Files to Modify
 
-| File | Change |
-|------|--------|
-| `app/api/chat/route.ts` | Replace VISUALIZATION_SYSTEM_PROMPT with shorter version |
-| `lib/hooks/useChatActions.ts` | Add `augmentWithVisualizationHint()`, apply to all user message pushes, update locale instruction |
-| `lib/utils/interactiveBlocks.ts` | Make regex case-insensitive, add `\`\`\`html` fallback detection |
+| File                             | Change                                                                                            |
+| -------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `app/api/chat/route.ts`          | Replace VISUALIZATION_SYSTEM_PROMPT with shorter version                                          |
+| `lib/hooks/useChatActions.ts`    | Add `augmentWithVisualizationHint()`, apply to all user message pushes, update locale instruction |
+| `lib/utils/interactiveBlocks.ts` | Make regex case-insensitive, add `\`\`\`html` fallback detection                                  |
 
 ## Files NOT to Modify
 

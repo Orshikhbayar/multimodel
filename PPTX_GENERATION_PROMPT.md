@@ -492,7 +492,9 @@ interface PptxBlockProps {
  * The JSON data is parsed and passed to pptxgenjs for client-side generation.
  */
 export default function PptxBlock({ jsonString }: PptxBlockProps) {
-  const [status, setStatus] = useState<"idle" | "generating" | "done" | "error">("idle");
+  const [status, setStatus] = useState<
+    "idle" | "generating" | "done" | "error"
+  >("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
   const handleDownload = useCallback(async () => {
@@ -501,7 +503,8 @@ export default function PptxBlock({ jsonString }: PptxBlockProps) {
       const data = JSON.parse(jsonString);
 
       // Dynamic import to avoid loading pptxgenjs until needed
-      const { generateAndDownloadPptx } = await import("@/lib/utils/generatePptx");
+      const { generateAndDownloadPptx } =
+        await import("@/lib/utils/generatePptx");
       await generateAndDownloadPptx(data);
 
       setStatus("done");
@@ -580,7 +583,7 @@ The existing `splitInteractiveBlocks` function detects `interactive-html` blocks
 
 **Update the return type and add a new segment type:**
 
-```typescript
+````typescript
 export type SegmentType = "text" | "interactive" | "pptx";
 
 export function splitInteractiveBlocks(
@@ -597,7 +600,8 @@ export function splitInteractiveBlocks(
   );
 
   // --- NEW: Extract pptx-slides blocks FIRST (before interactive-html) ---
-  const pptxSegments: Array<{ start: number; end: number; content: string }> = [];
+  const pptxSegments: Array<{ start: number; end: number; content: string }> =
+    [];
   const pptxRegex = /```pptx-slides\s*\n([\s\S]*?)```/gi;
   let pptxMatch;
   while ((pptxMatch = pptxRegex.exec(content)) !== null) {
@@ -618,11 +622,11 @@ export function splitInteractiveBlocks(
 
   // ... see full implementation approach below ...
 }
-```
+````
 
 **IMPORTANT — Simpler approach:** Instead of deeply refactoring the parser, just detect `pptx-slides` blocks separately AFTER the main split. Here's the recommended approach:
 
-```typescript
+````typescript
 /**
  * Splits message content into text, interactive-html, and pptx-slides segments.
  */
@@ -716,7 +720,7 @@ export function splitInteractiveBlocks(
 
   return segments;
 }
-```
+````
 
 ---
 
@@ -727,6 +731,7 @@ export function splitInteractiveBlocks(
 Add PptxBlock import and handle the "pptx" segment type in the rendering logic.
 
 **Add import:**
+
 ```typescript
 import PptxBlock from "./PptxBlock";
 ```
@@ -760,6 +765,7 @@ Same change — add PptxBlock import and handle "pptx" segments in compare mode.
 Add a "Slides" toggle button next to the existing Web/Image/Attach toggles. This is NOT gated by plan — all users can generate presentations.
 
 **Add import:**
+
 ```typescript
 import { Presentation } from "lucide-react";
 ```
@@ -767,11 +773,13 @@ import { Presentation } from "lucide-react";
 Note: If `Presentation` doesn't exist in the installed lucide-react version, use `FileSliders` or `LayoutDashboard` instead.
 
 **Add state:**
+
 ```typescript
 const [slidesEnabled, setSlidesEnabled] = useState(false);
 ```
 
 **Add button** after the Attach button:
+
 ```tsx
 <button
   type="button"
@@ -808,18 +816,19 @@ When `slidesEnabled` is true, append " [Generate this as a downloadable PowerPoi
 
 ## Files Created/Modified Summary
 
-| Action | File |
-|--------|------|
-| MODIFIED | `app/api/chat/route.ts` — Extend VISUALIZATION_SYSTEM_PROMPT with pptx-slides instructions |
-| CREATED | `lib/utils/pptxTypes.ts` — TypeScript types for slide data |
-| CREATED | `lib/utils/generatePptx.ts` — pptxgenjs wrapper for client-side generation |
-| CREATED | `components/chat/PptxBlock.tsx` — Download card component |
-| MODIFIED | `lib/utils/interactiveBlocks.ts` — Add `pptx` segment type detection |
-| MODIFIED | `components/chat/MessageItem.tsx` — Render PptxBlock for pptx segments |
-| MODIFIED | `components/chat/UnifiedAnswerFlow.tsx` — Same integration for compare mode |
-| MODIFIED (optional) | `components/Composer.tsx` — Add Slides toggle button |
+| Action              | File                                                                                       |
+| ------------------- | ------------------------------------------------------------------------------------------ |
+| MODIFIED            | `app/api/chat/route.ts` — Extend VISUALIZATION_SYSTEM_PROMPT with pptx-slides instructions |
+| CREATED             | `lib/utils/pptxTypes.ts` — TypeScript types for slide data                                 |
+| CREATED             | `lib/utils/generatePptx.ts` — pptxgenjs wrapper for client-side generation                 |
+| CREATED             | `components/chat/PptxBlock.tsx` — Download card component                                  |
+| MODIFIED            | `lib/utils/interactiveBlocks.ts` — Add `pptx` segment type detection                       |
+| MODIFIED            | `components/chat/MessageItem.tsx` — Render PptxBlock for pptx segments                     |
+| MODIFIED            | `components/chat/UnifiedAnswerFlow.tsx` — Same integration for compare mode                |
+| MODIFIED (optional) | `components/Composer.tsx` — Add Slides toggle button                                       |
 
 **Do NOT modify:**
+
 - Provider adapters
 - Billing logic (PPTX generation is free for all users — it's client-side, costs nothing)
 - Database schema
@@ -834,5 +843,6 @@ When `slidesEnabled` is true, append " [Generate this as a downloadable PowerPoi
 **Implement the VISUALIZER_FIX_PROMPT.md FIRST.** The PPTX feature depends on the interactive-html system working correctly (models need to output structured code blocks, which is currently broken). Fix the visualizer, verify it works, then implement this PPTX feature.
 
 The implementation order should be:
+
 1. `VISUALIZER_FIX_PROMPT.md` — fix system prompt and client-side augmentation
 2. This prompt (`PPTX_GENERATION_PROMPT.md`) — add presentation generation
