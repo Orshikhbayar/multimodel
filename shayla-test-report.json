@@ -1,0 +1,219 @@
+{
+  "test_report": {
+    "meta": {
+      "persona": "Shayla — 24yo Digital Marketer, MobiCom Mongolia",
+      "product": "Multi-Model AI (https://multimodel-ai.vercel.app)",
+      "test_date": "2026-03-20",
+      "test_method": "Claude in Chrome — live browser interaction",
+      "overall_verdict": "PARTIAL FAIL",
+      "overall_score": "4.5 / 10",
+      "shayla_one_liner": "It's got potential but right now it feels like a developer's side project, not a product I'd recommend to my team."
+    },
+
+    "option_a_heuristic_pass": {
+      "scenarios": [
+        {
+          "id": "TS-001",
+          "name": "First Impression & Signup",
+          "status": "PARTIAL PASS",
+          "severity": "Major",
+          "findings": [
+            "POSITIVE: Landing URL redirects straight to /chat — no friction, no marketing page gatekeeping. Shayla is in the product immediately.",
+            "POSITIVE: UI is localized in Mongolian. Navigation labels (Чат, Төслүүд, Insights, Төлбөр, Үнэ) all render correctly in Cyrillic.",
+            "POSITIVE: Brand name 'MultiModel' is visible in the top-left. Clean, warm color palette (teal + cream). Looks professional, not generic.",
+            "POSITIVE: Free plan badge and credit balance (1.00 USD) are visible in the sidebar — Shayla knows her limits immediately.",
+            "NEGATIVE: Could not test signup/login flow because the session was already authenticated. The login page experience remains untested.",
+            "NEGATIVE: No onboarding tour or first-use guidance. Shayla is dropped into a chat with a previous conversation visible — no 'Welcome, here's how to get started' moment."
+          ],
+          "shayla_reaction": "OK, it loaded fast and it's in Mongolian — that's already better than most AI tools. But what am I supposed to do first? There's no guidance."
+        },
+        {
+          "id": "TS-002",
+          "name": "First Chat — Can She Get Value in 2 Minutes?",
+          "status": "PARTIAL FAIL",
+          "severity": "Critical",
+          "findings": [
+            "POSITIVE: 'Шинэ чат' (New Chat) button is prominent and easy to find.",
+            "POSITIVE: Quick action chips are localized and marketing-relevant: 'Лэндинг хуудасны текст' (Landing page text), 'Кампанит ажлын товч' (Campaign brief), 'A/B test санаа' (A/B test ideas). These are exactly what Shayla needs.",
+            "POSITIVE: Cost estimate shown BEFORE sending: 'Тооцоолсон үнэ: 0.04 USD (4 загвар)'. Excellent transparency.",
+            "POSITIVE: The unified response ('Нэгдсэн хариу') produced 3 Mongolian ad headlines in 3.7 seconds. The output quality was actually good and work-relevant.",
+            "POSITIVE: Flow diagram showing prompt → models → unified response is visually clear and helps explain the multi-model concept.",
+            "CRITICAL: Claude Sonnet 4 card shows raw error: 'ANTHROPIC_API_KEY is not configured'. Gemini 2.5 Flash shows: 'GOOGLE_API_KEY is not configured'. Both have red/pink error borders.",
+            "CRITICAL: These are developer-facing error messages exposed directly to an end user. Shayla has no idea what an API key is. She sees 2 out of 3 models 'broken' with technical jargon.",
+            "NEGATIVE: The product claims '4 загвар' (4 models) but only GPT-4.1 actually responded. Where is the 4th model? The math doesn't add up."
+          ],
+          "shayla_reaction": "Wait — it says 4 models but only one actually worked? And what is 'ANTHROPIC_API_KEY is not configured'? Is this thing broken? I thought the whole point was multiple AI models.",
+          "recommendation": "URGENT: Never show raw API key errors to users. Replace with: 'Энэ загвар одоогоор боломжгүй байна' (This model is currently unavailable). Better yet, don't show unavailable models in the response flow at all — only show models that successfully responded."
+        },
+        {
+          "id": "TS-003",
+          "name": "Collaboration Modes Discovery",
+          "status": "PARTIAL PASS",
+          "severity": "Minor",
+          "findings": [
+            "POSITIVE: 'Нэгдсэн хариу' (Unified response) mode is the default and works correctly as a concept — prompt fans out to multiple models, responses are unified.",
+            "POSITIVE: Settings gear icon (⚙️) is visible next to the mode banner for configuration.",
+            "POSITIVE: The mode banner explains itself: '4 загвар · Загвар тус бүрийн нооргоор болон нэгтгэсэн эцсийн хариу' (4 models · Draft from each model and a unified final response). This is clear.",
+            "NEGATIVE: Only 'Ерөнхий' (General) mode was visible in the top bar. The other modes (Debate, Expert, Simulation, etc.) were not immediately discoverable without clicking the gear icon.",
+            "NEGATIVE: The mode names 'Ensemble', 'Debate', 'Expert' are likely English-only terms. Shayla might not understand them without Mongolian translations."
+          ],
+          "shayla_reaction": "I see it says 'Unified response' and there's a settings icon. I guess I can change modes? But I don't know what my options are without clicking around."
+        },
+        {
+          "id": "TS-004",
+          "name": "Mobile Responsiveness",
+          "status": "FAIL",
+          "severity": "Critical",
+          "findings": [
+            "CRITICAL: At 375px viewport width, the sidebar (~290px fixed width) does not collapse or hide. It consumes approximately 77% of the screen width, leaving only ~85px for the chat content area.",
+            "CRITICAL: No hamburger menu, no collapsible sidebar, no responsive breakpoint detected. The layout is a fixed desktop layout that does not adapt to mobile screens.",
+            "NEGATIVE: Quick action chips in the chat input area would overflow horizontally on mobile with no visible scroll indicator.",
+            "NEGATIVE: The model selector dropdown at ~300px width would be unusable on a 375px screen."
+          ],
+          "shayla_reaction": "I can't show this to my boss on my phone. It's desktop-only. In 2026, that's not acceptable.",
+          "recommendation": "Implement responsive breakpoints: sidebar should collapse to a hamburger menu at < 768px. Chat input should stack vertically. Model selector needs a mobile-friendly sheet/modal."
+        },
+        {
+          "id": "TS-005",
+          "name": "Pricing & Billing Clarity",
+          "status": "PASS",
+          "severity": "None",
+          "findings": [
+            "POSITIVE: Pricing page is accessible from sidebar via 'Үнэ' (Price) button. Navigation is intuitive.",
+            "POSITIVE: 4 clear tiers: Free, Plus ($19), Pro ($49, marked 'Хамгийн түгээмэл' — Most popular), Team ($129).",
+            "POSITIVE: USD/MNT currency toggle — Shayla can see prices in Mongolian Tugrik (67,802 MNT for Plus, 174,859 MNT for Pro). This is a killer feature for local market adoption.",
+            "POSITIVE: Monthly/Yearly toggle present.",
+            "POSITIVE: Each tier clearly shows: monthly credit allowance, number of active models, feature checklist with green checkmarks vs. dashes.",
+            "POSITIVE: Dashboard has dedicated Usage, Billing, and Plans sub-sections — well-organized.",
+            "MINOR: '/cap' label after prices is ambiguous — does it mean per capita? per month? Shayla might not know."
+          ],
+          "shayla_reaction": "Finally, a pricing page I can screenshot and send to my team lead. The MNT conversion is actually impressive — most AI tools don't even know Mongolia exists."
+        },
+        {
+          "id": "TS-006",
+          "name": "Template Discovery",
+          "status": "FAIL",
+          "severity": "Critical",
+          "findings": [
+            "CRITICAL: Template Library page is completely empty. 'No templates yet. Create one or seed system templates to get started.'",
+            "CRITICAL: Clicking 'Seed System Templates' triggers a raw PostgreSQL error: 'there is no unique or exclusion constraint matching the ON CONFLICT specification'. This is a database error exposed directly to the end user.",
+            "NEGATIVE: Template Library header, search bar, and empty state text are all in English — breaking the Mongolian localization pattern established elsewhere in the app.",
+            "NEGATIVE: 'Seed System Templates' is developer jargon. Shayla would never know what 'seed' means in this context.",
+            "NEGATIVE: No pre-built marketing templates exist. For a user whose workflow is 'create campaign briefs and A/B test ideas', this is a missed opportunity."
+          ],
+          "shayla_reaction": "There's an error when I click the button and there are no templates at all? This page is broken. And why is it suddenly in English?",
+          "recommendation": "1. Fix the ON CONFLICT database migration immediately. 2. Pre-populate with 10-15 templates across categories (Marketing, Development, Writing, Analysis). 3. Localize the entire Template Library page to Mongolian. 4. Rename 'Seed System Templates' to 'Загвар нэмэх' (Add templates) or similar."
+        },
+        {
+          "id": "TS-007",
+          "name": "Error Handling & Edge Cases",
+          "status": "PARTIAL FAIL",
+          "severity": "Major",
+          "findings": [
+            "POSITIVE: 404 page is clean and user-friendly: icon, '404 Page not found', 'The page you're looking for doesn't exist or has been moved.', 'Go home' button. Clear recovery path.",
+            "NEGATIVE: 404 page is entirely in English — no Mongolian localization.",
+            "NEGATIVE: 404 page has no MultiModel branding (no logo, no brand colors). Shayla might think she navigated away from the product entirely.",
+            "CRITICAL: API key errors (ANTHROPIC_API_KEY, GOOGLE_API_KEY) are shown raw in the chat flow diagram. No user-friendly error handling.",
+            "CRITICAL: PostgreSQL error on Template seeding is shown raw. No error boundary or graceful fallback.",
+            "SUMMARY: The app handles routing errors (404) gracefully but fails completely on API/database errors — the exact errors a user is most likely to encounter during actual usage."
+          ],
+          "shayla_reaction": "The 404 page is fine but the real errors — the ones I actually hit while using the product — are raw technical garbage. That's backwards."
+        }
+      ]
+    },
+
+    "option_b_value_proposition_verdict": {
+      "core_question": "Even if every bug were fixed tomorrow, does Shayla NEED Multi-Model AI?",
+      "verdict": "CONDITIONAL YES — but only if multi-model comparison actually works",
+      "analysis": {
+        "what_shayla_has_today": {
+          "chatgpt": "Free, reliable, good for daily questions and text generation. She knows it well.",
+          "gemini": "Free, good for image generation. Her go-to for visual marketing assets.",
+          "total_cost": "$0/month",
+          "pain_point": "Switching between tabs, copy-pasting the same prompt into both, no side-by-side comparison"
+        },
+        "what_multimodel_promises": {
+          "value_proposition": "Query multiple AI models with one prompt, get a unified best-of response",
+          "pricing_for_shayla": "Free tier: 1.00 USD credit, 1 active model. Plus tier: $19/month for 2 active models.",
+          "key_insight": "The FREE tier only gives her 1 active model — which means she gets LESS than what she has today (ChatGPT + Gemini for free). She'd need to pay $19/month just to match her current 2-tool setup."
+        },
+        "the_hard_truth": [
+          "Multi-Model AI's entire value proposition is 'use multiple AI models in one place'. But right now, 2 out of 3 models showed API errors. The one feature that justifies this product's existence is broken.",
+          "The free tier with 1 model is actually WORSE than Shayla's current setup (2 free tools). She has to pay to get what she already has for free.",
+          "The MNT pricing and Mongolian localization are genuine differentiators — no other AI aggregator does this. But differentiation means nothing if the core feature doesn't work.",
+          "The quick action chips (Landing page text, Campaign brief, A/B test ideas) show product-market fit awareness for marketers. But the empty template library and broken seeding undercut this.",
+          "The unified response flow diagram is genuinely innovative UX. When it works (GPT-4.1 alone), the output is good. But showing errored models in the flow diagram actively damages trust.",
+          "The cost transparency (showing estimated price before sending) is excellent and rare. This is a real selling point once the multi-model feature actually works."
+        ],
+        "shayla_would_switch_if": [
+          "All 3+ models consistently respond without errors",
+          "The unified response is noticeably better than any single model alone",
+          "Templates exist for her marketing workflow",
+          "The Plus plan ($19) delivers enough credit for her weekly usage",
+          "She can show it to colleagues on mobile"
+        ],
+        "shayla_would_NOT_switch_if": [
+          "She has to pay $19/month for something ChatGPT + Gemini do for free",
+          "Multi-model responses keep failing with technical errors",
+          "The product feels like a developer tool, not a marketer's tool",
+          "She can't use it on her phone"
+        ]
+      },
+      "bottom_line": "You've built the right product for the right persona in the right market (Mongolian localization is a moat). But the product is shipping a promise it can't keep right now. Fix the multi-model reliability first — everything else is secondary."
+    },
+
+    "priority_fix_list": [
+      {
+        "priority": "P0 — Ship blocker",
+        "issue": "API key errors exposed to users (ANTHROPIC_API_KEY, GOOGLE_API_KEY)",
+        "impact": "Destroys the core value proposition. Users see the multi-model feature as broken.",
+        "fix": "1. Never show raw API errors. 2. Gracefully degrade: hide failed models from the flow diagram, show only successful responses. 3. If ALL models fail, show a localized error: 'Загварууд одоогоор ажиллахгүй байна. Дараа дахин оролдоно уу.'"
+      },
+      {
+        "priority": "P0 — Ship blocker",
+        "issue": "PostgreSQL error on Template seeding",
+        "impact": "The entire Template feature is broken. Empty library + database error = dead feature.",
+        "fix": "Fix the ON CONFLICT migration. Pre-populate with system templates. This should be a 1-hour database fix."
+      },
+      {
+        "priority": "P1 — Must fix before marketing push",
+        "issue": "No mobile responsiveness",
+        "impact": "Product is unusable on phones. In Mongolia's mobile-first market, this eliminates a huge portion of potential users.",
+        "fix": "Add responsive breakpoints: collapsible sidebar at < 768px, mobile-friendly model selector, stacked chat input."
+      },
+      {
+        "priority": "P1 — Must fix before marketing push",
+        "issue": "Inconsistent localization (English leaking through)",
+        "impact": "Template Library, 404 page, and some model descriptions are English-only. Breaks the trust built by the Mongolian chat UI.",
+        "fix": "Audit all pages for untranslated strings. Prioritize: Template Library, 404, error messages, model descriptions."
+      },
+      {
+        "priority": "P2 — Should fix",
+        "issue": "No onboarding flow for first-time users",
+        "impact": "Shayla gets dropped into the chat with no guidance. She has to discover features by clicking around.",
+        "fix": "Add a 3-step onboarding tooltip: 1. 'Энд мессеж бичнэ' (Write a message here), 2. 'Загвар сонгох' (Select a model), 3. 'Олон загвар нэгэн зэрэг' (Multiple models at once)."
+      },
+      {
+        "priority": "P2 — Should fix",
+        "issue": "404 page has no branding",
+        "impact": "Minor — but Shayla might think she left the site.",
+        "fix": "Add MultiModel logo and brand colors to the 404 page."
+      },
+      {
+        "priority": "P3 — Nice to have",
+        "issue": "'/cap' label on pricing is ambiguous",
+        "impact": "Shayla might not understand it means 'per month'.",
+        "fix": "Change to '/сар' (per month) in Mongolian, or '/mo' in English."
+      }
+    ],
+
+    "what_shayla_got_right_about_this_product": [
+      "Mongolian localization is a genuine competitive moat — no other AI aggregator does this",
+      "MNT currency on the pricing page is chef's kiss for local market adoption",
+      "The quick action chips show deep understanding of marketing workflows",
+      "Cost transparency before sending is rare and valuable",
+      "The unified response flow diagram is innovative and visually clear UX",
+      "Model selection dropdown is well-organized by provider with clear labels"
+    ]
+  }
+}

@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, CreditCard, Gauge, Layers } from "lucide-react";
+import { BarChart3, CreditCard, Gauge, Layers, Shield } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
 const DASHBOARD_ITEMS = [
   { href: "/dashboard", label: "Overview", icon: BarChart3 },
   { href: "/dashboard/usage", label: "Usage", icon: Gauge },
+  { href: "/dashboard/limits", label: "Limits", icon: Shield },
   { href: "/dashboard/billing", label: "Billing", icon: CreditCard },
   { href: "/dashboard/plans", label: "Plans", icon: Layers },
 ] as const;

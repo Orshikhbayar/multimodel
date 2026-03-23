@@ -11,6 +11,7 @@ import { SettingsDrawer } from "@/components/SettingsDrawer";
 import { UpgradeModal } from "@/components/billing/UpgradeModal";
 import { TopUpModal } from "@/components/billing/TopUpModal";
 import { OutOfCreditsModal } from "@/components/billing/OutOfCreditsModal";
+import { UsageLimitBanner } from "@/components/chat/UsageLimitBanner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChatContentContainer } from "@/components/ChatContentContainer";
@@ -229,6 +230,7 @@ export function ChatWorkspace({
         onOpenChange={(open) => !open && setDisagreementsRun(null)}
         disagreements={disagreementsRun?.disagreements ?? []}
       />
+      <UsageLimitBanner />
       <UpgradeModal />
       <TopUpModal />
       <OutOfCreditsModal />
