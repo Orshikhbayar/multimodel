@@ -207,7 +207,9 @@ export function MessageItem({
                         ? t("chat.waitingForSlot")
                         : selectedRun?.status === "streaming"
                           ? t("chat.thinking")
-                          : ""),
+                          : selectedRun?.status === "error"
+                            ? (selectedRun.error?.message ?? t("chat.error"))
+                            : ""),
                     !isUser ? prompt : undefined,
                   ).map((segment, i) =>
                     segment.type === "interactive" ? (

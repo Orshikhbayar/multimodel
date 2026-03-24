@@ -9,7 +9,7 @@ afterEach(() => {
 describe("getGoogleModelName", () => {
   it("maps known catalog IDs to Gemini API model strings", () => {
     expect(getGoogleModelName("google/gemini-2.5-flash")).toBe(
-      "gemini-2.5-flash-preview-04-17",
+      "gemini-2.5-flash",
     );
     expect(getGoogleModelName("google/gemini-2.0")).toBe("gemini-2.0-flash");
   });

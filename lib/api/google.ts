@@ -6,7 +6,7 @@
 import type { StreamOptions, StreamEvent, TokenUsage } from "./openai";
 
 const GOOGLE_MODEL_MAP: Record<string, string> = {
-  "google/gemini-2.5-flash": "gemini-2.5-flash-preview-04-17",
+  "google/gemini-2.5-flash": "gemini-2.5-flash",
   "google/gemini-2.0": "gemini-2.0-flash",
 };
 
