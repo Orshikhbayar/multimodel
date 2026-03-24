@@ -1,10 +1,13 @@
 "use server";
 
-import { createSupabaseServerClient, getAuthenticatedUser } from "@/lib/supabase/server";
+import {
+  createSupabaseServerClient,
+  getAuthenticatedUser,
+} from "@/lib/supabase/server";
 
 /**
  * Persists a thumbs-up / thumbs-down rating for a model run.
- * Passing the same rating twice clears it (toggle behaviour).
+ * Passing the same rating twice clears it (toggle behavior).
  *
  * @param runId  - The UUID of the model_runs row to rate
  * @param rating - 1 for thumbs-up, -1 for thumbs-down
@@ -19,7 +22,7 @@ export async function rateRun(
 
   const supabase = await createSupabaseServerClient();
 
-  // Fetch the current rating to implement toggle behaviour.
+  // Fetch the current rating to implement toggle behavior.
   // Ownership is enforced by RLS (workspace membership check).
   const { data: existing, error: fetchError } = await supabase
     .from("model_runs")
@@ -32,8 +35,7 @@ export async function rateRun(
   }
 
   // Toggle: clicking the active button again clears the rating.
-  const newRating: 1 | -1 | null =
-    existing.rating === rating ? null : rating;
+  const newRating: 1 | -1 | null = existing.rating === rating ? null : rating;
 
   const { error: updateError } = await supabase
     .from("model_runs")

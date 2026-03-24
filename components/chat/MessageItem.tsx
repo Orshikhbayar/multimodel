@@ -320,12 +320,12 @@ export function MessageItem({
                 <CopyButton text={text} />
                 <button
                   type="button"
-                  disabled={!selectedRun?.id || selectedRun.status === "streaming"}
+                  disabled={
+                    !selectedRun?.id || selectedRun.status === "streaming"
+                  }
                   className={cn(
                     "transition-colors",
-                    rating === 1
-                      ? "text-green-500"
-                      : "hover:text-foreground",
+                    rating === 1 ? "text-green-500" : "hover:text-foreground",
                   )}
                   title={t("chat.upvote")}
                   onClick={async () => {
@@ -340,11 +340,15 @@ export function MessageItem({
                     }
                   }}
                 >
-                  <ThumbsUp className={cn("h-4 w-4", rating === 1 && "fill-current")} />
+                  <ThumbsUp
+                    className={cn("h-4 w-4", rating === 1 && "fill-current")}
+                  />
                 </button>
                 <button
                   type="button"
-                  disabled={!selectedRun?.id || selectedRun.status === "streaming"}
+                  disabled={
+                    !selectedRun?.id || selectedRun.status === "streaming"
+                  }
                   className={cn(
                     "transition-colors",
                     rating === -1
@@ -364,7 +368,9 @@ export function MessageItem({
                     }
                   }}
                 >
-                  <ThumbsDown className={cn("h-4 w-4", rating === -1 && "fill-current")} />
+                  <ThumbsDown
+                    className={cn("h-4 w-4", rating === -1 && "fill-current")}
+                  />
                 </button>
                 <div className="relative flex items-center group">
                   <button
