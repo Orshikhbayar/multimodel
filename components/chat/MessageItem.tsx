@@ -33,6 +33,7 @@ import type { Message, Run, ToolCall } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useChatActions } from "@/lib/hooks/useChatActions";
 import { useConversationStore } from "@/lib/stores";
+import { rateRun } from "@/lib/actions/rateRun";
 
 interface MessageItemProps {
   message: Message;
@@ -74,6 +75,9 @@ export function MessageItem({
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(message.content);
   const editRef = useRef<HTMLTextAreaElement>(null);
+  const [rating, setRating] = useState<1 | -1 | null>(
+    selectedRun?.rating ?? null,
+  );
 
   useEffect(() => {
     const el = editRef.current;
@@ -316,17 +320,51 @@ export function MessageItem({
                 <CopyButton text={text} />
                 <button
                   type="button"
-                  className="hover:text-foreground transition-colors"
+                  disabled={!selectedRun?.id || selectedRun.status === "streaming"}
+                  className={cn(
+                    "transition-colors",
+                    rating === 1
+                      ? "text-green-500"
+                      : "hover:text-foreground",
+                  )}
                   title={t("chat.upvote")}
+                  onClick={async () => {
+                    if (!selectedRun?.id) return;
+                    const next = rating === 1 ? null : (1 as const);
+                    setRating(next);
+                    try {
+                      const result = await rateRun(selectedRun.id, 1);
+                      setRating(result.rating);
+                    } catch {
+                      setRating(rating); // revert on error
+                    }
+                  }}
                 >
-                  <ThumbsUp className="h-4 w-4" />
+                  <ThumbsUp className={cn("h-4 w-4", rating === 1 && "fill-current")} />
                 </button>
                 <button
                   type="button"
-                  className="hover:text-foreground transition-colors"
+                  disabled={!selectedRun?.id || selectedRun.status === "streaming"}
+                  className={cn(
+                    "transition-colors",
+                    rating === -1
+                      ? "text-destructive"
+                      : "hover:text-foreground",
+                  )}
                   title={t("chat.downvote")}
+                  onClick={async () => {
+                    if (!selectedRun?.id) return;
+                    const next = rating === -1 ? null : (-1 as const);
+                    setRating(next);
+                    try {
+                      const result = await rateRun(selectedRun.id, -1);
+                      setRating(result.rating);
+                    } catch {
+                      setRating(rating); // revert on error
+                    }
+                  }}
                 >
-                  <ThumbsDown className="h-4 w-4" />
+                  <ThumbsDown className={cn("h-4 w-4", rating === -1 && "fill-current")} />
                 </button>
                 <div className="relative flex items-center group">
                   <button

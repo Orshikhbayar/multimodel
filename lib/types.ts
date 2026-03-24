@@ -40,6 +40,8 @@ export interface Run {
     message: string;
     code?: string;
   };
+  /** User rating: 1 = thumbs up, -1 = thumbs down, undefined = no rating */
+  rating?: 1 | -1;
 }
 
 export interface Message {
