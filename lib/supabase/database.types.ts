@@ -215,6 +215,7 @@ export type Database = {
           output_text: string | null;
           output_tokens: number | null;
           provider: string;
+          rating: number | null;
           slot_id: number | null;
           sources: Json | null;
           status: Database["public"]["Enums"]["run_status"];
@@ -237,6 +238,7 @@ export type Database = {
           output_text?: string | null;
           output_tokens?: number | null;
           provider: string;
+          rating?: number | null;
           slot_id?: number | null;
           sources?: Json | null;
           status?: Database["public"]["Enums"]["run_status"];
@@ -259,6 +261,7 @@ export type Database = {
           output_text?: string | null;
           output_tokens?: number | null;
           provider?: string;
+          rating?: number | null;
           slot_id?: number | null;
           sources?: Json | null;
           status?: Database["public"]["Enums"]["run_status"];

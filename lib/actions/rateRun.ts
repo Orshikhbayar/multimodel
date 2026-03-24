@@ -20,18 +20,15 @@ export async function rateRun(
   const supabase = await createSupabaseServerClient();
 
   // Fetch the current rating to implement toggle behaviour.
+  // Ownership is enforced by RLS (workspace membership check).
   const { data: existing, error: fetchError } = await supabase
     .from("model_runs")
-    .select("rating, user_id")
+    .select("rating")
     .eq("id", runId)
     .single();
 
   if (fetchError || !existing) {
     throw new Error("Run not found");
-  }
-
-  if (existing.user_id !== user.id) {
-    throw new Error("Unauthorized");
   }
 
   // Toggle: clicking the active button again clears the rating.
