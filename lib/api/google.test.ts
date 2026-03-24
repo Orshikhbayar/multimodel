@@ -25,17 +25,17 @@ describe("getGoogleModelName", () => {
 });
 
 describe("streamGoogleCompletion", () => {
-  it("throws when GOOGLE_API_KEY is not set", async () => {
-    vi.stubEnv("GOOGLE_API_KEY", "");
+  it("throws when GOOGLE_AI_API_KEY is not set", async () => {
+    vi.stubEnv("GOOGLE_AI_API_KEY", "");
     const gen = streamGoogleCompletion({
       model: "google/gemini-2.5-flash",
       messages: [{ role: "user", content: "hello" }],
     });
-    await expect(gen.next()).rejects.toThrow("GOOGLE_API_KEY");
+    await expect(gen.next()).rejects.toThrow("GOOGLE_AI_API_KEY");
   });
 
   it("streams text from Gemini SSE events as token events", async () => {
-    vi.stubEnv("GOOGLE_API_KEY", "goog-test");
+    vi.stubEnv("GOOGLE_AI_API_KEY", "goog-test");
 
     const encoder = new TextEncoder();
     const events =
@@ -80,7 +80,7 @@ describe("streamGoogleCompletion", () => {
   });
 
   it("throws on non-ok API response", async () => {
-    vi.stubEnv("GOOGLE_API_KEY", "goog-test");
+    vi.stubEnv("GOOGLE_AI_API_KEY", "goog-test");
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => ({
@@ -98,7 +98,7 @@ describe("streamGoogleCompletion", () => {
   });
 
   it("separates system messages from user messages in request body", async () => {
-    vi.stubEnv("GOOGLE_API_KEY", "goog-test");
+    vi.stubEnv("GOOGLE_AI_API_KEY", "goog-test");
 
     let capturedBody: unknown;
     vi.stubGlobal(

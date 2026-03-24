@@ -44,12 +44,12 @@ describe("providerRouter.streamCompletion", () => {
   });
 
   it("routes google/* to Google adapter when API key missing", async () => {
-    vi.stubEnv("GOOGLE_API_KEY", "");
+    vi.stubEnv("GOOGLE_AI_API_KEY", "");
     const gen = streamCompletion({
       model: "google/gemini-2.5-flash",
       messages: [{ role: "user", content: "hi" }],
     });
-    await expect(gen.next()).rejects.toThrow("GOOGLE_API_KEY");
+    await expect(gen.next()).rejects.toThrow("GOOGLE_AI_API_KEY");
   });
 
   it("routes xai/* to OpenAI-compatible adapter when API key missing", async () => {

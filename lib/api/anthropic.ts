@@ -10,8 +10,8 @@ import type { StreamOptions, StreamEvent, TokenUsage } from "./openai";
  * Anthropic uses date-suffixed identifiers; keep these current.
  */
 const ANTHROPIC_MODEL_MAP: Record<string, string> = {
-  "anthropic/claude-opus-4": "claude-opus-4-5-20250514",
-  "anthropic/claude-sonnet-4": "claude-sonnet-4-5-20250514",
+  "anthropic/claude-opus-4": "claude-opus-4-6",
+  "anthropic/claude-sonnet-4": "claude-sonnet-4-6",
   "anthropic/claude-3.5": "claude-3-5-sonnet-20241022",
 };
 

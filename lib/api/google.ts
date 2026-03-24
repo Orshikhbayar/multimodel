@@ -48,9 +48,9 @@ interface GeminiStreamChunk {
 export async function* streamGoogleCompletion(
   options: StreamOptions,
 ): AsyncGenerator<StreamEvent, void, unknown> {
-  const apiKey = process.env.GOOGLE_API_KEY;
+  const apiKey = process.env.GOOGLE_AI_API_KEY;
   if (!apiKey) {
-    throw new Error("GOOGLE_API_KEY is not configured");
+    throw new Error("GOOGLE_AI_API_KEY is not configured");
   }
 
   const modelName = getGoogleModelName(options.model);

@@ -12,10 +12,10 @@ afterEach(() => {
 describe("getAnthropicModelName", () => {
   it("maps known catalog IDs to Anthropic API strings", () => {
     expect(getAnthropicModelName("anthropic/claude-sonnet-4")).toBe(
-      "claude-sonnet-4-5-20250514",
+      "claude-sonnet-4-6",
     );
     expect(getAnthropicModelName("anthropic/claude-opus-4")).toBe(
-      "claude-opus-4-5-20250514",
+      "claude-opus-4-6",
     );
     expect(getAnthropicModelName("anthropic/claude-3.5")).toBe(
       "claude-3-5-sonnet-20241022",
