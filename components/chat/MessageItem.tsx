@@ -20,6 +20,8 @@ import { Button } from "@/components/ui/button";
 import { ContentColumn } from "@/components/layout";
 import InteractiveBlock from "./InteractiveBlock";
 import PptxBlock from "./PptxBlock";
+import { CompareResponseGrid } from "./CompareResponseGrid";
+import { AICollaborationVisual } from "./AICollaborationVisual";
 import { splitInteractiveBlocks } from "@/lib/utils/interactiveBlocks";
 import { ExpandableMessage } from "./ExpandableMessage";
 import { UnifiedAnswerFlow } from "./UnifiedAnswerFlow";
@@ -29,10 +31,10 @@ import {
   normalizeLanguage,
 } from "./codeHighlight";
 import { useI18n } from "@/lib/i18n";
-import type { Message, Run, ToolCall } from "@/lib/types";
+import type { InteractionMode, Message, Run, ToolCall } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useChatActions } from "@/lib/hooks/useChatActions";
-import { useConversationStore } from "@/lib/stores";
+import { useConversationStore, useSettingsStore } from "@/lib/stores";
 import { rateRun } from "@/lib/actions/rateRun";
 
 // ---------------------------------------------------------------------------
@@ -158,6 +160,7 @@ export function MessageItem({
   onShowDisagreements,
 }: MessageItemProps) {
   const isUser = message.role === "user";
+  const { mode } = useSettingsStore();
   const assistantRuns = message.runs ?? (run ? [run] : []);
   const unifiedRun = assistantRuns.find((entry) => entry.model === "Unified");
   const perspectiveRuns = assistantRuns.filter(
@@ -165,6 +168,15 @@ export function MessageItem({
   );
   const showUnifiedFlow =
     !isUser && Boolean(unifiedRun) && perspectiveRuns.length >= 2;
+  const isCompare =
+    mode === "compare" && !isUser && perspectiveRuns.length >= 2;
+  const isMultiModel =
+    (mode === "compare" || mode === "team") &&
+    !isUser &&
+    perspectiveRuns.length >= 2;
+  const anyStreaming = perspectiveRuns.some(
+    (r) => r.status === "streaming" || r.status === "queued",
+  );
   const selectedRun = showUnifiedFlow ? unifiedRun : run;
   const toolCalls = message.toolCalls ?? [];
   const text = selectedRun?.text?.trim() || message.content;
@@ -215,14 +227,24 @@ export function MessageItem({
             isUser ? "items-end group" : "items-start",
           )}
         >
-          {!isUser && (
+          {!isUser && !isCompare && (
             <div className="mb-1 text-[11px] text-muted-foreground">
               {showUnifiedFlow
                 ? t("chat.unifiedAnswer")
                 : (selectedRun?.model ?? t("chat.assistant"))}
             </div>
           )}
-          {showUnifiedFlow && unifiedRun ? (
+          {/* AI Collaboration Visual — shown while streaming in multi-model modes */}
+          {isMultiModel && anyStreaming && (
+            <div className="w-full max-w-[95%]">
+              <AICollaborationVisual runs={perspectiveRuns} mode={mode} />
+            </div>
+          )}
+          {isCompare ? (
+            <div className="w-full max-w-[95%]">
+              <CompareResponseGrid runs={perspectiveRuns} />
+            </div>
+          ) : showUnifiedFlow && unifiedRun ? (
             <div className="w-full max-w-[95%]">
               <UnifiedAnswerFlow
                 prompt={prompt}

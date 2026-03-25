@@ -14,5 +14,15 @@ export function generateRuns(mode: InteractionMode, slots: ModelSlot[]): Run[] {
     text: "",
   }));
 
+  // Only in "team" mode: add a Unified judge run
+  if (mode === "team" && pickedSlots.length >= 2) {
+    baseRuns.push({
+      id: crypto.randomUUID(),
+      model: UNIFIED_MODEL_NAME,
+      status: "queued",
+      text: "",
+    });
+  }
+
   return baseRuns;
 }

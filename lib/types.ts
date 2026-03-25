@@ -76,7 +76,8 @@ export interface Project {
 // Interaction modes for multi-model orchestration
 export type InteractionMode =
   | "single" // One model answers
-  | "compare"; // Multiple models answer side by side
+  | "compare" // Multiple models answer side by side (no synthesis)
+  | "team"; // Multiple models + judge synthesizes
 
 export interface ModelOption {
   id: string;

@@ -2,16 +2,11 @@ import type { Plan, PlanId, TopUpPack, TopUpPackId } from "./types";
 import { convertCurrency } from "./utils";
 import { MODELS } from "@/lib/modelCatalog";
 
-// Free tier: DeepSeek, Gemini Flash, GPT-4o-mini, Claude Sonnet (comparison with free models)
-const FREE_MODELS = [
-  "openai/gpt-4o-mini",
-  "anthropic/claude-sonnet-4",
-  "google/gemini-2.5-flash",
-  "deepseek/deepseek-chat",
-];
+// Free tier: models with tier "free" in the catalog
+const FREE_MODELS = MODELS.filter((m) => m.tier === "free").map((m) => m.id);
 
-// Pro tier: all models
-const PRO_MODELS = MODELS.map((model) => model.id);
+// Premium tier: all models
+const ALL_MODELS = MODELS.map((model) => model.id);
 
 // Free: $0/mo — 20 comparisons/day, file upload only, free models
 // Pro: $12/mo — unlimited comparisons, all models, web search + image gen + file upload
@@ -45,10 +40,10 @@ export const PLANS: Plan[] = [
     features: {
       webSearch: true,
       tools: true,
-      images: true,
+      images: false,
       projects: false,
     },
-    allowedModelIds: PRO_MODELS,
+    allowedModelIds: ALL_MODELS,
   },
 ];
 

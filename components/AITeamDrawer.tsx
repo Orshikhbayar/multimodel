@@ -194,7 +194,7 @@ export function AITeamDrawer({ open, onOpenChange }: DrawerProps) {
             <RadioGroup
               value={draftMode}
               onValueChange={(val) => setDraftMode(val as InteractionMode)}
-              className="grid grid-cols-1 gap-2 md:grid-cols-2"
+              className="grid grid-cols-1 gap-2 md:grid-cols-3"
             >
               {MODE_OPTIONS.map((option) => (
                 <label

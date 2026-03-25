@@ -38,7 +38,7 @@ describe("modelCatalog", () => {
   });
 
   it("contains no fictional/aspirational model IDs", () => {
-    const bannedPrefixes = ["gpt-5", "gemini-3", "grok-4", "claude-opus-4.1"];
+    const bannedPrefixes = ["claude-opus-4.1"];
     for (const model of MODELS) {
       for (const prefix of bannedPrefixes) {
         expect(model.id).not.toContain(prefix);
@@ -60,7 +60,8 @@ describe("modelCatalog", () => {
     expect(isValidModel("openai/gpt-5.2")).toBe(false);
     expect(isValidModel("google/gemini-3-pro")).toBe(false);
     expect(isValidModel("anthropic/claude-opus-4.1")).toBe(false);
-    expect(isValidModel("xai/grok-4")).toBe(false);
+    // xai/grok-4 is now in catalog
+    expect(isValidModel("xai/grok-4")).toBe(true);
   });
 
   it("getAllModelIds returns a flat list matching MODELS length", () => {

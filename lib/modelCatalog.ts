@@ -21,6 +21,8 @@ export type ModelProvider = {
   icon?: ProviderIconKey;
 };
 
+export type ModelTier = "free" | "pro" | "premium";
+
 export type CatalogModel = {
   id: string;
   label: string;
@@ -30,6 +32,8 @@ export type CatalogModel = {
   /** Human-readable context size, e.g. "128K". Use contextWindowTokens for arithmetic. */
   context?: string;
   glyph?: ModelGlyphKey;
+  /** Plan tier required to use this model */
+  tier?: ModelTier;
 
   // ── Billing fields — source of truth for cost estimation ─────────────
   /** Input token cost in USD per 1M tokens (prompt). */
@@ -67,11 +71,40 @@ export const PROVIDERS: ModelProvider[] = [
 export const MODELS: CatalogModel[] = [
   // ── OpenAI ──────────────────────────────────────────────────────────────
   {
+    id: "openai/gpt-5.4",
+    label: "GPT-5.4",
+    providerId: "openai",
+    description: "Latest frontier all-rounder with strongest ecosystem",
+    tags: ["new"],
+    context: "256K",
+    glyph: "openai",
+    inputCostPer1M: 2.5,
+    outputCostPer1M: 15.0,
+    contextWindowTokens: 262_144,
+    maxOutputTokens: 65_536,
+    releaseDate: "2026-02-10",
+    tier: "pro",
+  },
+  {
+    id: "openai/o3",
+    label: "o3",
+    providerId: "openai",
+    description: "Reasoning model — trades speed for accuracy",
+    tags: ["new"],
+    context: "200K",
+    glyph: "openai",
+    inputCostPer1M: 10.0,
+    outputCostPer1M: 40.0,
+    contextWindowTokens: 200_000,
+    maxOutputTokens: 100_000,
+    releaseDate: "2025-12-17",
+    tier: "premium",
+  },
+  {
     id: "openai/gpt-4.1",
     label: "GPT-4.1",
     providerId: "openai",
     description: "Balanced reasoning and long-context tasks",
-    tags: ["new"],
     context: "1M",
     glyph: "openai",
     inputCostPer1M: 2.0,
@@ -79,6 +112,7 @@ export const MODELS: CatalogModel[] = [
     contextWindowTokens: 1_047_576,
     maxOutputTokens: 32_768,
     releaseDate: "2025-04-14",
+    tier: "pro",
   },
   {
     id: "openai/gpt-4o",
@@ -92,6 +126,7 @@ export const MODELS: CatalogModel[] = [
     contextWindowTokens: 128_000,
     maxOutputTokens: 16_384,
     releaseDate: "2024-05-13",
+    tier: "pro",
   },
   {
     id: "openai/gpt-4o-mini",
@@ -105,14 +140,15 @@ export const MODELS: CatalogModel[] = [
     contextWindowTokens: 128_000,
     maxOutputTokens: 16_384,
     releaseDate: "2024-07-18",
+    tier: "free",
   },
 
   // ── Anthropic ────────────────────────────────────────────────────────────
   {
-    id: "anthropic/claude-opus-4",
-    label: "Claude Opus 4",
+    id: "anthropic/claude-opus-4.6",
+    label: "Claude Opus 4.6",
     providerId: "anthropic",
-    description: "Highest quality long-form reasoning",
+    description: "Top-tier coding and reasoning, strongest prose quality",
     tags: ["new"],
     context: "200K",
     glyph: "anthropic",
@@ -120,13 +156,14 @@ export const MODELS: CatalogModel[] = [
     outputCostPer1M: 75.0,
     contextWindowTokens: 200_000,
     maxOutputTokens: 32_000,
-    releaseDate: "2025-05-22",
+    releaseDate: "2026-03-13",
+    tier: "premium",
   },
   {
-    id: "anthropic/claude-sonnet-4",
-    label: "Claude Sonnet 4",
+    id: "anthropic/claude-sonnet-4.6",
+    label: "Claude Sonnet 4.6",
     providerId: "anthropic",
-    description: "Strong all-round assistant",
+    description: "Strong all-round assistant, fast and capable",
     tags: ["new"],
     context: "200K",
     glyph: "anthropic",
@@ -134,7 +171,36 @@ export const MODELS: CatalogModel[] = [
     outputCostPer1M: 15.0,
     contextWindowTokens: 200_000,
     maxOutputTokens: 64_000,
+    releaseDate: "2026-03-13",
+    tier: "pro",
+  },
+  {
+    id: "anthropic/claude-opus-4",
+    label: "Claude Opus 4",
+    providerId: "anthropic",
+    description: "Highest quality long-form reasoning",
+    context: "200K",
+    glyph: "anthropic",
+    inputCostPer1M: 15.0,
+    outputCostPer1M: 75.0,
+    contextWindowTokens: 200_000,
+    maxOutputTokens: 32_000,
     releaseDate: "2025-05-22",
+    tier: "premium",
+  },
+  {
+    id: "anthropic/claude-sonnet-4",
+    label: "Claude Sonnet 4",
+    providerId: "anthropic",
+    description: "Strong all-round assistant",
+    context: "200K",
+    glyph: "anthropic",
+    inputCostPer1M: 3.0,
+    outputCostPer1M: 15.0,
+    contextWindowTokens: 200_000,
+    maxOutputTokens: 64_000,
+    releaseDate: "2025-05-22",
+    tier: "pro",
   },
   {
     id: "anthropic/claude-3.5",
@@ -148,15 +214,30 @@ export const MODELS: CatalogModel[] = [
     contextWindowTokens: 200_000,
     maxOutputTokens: 8_192,
     releaseDate: "2024-10-22",
+    tier: "pro",
   },
 
   // ── Google ───────────────────────────────────────────────────────────────
+  {
+    id: "google/gemini-3.1-pro",
+    label: "Gemini 3.1 Pro",
+    providerId: "google",
+    description: "Top reasoning with multimodal, leads benchmarks",
+    tags: ["new"],
+    context: "2M",
+    glyph: "google",
+    inputCostPer1M: 2.0,
+    outputCostPer1M: 12.0,
+    contextWindowTokens: 2_097_152,
+    maxOutputTokens: 65_536,
+    releaseDate: "2026-02-25",
+    tier: "pro",
+  },
   {
     id: "google/gemini-2.5-flash",
     label: "Gemini 2.5 Flash",
     providerId: "google",
     description: "Fast cost-efficient multimodal",
-    tags: ["new"],
     context: "1M",
     glyph: "google",
     inputCostPer1M: 0.075,
@@ -164,6 +245,7 @@ export const MODELS: CatalogModel[] = [
     contextWindowTokens: 1_048_576,
     maxOutputTokens: 65_536,
     releaseDate: "2025-03-25",
+    tier: "free",
   },
   {
     id: "google/gemini-2.0",
@@ -177,15 +259,30 @@ export const MODELS: CatalogModel[] = [
     contextWindowTokens: 1_048_576,
     maxOutputTokens: 8_192,
     releaseDate: "2024-12-11",
+    tier: "free",
   },
 
   // ── xAI ─────────────────────────────────────────────────────────────────
+  {
+    id: "xai/grok-4",
+    label: "Grok 4",
+    providerId: "xai",
+    description: "Frontier coding and real-time knowledge",
+    tags: ["new"],
+    context: "256K",
+    glyph: "xai",
+    inputCostPer1M: 2.0,
+    outputCostPer1M: 15.0,
+    contextWindowTokens: 262_144,
+    maxOutputTokens: 131_072,
+    releaseDate: "2026-01-20",
+    tier: "pro",
+  },
   {
     id: "xai/grok-3",
     label: "Grok 3",
     providerId: "xai",
     description: "Real-time knowledge, opinionated reasoning",
-    tags: ["new"],
     context: "128K",
     glyph: "xai",
     inputCostPer1M: 3.0,
@@ -193,6 +290,7 @@ export const MODELS: CatalogModel[] = [
     contextWindowTokens: 131_072,
     maxOutputTokens: 131_072,
     releaseDate: "2025-02-17",
+    tier: "pro",
   },
 
   // ── DeepSeek ─────────────────────────────────────────────────────────────
@@ -201,7 +299,6 @@ export const MODELS: CatalogModel[] = [
     label: "DeepSeek Reasoner",
     providerId: "deepseek",
     description: "Chain-of-thought reasoning (R1)",
-    tags: ["new"],
     context: "128K",
     glyph: "deepseek",
     inputCostPer1M: 0.55,
@@ -209,6 +306,7 @@ export const MODELS: CatalogModel[] = [
     contextWindowTokens: 128_000,
     maxOutputTokens: 8_000,
     releaseDate: "2025-01-20",
+    tier: "pro",
   },
   {
     id: "deepseek/deepseek-chat",
@@ -222,13 +320,14 @@ export const MODELS: CatalogModel[] = [
     contextWindowTokens: 128_000,
     maxOutputTokens: 8_000,
     releaseDate: "2024-12-26",
+    tier: "free",
   },
 ];
 
-// Default to 3 free models for the hero compare experience on first load
+// Default to a mix of free models for the compare experience on first load
 export const DEFAULT_SLOT_MODEL_IDS = [
   "openai/gpt-4o-mini",
-  "anthropic/claude-sonnet-4",
+  "anthropic/claude-sonnet-4.6",
   "google/gemini-2.5-flash",
   "deepseek/deepseek-chat",
 ];

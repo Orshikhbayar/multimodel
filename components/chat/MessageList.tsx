@@ -8,6 +8,7 @@ import { MessageItem } from "./MessageItem";
 import { ContentColumn } from "@/components/layout";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { useSettingsStore } from "@/lib/stores";
 import type { Conversation, ModelSlot, Run } from "@/lib/types";
 
 interface MessageListProps {
@@ -28,6 +29,8 @@ export function MessageList({
   onShowDisagreements,
 }: MessageListProps) {
   const { t } = useI18n();
+  const { mode } = useSettingsStore();
+  const isMultiModelMode = mode === "compare" || mode === "team";
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLElement | null>(null);
@@ -122,15 +125,19 @@ export function MessageList({
                     .reverse()
                     .find((entry) => entry.role === "user")?.content
                 : undefined;
+            // In compare/team mode, pass all runs so MessageItem can render them
+            // In single mode, find the active tab's run
             const run = message.runs
-              ? activeIsSlot
-                ? (message.runs.find((r) => r.slotId === activeTab) ??
-                  (activeSlot
-                    ? message.runs.find((r) => r.model === activeSlot.label)
-                    : undefined) ??
-                  message.runs[0])
-                : (message.runs.find((r) => r.model === activeTab) ??
-                  message.runs[0])
+              ? isMultiModelMode
+                ? message.runs[0] // MessageItem reads message.runs directly
+                : activeIsSlot
+                  ? (message.runs.find((r) => r.slotId === activeTab) ??
+                    (activeSlot
+                      ? message.runs.find((r) => r.model === activeSlot.label)
+                      : undefined) ??
+                    message.runs[0])
+                  : (message.runs.find((r) => r.model === activeTab) ??
+                    message.runs[0])
               : undefined;
             return (
               <MessageItem

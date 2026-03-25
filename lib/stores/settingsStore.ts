@@ -26,6 +26,14 @@ export const MODE_OPTIONS: ModeOption[] = [
     bestFor: "Finding the best answer and exploring different perspectives.",
     outputStyle: "Multiple responses shown side by side.",
   },
+  {
+    value: "team",
+    label: "Team",
+    description:
+      "Multiple models collaborate — one judges and unifies the best answer.",
+    bestFor: "Getting the strongest answer from combined AI perspectives.",
+    outputStyle: "Unified synthesis backed by individual model perspectives.",
+  },
 ];
 
 interface SettingsStoreState {
@@ -64,7 +72,11 @@ export const useSettingsStore = create<SettingsStore>()(
         // Map old modes to new ones
         let mode: InteractionMode = "compare";
         const oldMode = (state as { mode?: string }).mode;
-        if (oldMode === "single" || oldMode === "compare") {
+        if (
+          oldMode === "single" ||
+          oldMode === "compare" ||
+          oldMode === "team"
+        ) {
           mode = oldMode;
         } else if (
           oldMode === "smart" ||

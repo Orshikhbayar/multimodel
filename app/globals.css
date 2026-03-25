@@ -615,6 +615,51 @@ html[data-reduce-motion="true"]
   animation: none;
   opacity: 0.35;
 }
+/* AI Collaboration Visual animations */
+@keyframes travel-pulse {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(200%);
+    opacity: 0;
+  }
+}
+
+.animate-travel-pulse {
+  animation: travel-pulse 1.2s ease-in-out infinite;
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2s ease-in-out infinite;
+}
+
+@keyframes pulse-soft {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-travel-pulse,
+  .animate-pulse-soft {
+    animation: none;
+  }
+}
+
+html[data-reduce-motion="true"] .animate-travel-pulse,
+html[data-reduce-motion="true"] .animate-pulse-soft {
+  animation: none;
+}
+
 @layer base {
   :root {
     --chat-max-width: 860px;

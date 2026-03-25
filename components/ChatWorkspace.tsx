@@ -13,6 +13,7 @@ import { TopUpModal } from "@/components/billing/TopUpModal";
 import { OutOfCreditsModal } from "@/components/billing/OutOfCreditsModal";
 import { UsageLimitBanner } from "@/components/chat/UsageLimitBanner";
 import { MultiModelNudgeBanner } from "@/components/chat/MultiModelNudgeBanner";
+import { ActiveModelChips } from "@/components/chat/ActiveModelChips";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChatContentContainer } from "@/components/ChatContentContainer";
@@ -120,15 +121,29 @@ export function ChatWorkspace({
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="surface-enter flex min-h-0 flex-1 flex-col gap-4 px-3 pb-4 pt-3 md:px-6 md:pt-5">
         <ChatContentContainer maxWidth="var(--chat-max-width)">
-          <div className="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-[hsl(var(--app-panel)/0.72)] px-3 py-2.5 backdrop-blur-sm">
-            <div className="min-w-0">
-              <p className="truncate text-[11px] font-medium text-muted-foreground">
-                {contextBreadcrumb}
-              </p>
+          <div className="flex items-center justify-between gap-3 rounded-[1.35rem] border border-border/40 bg-card/80 backdrop-blur px-4 py-2.5">
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="text-xs">
+                {modeLabel}
+              </Badge>
+              {mode !== "single" && (
+                <span className="text-xs text-muted-foreground">
+                  {enabledModelIds.length}{" "}
+                  {enabledModelIds.length === 1
+                    ? t("composer.modelSingular")
+                    : t("composer.modelPlural")}
+                </span>
+              )}
             </div>
-            <Badge variant="secondary" className="shrink-0">
-              {contextBadgeLabel}
-            </Badge>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSettingsOpen(true)}
+              title={t("accessibility.openSettings")}
+              className="h-8 w-8 rounded-lg"
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
           </div>
         </ChatContentContainer>
 
@@ -159,10 +174,13 @@ export function ChatWorkspace({
                 activeModelCount={enabledModelIds.length}
                 onEnableMultiModel={() => setSettingsOpen(true)}
               />
+              <ActiveModelChips
+                onOpenSettings={() => setSettingsOpen(true)}
+              />
               {!projectArchived ? (
                 <Composer
                   onSend={handleSend}
-                  modelId={activeSlot?.modelId ?? "openai/gpt-5.2"}
+                  modelId={activeSlot?.modelId ?? "openai/gpt-4o-mini"}
                   modelLabel={activeSlot?.label ?? t("topBar.selectModel")}
                   enabledModelIds={enabledModelIds}
                   currency={currency}
@@ -204,10 +222,13 @@ export function ChatWorkspace({
                 activeModelCount={enabledModelIds.length}
                 onEnableMultiModel={() => setSettingsOpen(true)}
               />
+              <ActiveModelChips
+                onOpenSettings={() => setSettingsOpen(true)}
+              />
               {!projectArchived ? (
                 <Composer
                   onSend={handleSend}
-                  modelId={activeSlot?.modelId ?? "openai/gpt-5.2"}
+                  modelId={activeSlot?.modelId ?? "openai/gpt-4o-mini"}
                   modelLabel={activeSlot?.label ?? t("topBar.selectModel")}
                   enabledModelIds={enabledModelIds}
                   currency={currency}

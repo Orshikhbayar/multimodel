@@ -1,21 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  ArrowUp,
-  ChevronDown,
-  Globe,
-  Image,
-  Paperclip,
-  Square,
-} from "lucide-react";
+import { ArrowUp, ChevronDown, Globe, Paperclip, Square } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ModelPicker } from "@/components/ModelPicker";
 import { ModelGlyph } from "@/components/ModelGlyph";
 import { useChatActions } from "@/lib/hooks/useChatActions";
-import { useStreamStore } from "@/lib/stores";
+import { useStreamStore, useSettingsStore, useModelStore } from "@/lib/stores";
 import { estimateChatCostForSlots } from "@/lib/billing/estimator";
 import { formatCredits } from "@/lib/billing/utils";
 import type { Currency } from "@/lib/billing/types";
@@ -47,9 +40,10 @@ export function Composer({
 }: ComposerProps) {
   const { sendMessage, stopAllStreams } = useChatActions();
   const { currentPlanId } = useBillingStore();
+  const { mode } = useSettingsStore();
+  const { slots, activeSlotId } = useModelStore();
   const plan = getPlanById(currentPlanId);
   const [webSearchEnabled, setWebSearchEnabled] = useState(false);
-  const [imageGenEnabled, setImageGenEnabled] = useState(false);
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const maxHeight = 160;
@@ -83,6 +77,17 @@ export function Composer({
     [t],
   );
   const filteredQuickStartPrompts = quickStartPrompts;
+  const placeholder = useMemo(() => {
+    if (mode === "single") {
+      const activeSlot = slots.find((s) => s.slotId === activeSlotId);
+      return t("composer.placeholderSingle").replace(
+        "{model}",
+        activeSlot?.label ?? "AI",
+      );
+    }
+    if (mode === "compare") return t("composer.placeholderCompare");
+    return t("composer.placeholderTeam");
+  }, [mode, slots, activeSlotId, t]);
   const modelIdsForEstimate = useMemo(
     () => (enabledModelIds.length > 0 ? enabledModelIds : [modelId]),
     [enabledModelIds, modelId],
@@ -142,7 +147,7 @@ export function Composer({
           ref={textareaRef}
           value={value}
           onChange={(event) => setValue(event.target.value)}
-          placeholder={t("composer.placeholder")}
+          placeholder={placeholder}
           className="min-h-[46px] max-h-[160px] w-full resize-none border-0 bg-transparent px-0 text-sm leading-relaxed shadow-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 focus:ring-offset-0 focus-visible:ring-offset-0"
           onKeyDown={(event) => {
             if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
@@ -172,25 +177,6 @@ export function Composer({
             >
               <Globe className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Web</span>
-            </button>
-            <button
-              type="button"
-              title="Image Generation"
-              disabled={!plan.features.images}
-              onClick={() =>
-                plan.features.images && setImageGenEnabled((v) => !v)
-              }
-              className={cn(
-                "flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all",
-                imageGenEnabled && plan.features.images
-                  ? "bg-primary/15 text-primary"
-                  : plan.features.images
-                    ? "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-                    : "cursor-not-allowed text-muted-foreground/40",
-              )}
-            >
-              <Image className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Image</span>
             </button>
             <button
               type="button"

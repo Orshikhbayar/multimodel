@@ -18,6 +18,8 @@ import { MODELS, PROVIDERS, getProviderById } from "@/lib/modelCatalog";
 import { useI18n, type I18nKey } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
+import type { ModelTier } from "@/lib/modelCatalog";
+
 const MODEL_DESCRIPTION_KEYS: Partial<Record<string, I18nKey>> = {
   "openai/gpt-5.2": "modelPicker.descGpt52",
   "openai/gpt-5.2-codex": "modelPicker.descGpt52Codex",
@@ -37,6 +39,12 @@ const MODEL_DESCRIPTION_KEYS: Partial<Record<string, I18nKey>> = {
   "deepseek/deepseek-chat": "modelPicker.descDeepSeekChat",
   "deepseek/deepseek-reasoner": "modelPicker.descDeepSeekReasoner",
   "xai/grok-3": "modelPicker.descGrok3",
+};
+
+const TIER_BADGE_STYLES: Record<ModelTier, string> = {
+  free: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+  pro: "bg-primary/10 text-primary",
+  premium: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
 };
 
 export function ModelPicker({
@@ -350,6 +358,16 @@ function ModelSection({
                       >
                         {t("navigation.new")}
                       </Badge>
+                    ) : null}
+                    {model.tier && model.tier !== "free" ? (
+                      <span
+                        className={cn(
+                          "rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide",
+                          TIER_BADGE_STYLES[model.tier],
+                        )}
+                      >
+                        {model.tier}
+                      </span>
                     ) : null}
                   </div>
                   {description ? (
