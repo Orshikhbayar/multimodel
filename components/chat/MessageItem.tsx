@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
@@ -34,6 +34,105 @@ import { cn } from "@/lib/utils";
 import { useChatActions } from "@/lib/hooks/useChatActions";
 import { useConversationStore } from "@/lib/stores";
 import { rateRun } from "@/lib/actions/rateRun";
+
+// ---------------------------------------------------------------------------
+// Two-phase message content renderer
+// Phase 1 (streaming/queued): raw text, zero markdown parsing cost
+// Phase 2 (done/error):       full markdown with a subtle fade-in
+// ---------------------------------------------------------------------------
+interface MessageContentProps {
+  text: string;
+  status: string | undefined;
+  errorMessage: string | undefined;
+  prompt: string | undefined;
+  isUser: boolean;
+}
+
+const MessageContent = memo(
+  function MessageContent({
+    text,
+    status,
+    errorMessage,
+    prompt,
+    isUser,
+  }: MessageContentProps) {
+    const { t } = useI18n();
+    const isStreaming =
+      !isUser && (status === "streaming" || status === "queued");
+
+    // Phase 1 — plain text, no markdown parser, no layout thrash
+    if (isStreaming) {
+      return (
+        <div
+          className="whitespace-pre-wrap text-sm leading-relaxed"
+          aria-live="polite"
+          aria-atomic="false"
+        >
+          {text ||
+            (status === "queued"
+              ? t("chat.waitingForSlot")
+              : t("chat.thinking"))}
+          <span className="streaming-cursor" aria-hidden="true" />
+        </div>
+      );
+    }
+
+    // Phase 2 — full markdown render after stream completes
+    const content =
+      text || (status === "error" ? (errorMessage ?? t("chat.error")) : "");
+
+    return (
+      <div
+        className={!isUser && status === "done" ? "fade-in-render" : undefined}
+      >
+        {splitInteractiveBlocks(content, !isUser ? prompt : undefined).map(
+          (segment, i) =>
+            segment.type === "interactive" ? (
+              <InteractiveBlock key={i} html={segment.content} />
+            ) : segment.type === "pptx" ? (
+              <PptxBlock key={i} json={segment.content} />
+            ) : (
+              <ReactMarkdown
+                key={i}
+                remarkPlugins={[remarkGfm]}
+                skipHtml
+                components={{
+                  p: ({ children }) => (
+                    <p className="mb-2 last:mb-0">{children}</p>
+                  ),
+                  code: ({ className, children, ...props }) => {
+                    const isInline = !className;
+                    if (isInline) {
+                      return (
+                        <code
+                          className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono"
+                          {...props}
+                        >
+                          {children}
+                        </code>
+                      );
+                    }
+                    const language =
+                      className?.replace("language-", "") ?? "text";
+                    const code = String(children).replace(/\n$/, "");
+                    return <CodeBlock code={code} language={language} />;
+                  },
+                  pre: ({ children }) => <>{children}</>,
+                }}
+              >
+                {segment.content}
+              </ReactMarkdown>
+            ),
+        )}
+      </div>
+    );
+  },
+  // Only re-render when text or status actually changes
+  (prev, next) =>
+    prev.text === next.text &&
+    prev.status === next.status &&
+    prev.errorMessage === next.errorMessage,
+);
 
 interface MessageItemProps {
   message: Message;
@@ -204,60 +303,13 @@ export function MessageItem({
                   </div>
                 </div>
               ) : (
-                <>
-                  {splitInteractiveBlocks(
-                    displayContent ||
-                      (selectedRun?.status === "queued"
-                        ? t("chat.waitingForSlot")
-                        : selectedRun?.status === "streaming"
-                          ? t("chat.thinking")
-                          : selectedRun?.status === "error"
-                            ? (selectedRun.error?.message ?? t("chat.error"))
-                            : ""),
-                    !isUser ? prompt : undefined,
-                  ).map((segment, i) =>
-                    segment.type === "interactive" ? (
-                      <InteractiveBlock key={i} html={segment.content} />
-                    ) : segment.type === "pptx" ? (
-                      <PptxBlock key={i} json={segment.content} />
-                    ) : (
-                      <ReactMarkdown
-                        key={i}
-                        remarkPlugins={[remarkGfm]}
-                        skipHtml
-                        components={{
-                          p: ({ children }) => (
-                            <p className="mb-2 last:mb-0">{children}</p>
-                          ),
-                          code: ({ className, children, ...props }) => {
-                            const isInline = !className;
-
-                            if (isInline) {
-                              return (
-                                <code
-                                  className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono"
-                                  {...props}
-                                >
-                                  {children}
-                                </code>
-                              );
-                            }
-
-                            const language =
-                              className?.replace("language-", "") ?? "text";
-                            const code = String(children).replace(/\n$/, "");
-                            return (
-                              <CodeBlock code={code} language={language} />
-                            );
-                          },
-                          pre: ({ children }) => <>{children}</>,
-                        }}
-                      >
-                        {segment.content}
-                      </ReactMarkdown>
-                    ),
-                  )}
-                </>
+                <MessageContent
+                  text={displayContent}
+                  status={selectedRun?.status}
+                  errorMessage={selectedRun?.error?.message}
+                  prompt={!isUser ? prompt : undefined}
+                  isUser={isUser}
+                />
               )}
             </ExpandableMessage>
           )}

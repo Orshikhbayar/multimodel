@@ -240,58 +240,78 @@ export function UnifiedAnswerFlow({
             )}
           </p>
           <div className="chat-markdown prose prose-sm dark:prose-invert max-w-none">
-            {splitInteractiveBlocks(
-              unifiedRun.text || t("chat.unifiedCollecting"),
-              prompt,
-            ).map((segment, i) =>
-              segment.type === "interactive" ? (
-                <InteractiveBlock key={i} html={segment.content} compact />
-              ) : segment.type === "pptx" ? (
-                <PptxBlock key={i} json={segment.content} compact />
-              ) : (
-                <ReactMarkdown
-                  key={i}
-                  remarkPlugins={[remarkGfm]}
-                  skipHtml
-                  components={{
-                    p: ({ children }) => (
-                      <p className="mb-2 last:mb-0">{children}</p>
-                    ),
-                    code: ({ className, children, ...props }) => {
-                      const isInline = !className;
-                      if (isInline) {
-                        return (
-                          <code
-                            className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono"
-                            {...props}
-                          >
-                            {children}
-                          </code>
-                        );
-                      }
+            {unifiedRun.status === "streaming" ||
+            unifiedRun.status === "queued" ? (
+              // Phase 1 — raw text while streaming, zero parsing cost
+              <div
+                className="whitespace-pre-wrap text-sm leading-relaxed"
+                aria-live="polite"
+                aria-atomic="false"
+              >
+                {unifiedRun.text || t("chat.unifiedCollecting")}
+                <span className="streaming-cursor" aria-hidden="true" />
+              </div>
+            ) : (
+              // Phase 2 — full markdown after stream completes
+              <div
+                className={
+                  unifiedRun.status === "done" ? "fade-in-render" : undefined
+                }
+              >
+                {splitInteractiveBlocks(
+                  unifiedRun.text || t("chat.unifiedCollecting"),
+                  prompt,
+                ).map((segment, i) =>
+                  segment.type === "interactive" ? (
+                    <InteractiveBlock key={i} html={segment.content} compact />
+                  ) : segment.type === "pptx" ? (
+                    <PptxBlock key={i} json={segment.content} compact />
+                  ) : (
+                    <ReactMarkdown
+                      key={i}
+                      remarkPlugins={[remarkGfm]}
+                      skipHtml
+                      components={{
+                        p: ({ children }) => (
+                          <p className="mb-2 last:mb-0">{children}</p>
+                        ),
+                        code: ({ className, children, ...props }) => {
+                          const isInline = !className;
+                          if (isInline) {
+                            return (
+                              <code
+                                className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono"
+                                {...props}
+                              >
+                                {children}
+                              </code>
+                            );
+                          }
 
-                      const language =
-                        className?.replace("language-", "") ?? "text";
-                      const code = String(children).replace(/\n$/, "");
-                      return (
-                        <UnifiedCodeBlock
-                          language={language}
-                          code={code}
-                          textLabel={t("common.text")}
-                          copyLabel={t("common.copy")}
-                          copiedLabel={t("common.copied")}
-                          {...props}
-                        />
-                      );
-                    },
-                    pre: ({ children }) => (
-                      <pre className="my-2">{children}</pre>
-                    ),
-                  }}
-                >
-                  {segment.content}
-                </ReactMarkdown>
-              ),
+                          const language =
+                            className?.replace("language-", "") ?? "text";
+                          const code = String(children).replace(/\n$/, "");
+                          return (
+                            <UnifiedCodeBlock
+                              language={language}
+                              code={code}
+                              textLabel={t("common.text")}
+                              copyLabel={t("common.copy")}
+                              copiedLabel={t("common.copied")}
+                              {...props}
+                            />
+                          );
+                        },
+                        pre: ({ children }) => (
+                          <pre className="my-2">{children}</pre>
+                        ),
+                      }}
+                    >
+                      {segment.content}
+                    </ReactMarkdown>
+                  ),
+                )}
+              </div>
             )}
           </div>
         </div>

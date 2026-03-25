@@ -632,3 +632,38 @@ html[data-reduce-motion="true"]
     }
   }
 }
+
+/* ─── Streaming cursor ─────────────────────────────────────────────────────── */
+.streaming-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background-color: currentColor;
+  margin-left: 1px;
+  vertical-align: text-bottom;
+  animation: cursor-blink 0.9s step-end infinite;
+}
+
+@keyframes cursor-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+/* ─── Fade-in when markdown swaps in after streaming ───────────────────────── */
+.fade-in-render {
+  animation: fade-in-render 0.15s ease-out both;
+}
+
+@keyframes fade-in-render {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

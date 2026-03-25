@@ -69,10 +69,17 @@ export function MessageList({
   useEffect(() => {
     const shouldStick = stickToBottomRef.current;
     const isNewMessage = messages.length > prevCountRef.current;
-    const behavior = isNewMessage ? "smooth" : "auto";
 
     if (shouldStick || isNewMessage) {
-      bottomRef.current?.scrollIntoView({ behavior });
+      const viewport = viewportRef.current;
+      if (viewport) {
+        // Use instant during streaming (rapid token arrival) to avoid rubber-band lag.
+        // Use smooth only when a brand-new message appears.
+        viewport.scrollTo({
+          top: viewport.scrollHeight,
+          behavior: isNewMessage ? "smooth" : "instant",
+        });
+      }
     }
 
     prevCountRef.current = messages.length;
@@ -95,7 +102,7 @@ export function MessageList({
         aria-live="polite"
       >
         <ContentColumn
-          className="space-y-6 py-6 pb-28"
+          className="space-y-6 py-6 pb-6"
           maxWidth="var(--chat-max-width)"
         >
           {messages.map((message, index) => {
