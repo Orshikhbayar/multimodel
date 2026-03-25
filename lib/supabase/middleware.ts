@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getSupabaseConfig } from "./env";
 
-const PUBLIC_ROUTES = new Set(["/auth/login", "/auth/callback", "/intro"]);
+const PUBLIC_ROUTES = new Set(["/", "/auth/login", "/auth/callback", "/intro"]);
 const PROTECTED_ROUTE_PREFIXES = [
   "/",
   "/about",
