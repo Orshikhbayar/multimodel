@@ -174,9 +174,7 @@ export function ChatWorkspace({
                 activeModelCount={enabledModelIds.length}
                 onEnableMultiModel={() => setSettingsOpen(true)}
               />
-              <ActiveModelChips
-                onOpenSettings={() => setSettingsOpen(true)}
-              />
+              <ActiveModelChips onOpenSettings={() => setSettingsOpen(true)} />
               {!projectArchived ? (
                 <Composer
                   onSend={handleSend}
@@ -222,9 +220,7 @@ export function ChatWorkspace({
                 activeModelCount={enabledModelIds.length}
                 onEnableMultiModel={() => setSettingsOpen(true)}
               />
-              <ActiveModelChips
-                onOpenSettings={() => setSettingsOpen(true)}
-              />
+              <ActiveModelChips onOpenSettings={() => setSettingsOpen(true)} />
               {!projectArchived ? (
                 <Composer
                   onSend={handleSend}

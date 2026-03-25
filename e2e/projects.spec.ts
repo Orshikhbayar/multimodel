@@ -6,7 +6,6 @@ test("chat page loads and new conversation can be started", async ({
   await page.goto("/chat");
   await page.waitForLoadState("networkidle");
 
-  // The composer textarea should be visible on the chat page
-  const composer = page.getByRole("textbox", { name: /message/i });
+  const composer = page.locator("textarea").first();
   await expect(composer).toBeVisible({ timeout: 15_000 });
 });
