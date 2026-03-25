@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { createElement, useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Check, Copy, ThumbsUp } from "lucide-react";
@@ -17,6 +17,7 @@ import {
   SUPPORTED_LANGUAGES,
   normalizeLanguage,
 } from "./codeHighlight";
+import { useStreamingLabel } from "@/lib/hooks/useStreamingLabel";
 
 interface UnifiedAnswerFlowProps {
   prompt?: string;
@@ -51,6 +52,107 @@ function iconForRunModel(model: string) {
   return Layers;
 }
 
+/** Copy button with checkmark feedback */
+function PerspectiveCopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  const { t } = useI18n();
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Ignore clipboard errors
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      className="flex h-5 w-5 items-center justify-center rounded-full transition-all text-muted-foreground hover:text-foreground"
+      title={t("chat.copyResponse")}
+      onClick={handleCopy}
+    >
+      {copied ? (
+        <Check className="h-3 w-3 text-green-500" />
+      ) : (
+        <Copy className="h-3 w-3" />
+      )}
+    </button>
+  );
+}
+
+/** Individual perspective card — uses useStreamingLabel internally */
+function PerspectiveCard({
+  run,
+  isBestAnswer,
+  onToggleBest,
+}: {
+  run: Run;
+  isBestAnswer: boolean;
+  onToggleBest: () => void;
+}) {
+  const { t } = useI18n();
+  const streamingLabel = useStreamingLabel(run.text, run.status);
+
+  return (
+    <article
+      className={cn(
+        "unified-flow__perspective-card w-full rounded-xl border bg-background/80 px-3 py-2 shadow-sm",
+        run.status === "streaming" && "unified-flow__perspective-card--streaming",
+        run.status === "error" && "border-destructive/40",
+        isBestAnswer &&
+          "border-emerald-400/60 bg-emerald-50/10 ring-1 ring-emerald-400/30",
+      )}
+    >
+      <div className="mb-1 flex items-center gap-2 text-xs font-semibold">
+        <span className="flex h-6 w-6 items-center justify-center rounded-full border bg-muted/40">
+          {createElement(iconForRunModel(run.model), { className: "h-3.5 w-3.5" })}
+        </span>
+        <span className="line-clamp-1 flex-1">{run.model}</span>
+        {run.status === "queued" ? (
+          <span className="rounded-full border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+            {t("chat.queued")}
+          </span>
+        ) : null}
+        {run.status === "done" && (
+          <>
+            <PerspectiveCopyButton text={run.text} />
+            <button
+              type="button"
+              title="Mark as best answer"
+              onClick={onToggleBest}
+              className={cn(
+                "flex h-5 w-5 items-center justify-center rounded-full transition-all",
+                isBestAnswer
+                  ? "bg-emerald-500/20 text-emerald-500"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <ThumbsUp className="h-3 w-3" />
+            </button>
+          </>
+        )}
+      </div>
+      {run.status === "streaming" && run.text.length < 200 ? (
+        <p className="text-xs text-muted-foreground italic">{streamingLabel}</p>
+      ) : (
+        <p className="text-xs text-muted-foreground">
+          {sentencePreview(
+            run.text,
+            run.status === "error"
+              ? t("chat.error")
+              : run.status === "queued"
+                ? t("chat.waitingForSlot")
+                : t("chat.thinking"),
+          )}
+        </p>
+      )}
+    </article>
+  );
+}
+
 export function UnifiedAnswerFlow({
   prompt,
   unifiedRun,
@@ -58,6 +160,10 @@ export function UnifiedAnswerFlow({
 }: UnifiedAnswerFlowProps) {
   const { t } = useI18n();
   const [bestAnswerRunId, setBestAnswerRunId] = useState<string | null>(null);
+  const unifiedStreamingLabel = useStreamingLabel(
+    unifiedRun.text,
+    unifiedRun.status,
+  );
 
   const visibleRuns = useMemo(
     () => perspectiveRuns.slice(0, MAX_PERSPECTIVE_CARDS),
@@ -92,66 +198,21 @@ export function UnifiedAnswerFlow({
             gridTemplateColumns: `repeat(${Math.max(1, visibleRuns.length)}, minmax(0, 1fr))`,
           }}
         >
-          {visibleRuns.map((run) => {
-            const Icon = iconForRunModel(run.model);
-            return (
-              <div key={run.id} className="flex flex-col items-center">
-                <div className="unified-flow__stem unified-flow__stem--top" />
-                <article
-                  className={cn(
-                    "unified-flow__perspective-card w-full rounded-xl border bg-background/80 px-3 py-2 shadow-sm",
-                    run.status === "streaming" &&
-                      "unified-flow__perspective-card--streaming",
-                    run.status === "error" && "border-destructive/40",
-                    bestAnswerRunId === run.id &&
-                      "border-emerald-400/60 bg-emerald-50/10 ring-1 ring-emerald-400/30",
-                  )}
-                >
-                  <div className="mb-1 flex items-center gap-2 text-xs font-semibold">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full border bg-muted/40">
-                      <Icon className="h-3.5 w-3.5" />
-                    </span>
-                    <span className="line-clamp-1 flex-1">{run.model}</span>
-                    {run.status === "queued" ? (
-                      <span className="rounded-full border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-                        {t("chat.queued")}
-                      </span>
-                    ) : null}
-                    {run.status === "done" && (
-                      <button
-                        type="button"
-                        title="Mark as best answer"
-                        onClick={() =>
-                          setBestAnswerRunId((prev) =>
-                            prev === run.id ? null : run.id,
-                          )
-                        }
-                        className={cn(
-                          "flex h-5 w-5 items-center justify-center rounded-full transition-all",
-                          bestAnswerRunId === run.id
-                            ? "bg-emerald-500/20 text-emerald-500"
-                            : "text-muted-foreground hover:text-foreground",
-                        )}
-                      >
-                        <ThumbsUp className="h-3 w-3" />
-                      </button>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {sentencePreview(
-                      run.text,
-                      run.status === "error"
-                        ? t("chat.error")
-                        : run.status === "queued"
-                          ? t("chat.waitingForSlot")
-                          : t("chat.thinking"),
-                    )}
-                  </p>
-                </article>
-                <div className="unified-flow__stem unified-flow__stem--bottom" />
-              </div>
-            );
-          })}
+          {visibleRuns.map((run) => (
+            <div key={run.id} className="flex flex-col items-center">
+              <div className="unified-flow__stem unified-flow__stem--top" />
+              <PerspectiveCard
+                run={run}
+                isBestAnswer={bestAnswerRunId === run.id}
+                onToggleBest={() =>
+                  setBestAnswerRunId((prev) =>
+                    prev === run.id ? null : run.id,
+                  )
+                }
+              />
+              <div className="unified-flow__stem unified-flow__stem--bottom" />
+            </div>
+          ))}
         </div>
 
         <div className="unified-flow__rail unified-flow__rail--bottom" />
@@ -165,7 +226,16 @@ export function UnifiedAnswerFlow({
         )}
       >
         <div className="text-sm leading-relaxed">
-          <p className="mb-2 font-semibold">{t("chat.unifiedAnswer")}:</p>
+          <p className="mb-2 font-semibold">
+            {unifiedRun.status === "streaming" &&
+            unifiedRun.text.length < 200 ? (
+              <span className="italic text-muted-foreground">
+                {unifiedStreamingLabel}
+              </span>
+            ) : (
+              <>{t("chat.unifiedAnswer")}:</>
+            )}
+          </p>
           <div className="chat-markdown prose prose-sm dark:prose-invert max-w-none">
             {splitInteractiveBlocks(
               unifiedRun.text || t("chat.unifiedCollecting"),

@@ -12,6 +12,7 @@ import { UpgradeModal } from "@/components/billing/UpgradeModal";
 import { TopUpModal } from "@/components/billing/TopUpModal";
 import { OutOfCreditsModal } from "@/components/billing/OutOfCreditsModal";
 import { UsageLimitBanner } from "@/components/chat/UsageLimitBanner";
+import { MultiModelNudgeBanner } from "@/components/chat/MultiModelNudgeBanner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChatContentContainer } from "@/components/ChatContentContainer";
@@ -154,6 +155,10 @@ export function ChatWorkspace({
                 enabledModelCount={enabledModelIds.length}
                 onOpenSettings={() => setSettingsOpen(true)}
               />
+              <MultiModelNudgeBanner
+                activeModelCount={enabledModelIds.length}
+                onEnableMultiModel={() => setSettingsOpen(true)}
+              />
               {!projectArchived ? (
                 <Composer
                   onSend={handleSend}
@@ -194,6 +199,10 @@ export function ChatWorkspace({
                 modeOutputStyle={modeOutputStyle}
                 enabledModelCount={enabledModelIds.length}
                 onOpenSettings={() => setSettingsOpen(true)}
+              />
+              <MultiModelNudgeBanner
+                activeModelCount={enabledModelIds.length}
+                onEnableMultiModel={() => setSettingsOpen(true)}
               />
               {!projectArchived ? (
                 <Composer

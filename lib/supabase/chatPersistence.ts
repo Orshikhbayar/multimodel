@@ -137,7 +137,7 @@ export async function hydrateWorkspaceConversations(
     client
       .from("messages")
       .select(
-        "id, conversation_id, role, content, created_at, edited_at, attachments, tool_calls",
+        "id, conversation_id, role, content, created_at, edited_at, attachments, tool_calls, feedback",
       )
       .in("conversation_id", conversationIds)
       .order("created_at", { ascending: true }),

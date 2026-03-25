@@ -128,6 +128,7 @@ export type Database = {
           conversation_id: string;
           created_at: string;
           edited_at: string | null;
+          feedback: number | null;
           id: string;
           role: Database["public"]["Enums"]["message_role"];
           tool_calls: Json | null;
@@ -138,6 +139,7 @@ export type Database = {
           conversation_id: string;
           created_at?: string;
           edited_at?: string | null;
+          feedback?: number | null;
           id?: string;
           role: Database["public"]["Enums"]["message_role"];
           tool_calls?: Json | null;
@@ -148,6 +150,7 @@ export type Database = {
           conversation_id?: string;
           created_at?: string;
           edited_at?: string | null;
+          feedback?: number | null;
           id?: string;
           role?: Database["public"]["Enums"]["message_role"];
           tool_calls?: Json | null;
@@ -206,6 +209,7 @@ export type Database = {
           disagreements: Json | null;
           error_code: string | null;
           error_text: string | null;
+          feedback: number | null;
           id: string;
           input_tokens: number | null;
           interrupted: boolean;
@@ -229,6 +233,7 @@ export type Database = {
           disagreements?: Json | null;
           error_code?: string | null;
           error_text?: string | null;
+          feedback?: number | null;
           id?: string;
           input_tokens?: number | null;
           interrupted?: boolean;
@@ -252,6 +257,7 @@ export type Database = {
           disagreements?: Json | null;
           error_code?: string | null;
           error_text?: string | null;
+          feedback?: number | null;
           id?: string;
           input_tokens?: number | null;
           interrupted?: boolean;

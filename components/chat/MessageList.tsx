@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ChevronDown } from "lucide-react";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageItem } from "./MessageItem";
 import { ContentColumn } from "@/components/layout";
 import { useI18n } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 import type { Conversation, ModelSlot, Run } from "@/lib/types";
 
 interface MessageListProps {
@@ -28,8 +30,10 @@ export function MessageList({
   const { t } = useI18n();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLElement | null>(null);
   const stickToBottomRef = useRef(true);
   const prevCountRef = useRef(0);
+  const [isAtBottom, setIsAtBottom] = useState(true);
   const messages = useMemo(() => conversation?.messages ?? [], [conversation]);
   const slotIds = useMemo(
     () => new Set(slots.map((slot) => slot.slotId)),
@@ -46,12 +50,15 @@ export function MessageList({
     const viewport = scrollAreaRef.current?.querySelector(
       "[data-scroll-container]",
     ) as HTMLElement | null;
+    viewportRef.current = viewport;
     if (!viewport) return;
 
     const updateStickiness = () => {
       const distanceFromBottom =
         viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
-      stickToBottomRef.current = distanceFromBottom <= 48;
+      const atBottom = distanceFromBottom <= 48;
+      stickToBottomRef.current = atBottom;
+      setIsAtBottom(atBottom);
     };
 
     updateStickiness();
@@ -71,63 +78,91 @@ export function MessageList({
     prevCountRef.current = messages.length;
   }, [messages, activeTab]);
 
+  const scrollToBottom = () => {
+    const viewport = viewportRef.current;
+    if (viewport) {
+      viewport.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" });
+    }
+  };
+
   return (
-    <ScrollArea
-      ref={scrollAreaRef}
-      className="flex-1 rounded-2xl bg-[hsl(var(--app-panel))] shadow-inner"
-      role="log"
-      aria-label={t("accessibility.chatMessages")}
-      aria-live="polite"
-    >
-      <ContentColumn
-        className="space-y-6 py-6 pb-28"
-        maxWidth="var(--chat-max-width)"
+    <div className="relative flex-1 min-h-0">
+      <ScrollArea
+        ref={scrollAreaRef}
+        className="h-full rounded-2xl bg-[hsl(var(--app-panel))] shadow-inner"
+        role="log"
+        aria-label={t("accessibility.chatMessages")}
+        aria-live="polite"
       >
-        {messages.map((message, index) => {
-          const nextMessage = messages[index + 1];
-          const isTurnEnd =
-            message.role === "assistant" &&
-            (!nextMessage || nextMessage.role === "user");
-          const retryContent =
-            message.role === "assistant"
-              ? [...messages.slice(0, index)]
-                  .reverse()
-                  .find((entry) => entry.role === "user")?.content
+        <ContentColumn
+          className="space-y-6 py-6 pb-28"
+          maxWidth="var(--chat-max-width)"
+        >
+          {messages.map((message, index) => {
+            const nextMessage = messages[index + 1];
+            const isTurnEnd =
+              message.role === "assistant" &&
+              (!nextMessage || nextMessage.role === "user");
+            const retryContent =
+              message.role === "assistant"
+                ? [...messages.slice(0, index)]
+                    .reverse()
+                    .find((entry) => entry.role === "user")?.content
+                : undefined;
+            const prompt =
+              message.role === "assistant"
+                ? [...messages.slice(0, index)]
+                    .reverse()
+                    .find((entry) => entry.role === "user")?.content
+                : undefined;
+            const run = message.runs
+              ? activeIsSlot
+                ? (message.runs.find((r) => r.slotId === activeTab) ??
+                  (activeSlot
+                    ? message.runs.find((r) => r.model === activeSlot.label)
+                    : undefined) ??
+                  message.runs[0])
+                : (message.runs.find((r) => r.model === activeTab) ??
+                  message.runs[0])
               : undefined;
-          const prompt =
-            message.role === "assistant"
-              ? [...messages.slice(0, index)]
-                  .reverse()
-                  .find((entry) => entry.role === "user")?.content
-              : undefined;
-          const run = message.runs
-            ? activeIsSlot
-              ? (message.runs.find((r) => r.slotId === activeTab) ??
-                (activeSlot
-                  ? message.runs.find((r) => r.model === activeSlot.label)
-                  : undefined) ??
-                message.runs[0])
-              : (message.runs.find((r) => r.model === activeTab) ??
-                message.runs[0])
-            : undefined;
-          return (
-            <MessageItem
-              key={message.id}
-              message={message}
-              projectId={projectId}
-              conversationId={conversation?.id}
-              run={message.role === "assistant" ? run : undefined}
-              prompt={prompt}
-              retryContent={retryContent}
-              isTurnEnd={isTurnEnd}
-              onShowSources={onShowSources}
-              onShowDisagreements={onShowDisagreements}
-            />
-          );
-        })}
-        <div ref={bottomRef} />
-      </ContentColumn>
-    </ScrollArea>
+            return (
+              <MessageItem
+                key={message.id}
+                message={message}
+                projectId={projectId}
+                conversationId={conversation?.id}
+                run={message.role === "assistant" ? run : undefined}
+                prompt={prompt}
+                retryContent={retryContent}
+                isTurnEnd={isTurnEnd}
+                onShowSources={onShowSources}
+                onShowDisagreements={onShowDisagreements}
+              />
+            );
+          })}
+          <div ref={bottomRef} />
+        </ContentColumn>
+      </ScrollArea>
+
+      {/* Scroll-to-bottom floating button */}
+      <div
+        className={cn(
+          "absolute bottom-4 left-1/2 -translate-x-1/2 z-50 transition-opacity duration-200",
+          isAtBottom ? "opacity-0 pointer-events-none" : "opacity-100",
+        )}
+      >
+        <button
+          type="button"
+          onClick={scrollToBottom}
+          title={t("chat.scrollToBottom")}
+          aria-label={t("chat.scrollToBottom")}
+          className="flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-xs text-muted-foreground shadow-md hover:text-foreground hover:bg-muted/50 transition-colors"
+        >
+          <ChevronDown className="h-3.5 w-3.5" />
+          {t("chat.scrollToBottom")}
+        </button>
+      </div>
+    </div>
   );
 }
 

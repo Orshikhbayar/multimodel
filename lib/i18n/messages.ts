@@ -161,6 +161,11 @@ const en = {
     modelDisagreementsDescription:
       "Where the models diverged, and how they justify their stance.",
     noDisagreements: "No disagreements captured.",
+    scrollToBottom: "Scroll to bottom",
+    multiModelNudge: "Compare responses across up to 6 models at once",
+    multiModelNudgeEnable: "Enable multi-model →",
+    openInNewTab: "Open in new tab",
+    copyResponse: "Copy response",
   },
   topBar: {
     selectModel: "Select model",
@@ -714,6 +719,11 @@ const mn: MessageSchema = {
     modelDisagreementsDescription:
       "Загварууд хаана зөрсөн, байр сууриа хэрхэн тайлбарласныг харуулна.",
     noDisagreements: "Зөрүү бүртгэгдээгүй байна.",
+    scrollToBottom: "Доош гүйлгэх",
+    multiModelNudge: "Нэгэн зэрэг 6 хүртэлх загварын хариуг харьцуулах",
+    multiModelNudgeEnable: "Олон загвар идэвхжүүлэх →",
+    openInNewTab: "Шинэ таб нээх",
+    copyResponse: "Хариуг хуулах",
   },
   topBar: {
     selectModel: "Загвар сонгох",
