@@ -367,7 +367,7 @@ export default async function LandingPage() {
       <footer className="border-t border-border/50 py-8">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 sm:flex-row">
           <p className="text-xs text-muted-foreground">
-            Built in Mongolia 🇲🇳 · © {new Date().getFullYear()} MultiModel AI
+            Built by Shixo · © {new Date().getFullYear()} MultiModel AI
           </p>
           <div className="flex gap-6 text-xs text-muted-foreground">
             <Link href="/auth/login" className="hover:text-foreground transition">
