@@ -12,9 +12,7 @@ describe("useStreamingLabel", () => {
   });
 
   it("returns a default label when not streaming", () => {
-    const { result } = renderHook(() =>
-      useStreamingLabel("some text", "done"),
-    );
+    const { result } = renderHook(() => useStreamingLabel("some text", "done"));
     expect(result.current).toBeTruthy();
     expect(typeof result.current).toBe("string");
   });

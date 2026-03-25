@@ -100,7 +100,8 @@ function PerspectiveCard({
     <article
       className={cn(
         "unified-flow__perspective-card w-full rounded-xl border bg-background/80 px-3 py-2 shadow-sm",
-        run.status === "streaming" && "unified-flow__perspective-card--streaming",
+        run.status === "streaming" &&
+          "unified-flow__perspective-card--streaming",
         run.status === "error" && "border-destructive/40",
         isBestAnswer &&
           "border-emerald-400/60 bg-emerald-50/10 ring-1 ring-emerald-400/30",
@@ -108,7 +109,9 @@ function PerspectiveCard({
     >
       <div className="mb-1 flex items-center gap-2 text-xs font-semibold">
         <span className="flex h-6 w-6 items-center justify-center rounded-full border bg-muted/40">
-          {createElement(iconForRunModel(run.model), { className: "h-3.5 w-3.5" })}
+          {createElement(iconForRunModel(run.model), {
+            className: "h-3.5 w-3.5",
+          })}
         </span>
         <span className="line-clamp-1 flex-1">{run.model}</span>
         {run.status === "queued" ? (
