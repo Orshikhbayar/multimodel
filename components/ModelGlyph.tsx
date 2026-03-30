@@ -69,6 +69,12 @@ const GLYPH_STYLES: Record<ModelGlyphKey, GlyphStyle> = {
     container: "border-[#9aabff] bg-white",
     src: "/model-logos/deepseek.svg",
   },
+  egune: {
+    kind: "text",
+    container: "border-[#c084fc] bg-purple-50 text-purple-700",
+    text: "Э",
+    textClass: "text-[10px] font-bold leading-none",
+  },
   misc: {
     kind: "icon",
     container: "border-border bg-muted/60 text-muted-foreground",

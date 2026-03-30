@@ -29,7 +29,7 @@ const MODEL_PRICING_USD_PER_1K: Record<
   "deepseek/deepseek-reasoner": { promptPer1k: 0.009, completionPer1k: 0.027 },
   "deepseek/deepseek-chat": { promptPer1k: 0.006, completionPer1k: 0.018 },
   // Egune pricing: ₮/1M → USD/1k (1 USD ≈ 3450 MNT)
-  "egune/egune1-14b": { promptPer1k: 0.000783, completionPer1k: 0.01420 },
+  "egune/egune1-14b": { promptPer1k: 0.000783, completionPer1k: 0.0142 },
   "egune/egune1-4b": { promptPer1k: 0.000261, completionPer1k: 0.00142 },
   "gpt-4.1": { promptPer1k: 0.01, completionPer1k: 0.03 },
   "gpt-5.2": { promptPer1k: 0.018, completionPer1k: 0.054 },
