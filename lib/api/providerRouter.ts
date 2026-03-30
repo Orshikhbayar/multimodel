@@ -41,13 +41,14 @@ export async function* streamCompletion(
 
     case "xai":
     case "deepseek":
+    case "egune":
       yield* streamOpenAICompatibleCompletion(options);
       break;
 
     default:
       throw new Error(
         `providerRouter: unknown provider prefix "${provider}" in model ID "${options.model}". ` +
-          `Supported prefixes: openai, anthropic, google, xai, deepseek.`,
+          `Supported prefixes: openai, anthropic, google, xai, deepseek, egune.`,
       );
   }
 }

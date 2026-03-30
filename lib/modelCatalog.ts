@@ -13,6 +13,7 @@ export type ModelGlyphKey =
   | "google"
   | "xai"
   | "deepseek"
+  | "egune"
   | "misc";
 
 export type ModelProvider = {
@@ -54,6 +55,7 @@ export const PROVIDERS: ModelProvider[] = [
   { id: "google", name: "Google", icon: "cloud" },
   { id: "xai", name: "xAI", icon: "flame" },
   { id: "deepseek", name: "DeepSeek", icon: "cpu" },
+  { id: "egune", name: "Egune", icon: "layers" },
   { id: "misc", name: "More", icon: "layers" },
 ];
 
@@ -86,21 +88,6 @@ export const MODELS: CatalogModel[] = [
     tier: "pro",
   },
   {
-    id: "openai/o3",
-    label: "o3",
-    providerId: "openai",
-    description: "Reasoning model — trades speed for accuracy",
-    tags: ["new"],
-    context: "200K",
-    glyph: "openai",
-    inputCostPer1M: 10.0,
-    outputCostPer1M: 40.0,
-    contextWindowTokens: 200_000,
-    maxOutputTokens: 100_000,
-    releaseDate: "2025-12-17",
-    tier: "premium",
-  },
-  {
     id: "openai/gpt-4.1",
     label: "GPT-4.1",
     providerId: "openai",
@@ -112,7 +99,7 @@ export const MODELS: CatalogModel[] = [
     contextWindowTokens: 1_047_576,
     maxOutputTokens: 32_768,
     releaseDate: "2025-04-14",
-    tier: "pro",
+    tier: "free",
   },
   {
     id: "openai/gpt-4o",
@@ -126,7 +113,7 @@ export const MODELS: CatalogModel[] = [
     contextWindowTokens: 128_000,
     maxOutputTokens: 16_384,
     releaseDate: "2024-05-13",
-    tier: "pro",
+    tier: "free",
   },
   {
     id: "openai/gpt-4o-mini",
@@ -200,7 +187,7 @@ export const MODELS: CatalogModel[] = [
     contextWindowTokens: 200_000,
     maxOutputTokens: 64_000,
     releaseDate: "2025-05-22",
-    tier: "pro",
+    tier: "free",
   },
   {
     id: "anthropic/claude-3.5",
@@ -293,6 +280,37 @@ export const MODELS: CatalogModel[] = [
     tier: "pro",
   },
 
+  // ── Egune ────────────────────────────────────────────────────────────────
+  {
+    id: "egune/egune1-14b",
+    label: "Egune 1 14B",
+    providerId: "egune",
+    description: "Mongolian-first LLM, strong multilingual reasoning",
+    tags: ["new"],
+    context: "8K",
+    glyph: "egune",
+    // Pricing: ₮2700/1M input, ₮49000/1M output (≈ 1 USD = 3450 MNT)
+    inputCostPer1M: 0.78,
+    outputCostPer1M: 14.2,
+    contextWindowTokens: 8_192,
+    maxOutputTokens: 2_048,
+    tier: "free",
+  },
+  {
+    id: "egune/egune1-4b",
+    label: "Egune 1 4B",
+    providerId: "egune",
+    description: "Fast and lightweight Mongolian LLM",
+    context: "8K",
+    glyph: "egune",
+    // Pricing: ₮900/1M input, ₮4900/1M output (≈ 1 USD = 3450 MNT)
+    inputCostPer1M: 0.26,
+    outputCostPer1M: 1.42,
+    contextWindowTokens: 8_192,
+    maxOutputTokens: 2_048,
+    tier: "free",
+  },
+
   // ── DeepSeek ─────────────────────────────────────────────────────────────
   {
     id: "deepseek/deepseek-reasoner",
@@ -326,8 +344,8 @@ export const MODELS: CatalogModel[] = [
 
 // Default to a mix of free models for the compare experience on first load
 export const DEFAULT_SLOT_MODEL_IDS = [
-  "openai/gpt-4o-mini",
-  "anthropic/claude-sonnet-4.6",
+  "openai/gpt-4o",
+  "anthropic/claude-sonnet-4",
   "google/gemini-2.5-flash",
   "deepseek/deepseek-chat",
 ];
@@ -350,6 +368,7 @@ const PROVIDER_GLYPH_MAP: Record<string, ModelGlyphKey> = {
   google: "google",
   xai: "xai",
   deepseek: "deepseek",
+  egune: "egune",
   misc: "misc",
 };
 
