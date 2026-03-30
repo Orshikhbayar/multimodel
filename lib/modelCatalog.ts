@@ -113,7 +113,7 @@ export const MODELS: CatalogModel[] = [
     contextWindowTokens: 128_000,
     maxOutputTokens: 16_384,
     releaseDate: "2024-05-13",
-    tier: "pro",
+    tier: "free",
   },
   {
     id: "openai/gpt-4o-mini",

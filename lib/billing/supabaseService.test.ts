@@ -201,7 +201,7 @@ describe("supabaseService", () => {
 
     it("applies plan guardrail when requested model not in plan", () => {
       const result = resolveAutoModelRouting({
-        requestedModelId: "openai/gpt-4o",
+        requestedModelId: "anthropic/claude-opus-4.6",
         planId: "free",
         mode: "smart",
       });
@@ -362,7 +362,7 @@ describe("supabaseService", () => {
         startUsageRunMetering({
           sessionUser: { id: "user-1", email: "user@example.com" },
           runReferenceId: "run-1",
-          requestedModelId: "openai/gpt-4o",
+          requestedModelId: "anthropic/claude-opus-4.6",
           mode: "manual",
           estimatedPromptTokens: 100,
           maxOutputTokens: 100,
