@@ -70,10 +70,9 @@ const GLYPH_STYLES: Record<ModelGlyphKey, GlyphStyle> = {
     src: "/model-logos/deepseek.svg",
   },
   egune: {
-    kind: "text",
-    container: "border-[#c084fc] bg-purple-50 text-purple-700",
-    text: "Э",
-    textClass: "text-[10px] font-bold leading-none",
+    kind: "logo",
+    container: "border-zinc-300 bg-white",
+    src: "/model-logos/egune.svg",
   },
   misc: {
     kind: "icon",
