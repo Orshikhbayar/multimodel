@@ -32,7 +32,7 @@ const PROVIDER_CONFIGS: Record<
     },
   },
   egune: {
-    baseUrl: "https://platform.egune.com/v1",
+    baseUrl: "https://api.egune.com/v1",
     envKey: "EGUNE_API_KEY",
     modelMap: {
       "egune/egune1-4b": "egune1-4b",
