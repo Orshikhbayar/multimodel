@@ -592,7 +592,8 @@ export async function POST(request: NextRequest) {
           const errorPromptTokens =
             tokenUsage?.promptTokens ?? estimatedPromptTokens;
           const errorCompletionTokens =
-            tokenUsage?.completionTokens ?? Math.max(0, fallbackCompletionTokens);
+            tokenUsage?.completionTokens ??
+            Math.max(0, fallbackCompletionTokens);
 
           await finalizeMetering(
             status === "cancelled" ? "cancelled" : "failed",

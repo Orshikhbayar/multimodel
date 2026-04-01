@@ -234,15 +234,16 @@ export function MessageItem({
                   ? t("chat.unifiedAnswer")
                   : (selectedRun?.model ?? t("chat.assistant"))}
               </span>
-              {message.collaborationMode && message.collaborationMode !== "none" && (
-                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
-                  {message.collaborationMode === "debate"
-                    ? "⚔ Debate"
-                    : message.collaborationMode === "chain"
-                      ? "⛓ Chain"
-                      : "🔬 Research"}
-                </span>
-              )}
+              {message.collaborationMode &&
+                message.collaborationMode !== "none" && (
+                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+                    {message.collaborationMode === "debate"
+                      ? "⚔ Debate"
+                      : message.collaborationMode === "chain"
+                        ? "⛓ Chain"
+                        : "🔬 Research"}
+                  </span>
+                )}
             </div>
           )}
           {/* AI Collaboration Visual — shown while streaming in multi-model modes */}

@@ -70,7 +70,12 @@ function readFileAsText(file: File): Promise<string> {
 }
 
 const IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
-const TEXT_TYPES = ["text/plain", "text/markdown", "text/csv", "application/json"];
+const TEXT_TYPES = [
+  "text/plain",
+  "text/markdown",
+  "text/csv",
+  "application/json",
+];
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export function Composer({
@@ -99,12 +104,16 @@ export function Composer({
 
   // ── Drag & drop state ──────────────────────────────────────────────────────
   const [isDragging, setIsDragging] = useState(false);
-  const [attachedImage, setAttachedImage] = useState<AttachedImage | null>(null);
+  const [attachedImage, setAttachedImage] = useState<AttachedImage | null>(
+    null,
+  );
   const dragCounter = useRef(0);
 
   // ── Clarify state ──────────────────────────────────────────────────────────
   const [clarifyLoading, setClarifyLoading] = useState(false);
-  const [clarifyQuestions, setClarifyQuestions] = useState<ClarifyQuestion[]>([]);
+  const [clarifyQuestions, setClarifyQuestions] = useState<ClarifyQuestion[]>(
+    [],
+  );
   const [clarifySelections, setClarifySelections] = useState<
     Record<number, string>
   >({});
@@ -179,10 +188,15 @@ export function Composer({
     let msg = value;
 
     // Append clarify selections
-    if (clarifyQuestions.length > 0 && Object.keys(clarifySelections).length > 0) {
+    if (
+      clarifyQuestions.length > 0 &&
+      Object.keys(clarifySelections).length > 0
+    ) {
       const answers = clarifyQuestions
         .map((q, i) =>
-          clarifySelections[i] ? `${q.question}: ${clarifySelections[i]}` : null,
+          clarifySelections[i]
+            ? `${q.question}: ${clarifySelections[i]}`
+            : null,
         )
         .filter(Boolean);
       if (answers.length > 0) {
@@ -229,39 +243,36 @@ export function Composer({
     e.dataTransfer.dropEffect = "copy";
   }, []);
 
-  const handleDrop = useCallback(
-    async (e: React.DragEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      dragCounter.current = 0;
-      setIsDragging(false);
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current = 0;
+    setIsDragging(false);
 
-      const files = Array.from(e.dataTransfer.files);
-      if (files.length === 0) return;
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length === 0) return;
 
-      const file = files[0]; // handle one file at a time
+    const file = files[0]; // handle one file at a time
 
-      if (IMAGE_TYPES.includes(file.type)) {
-        const dataUrl = await readFileAsDataUrl(file);
-        setAttachedImage({ dataUrl, name: file.name, size: file.size });
-        textareaRef.current?.focus();
-      } else if (
-        TEXT_TYPES.includes(file.type) ||
-        file.name.endsWith(".md") ||
-        file.name.endsWith(".csv") ||
-        file.name.endsWith(".txt")
-      ) {
-        const text = await readFileAsText(file);
-        setValue((prev) =>
-          prev
-            ? `${prev}\n\n--- ${file.name} ---\n${text}`
-            : `--- ${file.name} ---\n${text}`,
-        );
-        textareaRef.current?.focus();
-      }
-    },
-    [],
-  );
+    if (IMAGE_TYPES.includes(file.type)) {
+      const dataUrl = await readFileAsDataUrl(file);
+      setAttachedImage({ dataUrl, name: file.name, size: file.size });
+      textareaRef.current?.focus();
+    } else if (
+      TEXT_TYPES.includes(file.type) ||
+      file.name.endsWith(".md") ||
+      file.name.endsWith(".csv") ||
+      file.name.endsWith(".txt")
+    ) {
+      const text = await readFileAsText(file);
+      setValue((prev) =>
+        prev
+          ? `${prev}\n\n--- ${file.name} ---\n${text}`
+          : `--- ${file.name} ---\n${text}`,
+      );
+      textareaRef.current?.focus();
+    }
+  }, []);
 
   // ── File picker (Attach button) ────────────────────────────────────────────
   const handleFilePickerChange = useCallback(
@@ -273,7 +284,10 @@ export function Composer({
       if (IMAGE_TYPES.includes(file.type)) {
         const dataUrl = await readFileAsDataUrl(file);
         setAttachedImage({ dataUrl, name: file.name, size: file.size });
-      } else if (TEXT_TYPES.includes(file.type) || file.name.match(/\.(md|csv|txt|json)$/)) {
+      } else if (
+        TEXT_TYPES.includes(file.type) ||
+        file.name.match(/\.(md|csv|txt|json)$/)
+      ) {
         const text = await readFileAsText(file);
         setValue((prev) =>
           prev
@@ -328,15 +342,12 @@ export function Composer({
     }
   }, [trimmedValue, clarifyLoading]);
 
-  const toggleClarifyOption = useCallback(
-    (qIdx: number, option: string) => {
-      setClarifySelections((prev) => ({
-        ...prev,
-        [qIdx]: prev[qIdx] === option ? "" : option,
-      }));
-    },
-    [],
-  );
+  const toggleClarifyOption = useCallback((qIdx: number, option: string) => {
+    setClarifySelections((prev) => ({
+      ...prev,
+      [qIdx]: prev[qIdx] === option ? "" : option,
+    }));
+  }, []);
 
   const dismissClarify = () => {
     setClarifyQuestions([]);
@@ -348,9 +359,7 @@ export function Composer({
     <div
       className={cn(
         "relative rounded-[1.2rem] border bg-[hsl(var(--app-panel-2)/0.88)] px-3.5 py-3 shadow-[0_18px_42px_-30px_hsl(var(--foreground)/0.55)] backdrop-blur-xl transition-colors",
-        isDragging
-          ? "border-primary/70 bg-primary/5"
-          : "border-border/75",
+        isDragging ? "border-primary/70 bg-primary/5" : "border-border/75",
       )}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
@@ -361,7 +370,9 @@ export function Composer({
       {isDragging && (
         <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 rounded-[1.2rem] bg-primary/10">
           <ImagePlus className="h-8 w-8 text-primary" />
-          <p className="text-sm font-medium text-primary">Drop image or file here</p>
+          <p className="text-sm font-medium text-primary">
+            Drop image or file here
+          </p>
         </div>
       )}
 
@@ -402,8 +413,8 @@ export function Composer({
           <div className="rounded-xl border border-border/60 bg-muted/30 p-3">
             <div className="mb-2 flex items-center justify-between">
               <span className="flex items-center gap-1.5 text-xs font-medium text-foreground">
-                <Sparkles className="h-3.5 w-3.5 text-primary" />
-                A few quick questions to help me give you the best answer:
+                <Sparkles className="h-3.5 w-3.5 text-primary" />A few quick
+                questions to help me give you the best answer:
               </span>
               <button
                 type="button"
@@ -416,7 +427,9 @@ export function Composer({
             <div className="flex flex-col gap-3">
               {clarifyQuestions.map((q, qIdx) => (
                 <div key={qIdx}>
-                  <p className="mb-1.5 text-xs text-muted-foreground">{q.question}</p>
+                  <p className="mb-1.5 text-xs text-muted-foreground">
+                    {q.question}
+                  </p>
                   <div className="flex flex-wrap gap-1.5">
                     {q.options.map((opt) => (
                       <button
@@ -501,7 +514,7 @@ export function Composer({
               title="Web Search"
               disabled={!plan.features.webSearch}
               onClick={() =>
-                plan.features.webSearch && setWebSearchEnabled((v) => !v)
+                plan.features.webSearch && setWebSearchEnabled(!webSearchEnabled)
               }
               className={cn(
                 "flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all",

@@ -62,8 +62,7 @@ export function CollabModeSelector() {
         const active = collaborationMode === cfg.value;
 
         let disabledReason = "";
-        if (tooFewModels)
-          disabledReason = `Requires ${cfg.minModels}+ models`;
+        if (tooFewModels) disabledReason = `Requires ${cfg.minModels}+ models`;
         else if (needsSearch) disabledReason = "Enable Web Search first";
 
         return (

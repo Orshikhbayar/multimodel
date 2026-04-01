@@ -7,7 +7,13 @@ import {
   useStreamStore,
   useWorkspaceStore,
 } from "@/lib/stores";
-import type { CollaborationMode, Message, Run, ModelSlot, RunStatus } from "@/lib/types";
+import type {
+  CollaborationMode,
+  Message,
+  Run,
+  ModelSlot,
+  RunStatus,
+} from "@/lib/types";
 import { analytics } from "@/lib/analytics";
 import { useUsageStore } from "@/lib/analytics/usage";
 import { estimateTokenCostUsd } from "@/lib/billing/estimator";
@@ -522,10 +528,7 @@ function toLoggableError(error: unknown) {
 
 // ── Collaboration mode helpers ────────────────────────────────────────────────
 
-const COLLAB_ROLE_LABELS: Record<
-  CollaborationMode,
-  string[]
-> = {
+const COLLAB_ROLE_LABELS: Record<CollaborationMode, string[]> = {
   none: [],
   debate: ["Initial Answer", "Critique & Improvement"],
   chain: ["Drafter", "Reviewer", "Verifier"],
@@ -590,7 +593,11 @@ type CollabSSEEvent =
       runId: string;
       modelId: string;
       elapsedMs: number;
-      usage?: { promptTokens: number; completionTokens: number; totalTokens: number };
+      usage?: {
+        promptTokens: number;
+        completionTokens: number;
+        totalTokens: number;
+      };
       costUsd?: number;
     }
   | { type: "run_error"; runId: string; error: string; code?: string }
@@ -1241,10 +1248,15 @@ export function useChatActions() {
 
     // Initial state
     for (const run of runs) {
-      conversationStore.completeRun(conversationId, assistantMessageId, run.id, {
-        status: "queued",
-        text: t(locale, "chat.waitingForSlot"),
-      });
+      conversationStore.completeRun(
+        conversationId,
+        assistantMessageId,
+        run.id,
+        {
+          status: "queued",
+          text: t(locale, "chat.waitingForSlot"),
+        },
+      );
       const slot = slotByRunId.get(run.id);
       if (slot) modelStore.updateSlotStatus(slot.slotId, "idle");
     }
@@ -1496,7 +1508,8 @@ export function useChatActions() {
     }
 
     const { slots } = modelStore;
-    const { mode, instructions, collaborationMode, webSearchEnabled } = settingsStore;
+    const { mode, instructions, collaborationMode, webSearchEnabled } =
+      settingsStore;
 
     // Create user message
     const userMessage: Message = {
@@ -1626,7 +1639,7 @@ export function useChatActions() {
     });
 
     try {
-      if (isCollab && collaborationMode !== "none") {
+      if (isCollab) {
         await startCollabRuns(
           conversationId!,
           collaborationMode,

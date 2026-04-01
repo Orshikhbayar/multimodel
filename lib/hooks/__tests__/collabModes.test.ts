@@ -167,8 +167,20 @@ describe("startCollabRuns error fallback", () => {
     };
 
     const runs = [
-      { id: "run-1", model: "GPT (Drafter)", slotId: "slot-1", status: "queued" as const, text: "" },
-      { id: "run-2", model: "Claude (Reviewer)", slotId: "slot-2", status: "queued" as const, text: "" },
+      {
+        id: "run-1",
+        model: "GPT (Drafter)",
+        slotId: "slot-1",
+        status: "queued" as const,
+        text: "",
+      },
+      {
+        id: "run-2",
+        model: "Claude (Reviewer)",
+        slotId: "slot-2",
+        status: "queued" as const,
+        text: "",
+      },
     ];
 
     // Simulate a fetch failure
@@ -196,8 +208,18 @@ describe("startCollabRuns error fallback", () => {
     }
 
     expect(markRunError).toHaveBeenCalledTimes(2);
-    expect(markRunError).toHaveBeenCalledWith("conv-1", "msg-1", "run-1", "Network error");
-    expect(markRunError).toHaveBeenCalledWith("conv-1", "msg-1", "run-2", "Network error");
+    expect(markRunError).toHaveBeenCalledWith(
+      "conv-1",
+      "msg-1",
+      "run-1",
+      "Network error",
+    );
+    expect(markRunError).toHaveBeenCalledWith(
+      "conv-1",
+      "msg-1",
+      "run-2",
+      "Network error",
+    );
     expect(modelStore.updateSlotStatus).toHaveBeenCalledWith("slot-1", "error");
     expect(modelStore.updateSlotStatus).toHaveBeenCalledWith("slot-2", "error");
   });

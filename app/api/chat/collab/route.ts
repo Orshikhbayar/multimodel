@@ -64,7 +64,11 @@ type CollabSSEEvent =
       runId: string;
       modelId: string;
       elapsedMs: number;
-      usage?: { promptTokens: number; completionTokens: number; totalTokens: number };
+      usage?: {
+        promptTokens: number;
+        completionTokens: number;
+        totalTokens: number;
+      };
       costUsd?: number;
     }
   | { type: "run_error"; runId: string; error: string; code?: string }
@@ -88,7 +92,11 @@ async function streamModel(
   messages: ChatMessage[],
   signal: AbortSignal,
   emit: (event: CollabSSEEvent) => void,
-): Promise<{ text: string; promptTokens: number; completionTokens: number } | null> {
+): Promise<{
+  text: string;
+  promptTokens: number;
+  completionTokens: number;
+} | null> {
   emit({ type: "run_start", runId });
 
   const startTime = Date.now();
@@ -143,8 +151,7 @@ async function streamModel(
 
     return { text: accumulatedText, promptTokens, completionTokens };
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Stream failed";
+    const message = error instanceof Error ? error.message : "Stream failed";
     emit({ type: "run_error", runId, error: message });
     return null;
   }
@@ -429,8 +436,7 @@ export async function POST(request: NextRequest) {
   }
 
   const sessionUserId = claims.sub as string;
-  const sessionEmail =
-    typeof claims.email === "string" ? claims.email : null;
+  const sessionEmail = typeof claims.email === "string" ? claims.email : null;
   const log = createRequestLogger(requestId, sessionUserId);
 
   Sentry.setUser({ id: sessionUserId });
@@ -514,7 +520,10 @@ export async function POST(request: NextRequest) {
     if (!Array.isArray(runIds) || runIds.length !== modelIds.length) {
       releaseConcurrencySlot(sessionUserId, streamId);
       return new Response(
-        JSON.stringify({ error: "runIds must match modelIds length", requestId }),
+        JSON.stringify({
+          error: "runIds must match modelIds length",
+          requestId,
+        }),
         { status: 400, headers: { "Content-Type": "application/json" } },
       );
     }
@@ -613,8 +622,7 @@ export async function POST(request: NextRequest) {
     Sentry.captureException(error, { tags: { requestId } });
     return new Response(
       JSON.stringify({
-        error:
-          error instanceof Error ? error.message : "Internal server error",
+        error: error instanceof Error ? error.message : "Internal server error",
         requestId,
       }),
       {
