@@ -7,7 +7,7 @@ import {
   useStreamStore,
   useWorkspaceStore,
 } from "@/lib/stores";
-import type { Message, Run, ModelSlot } from "@/lib/types";
+import type { CollaborationMode, Message, Run, ModelSlot, RunStatus } from "@/lib/types";
 import { analytics } from "@/lib/analytics";
 import { useUsageStore } from "@/lib/analytics/usage";
 import { estimateTokenCostUsd } from "@/lib/billing/estimator";
@@ -519,6 +519,83 @@ function toLoggableError(error: unknown) {
 
   return { message: String(error) };
 }
+
+// ── Collaboration mode helpers ────────────────────────────────────────────────
+
+const COLLAB_ROLE_LABELS: Record<
+  CollaborationMode,
+  string[]
+> = {
+  none: [],
+  debate: ["Initial Answer", "Critique & Improvement"],
+  chain: ["Drafter", "Reviewer", "Verifier"],
+  research: [], // labels set dynamically (same as model label)
+};
+
+function generateCollabRuns(
+  mode: CollaborationMode,
+  slots: ModelSlot[],
+): Run[] {
+  const enabled = slots.filter((s) => s.enabled);
+  const picked = enabled.length ? enabled : slots.slice(0, 1);
+
+  if (mode === "debate") {
+    const [slotA, slotB] = picked;
+    if (!slotA || !slotB) return [];
+    return [
+      {
+        id: crypto.randomUUID(),
+        model: `${slotA.label} (Initial Answer)`,
+        slotId: slotA.slotId,
+        status: "queued" as RunStatus,
+        text: "",
+      },
+      {
+        id: crypto.randomUUID(),
+        model: `${slotB.label} (Critique & Improvement)`,
+        slotId: slotB.slotId,
+        status: "queued" as RunStatus,
+        text: "",
+      },
+    ];
+  }
+
+  if (mode === "chain") {
+    const roles = COLLAB_ROLE_LABELS.chain;
+    return picked.slice(0, 3).map((slot, i) => ({
+      id: crypto.randomUUID(),
+      model: `${slot.label} (${roles[i] ?? "Step " + (i + 1)})`,
+      slotId: slot.slotId,
+      status: "queued" as RunStatus,
+      text: "",
+    }));
+  }
+
+  // research — same as compare, no role suffix
+  return picked.map((slot) => ({
+    id: crypto.randomUUID(),
+    model: slot.label,
+    slotId: slot.slotId,
+    status: "queued" as RunStatus,
+    text: "",
+  }));
+}
+
+// SSE event types from the collab route
+type CollabSSEEvent =
+  | { type: "run_start"; runId: string }
+  | { type: "token"; runId: string; token: string }
+  | {
+      type: "run_done";
+      runId: string;
+      modelId: string;
+      elapsedMs: number;
+      usage?: { promptTokens: number; completionTokens: number; totalTokens: number };
+      costUsd?: number;
+    }
+  | { type: "run_error"; runId: string; error: string; code?: string }
+  | { type: "done" }
+  | { type: "error"; error: string; requestId: string };
 
 /**
  * Hook for chat actions - bridges all stores together
@@ -1134,6 +1211,241 @@ export function useChatActions() {
     }
   };
 
+  /**
+   * Drive the /api/chat/collab SSE endpoint and route each event to the
+   * matching run in the conversation store.
+   */
+  const startCollabRuns = async (
+    conversationId: string,
+    collaborationMode: "debate" | "chain" | "research",
+    prompt: string,
+    runs: Run[],
+    assistantMessageId: string,
+    slots: ModelSlot[],
+    apiMessages: { role: "system" | "user" | "assistant"; content: string }[],
+    serverConversationId?: string,
+    webSearch?: boolean,
+  ) => {
+    // Build mapping from runId → slot for UI updates
+    const slotByRunId = new Map<string, ModelSlot>();
+    runs.forEach((run) => {
+      const slot = slots.find((s) => s.slotId === run.slotId);
+      if (slot) slotByRunId.set(run.id, slot);
+    });
+
+    // One AbortController for the whole collab session
+    const controller = new AbortController();
+    for (const run of runs) {
+      streamStore.registerStream(run.id, controller);
+    }
+
+    // Initial state
+    for (const run of runs) {
+      conversationStore.completeRun(conversationId, assistantMessageId, run.id, {
+        status: "queued",
+        text: t(locale, "chat.waitingForSlot"),
+      });
+      const slot = slotByRunId.get(run.id);
+      if (slot) modelStore.updateSlotStatus(slot.slotId, "idle");
+    }
+
+    // Resolve real model IDs from slots (in run order)
+    const modelIds = runs.map((run) => {
+      const slot = slotByRunId.get(run.id);
+      return slot?.modelId ?? "";
+    });
+
+    try {
+      const response = await fetch("/api/chat/collab", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode: collaborationMode,
+          prompt,
+          modelIds,
+          runIds: runs.map((r) => r.id),
+          messages: apiMessages,
+          conversationId: serverConversationId,
+          messageId: assistantMessageId,
+          webSearch: webSearch ?? false,
+        }),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errMsg =
+          typeof errorData.error === "string"
+            ? errorData.error
+            : t(locale, "errors.somethingWentWrong");
+        for (const run of runs) {
+          conversationStore.markRunError(
+            conversationId,
+            assistantMessageId,
+            run.id,
+            errMsg,
+          );
+          const slot = slotByRunId.get(run.id);
+          if (slot) modelStore.updateSlotStatus(slot.slotId, "error");
+        }
+        return;
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("No response body");
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      outer: while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || !trimmed.startsWith("data: ")) continue;
+          if (trimmed === "data: [DONE]") break outer;
+
+          try {
+            const event = JSON.parse(trimmed.slice(6)) as CollabSSEEvent;
+
+            switch (event.type) {
+              case "run_start": {
+                conversationStore.completeRun(
+                  conversationId,
+                  assistantMessageId,
+                  event.runId,
+                  { status: "streaming", text: "" },
+                );
+                const slot = slotByRunId.get(event.runId);
+                if (slot) modelStore.updateSlotStatus(slot.slotId, "streaming");
+                break;
+              }
+
+              case "token": {
+                conversationStore.appendRunChunk(
+                  conversationId,
+                  assistantMessageId,
+                  event.runId,
+                  event.token,
+                );
+                break;
+              }
+
+              case "run_done": {
+                conversationStore.completeRun(
+                  conversationId,
+                  assistantMessageId,
+                  event.runId,
+                  {
+                    status: "done",
+                    latencyMs: event.elapsedMs,
+                    costUsd: event.costUsd,
+                    tokens: event.usage
+                      ? {
+                          prompt: event.usage.promptTokens,
+                          completion: event.usage.completionTokens,
+                          total: event.usage.totalTokens,
+                        }
+                      : undefined,
+                  },
+                );
+                const slot = slotByRunId.get(event.runId);
+                if (slot) {
+                  modelStore.updateSlotStatus(slot.slotId, "done");
+                  usageStore.addRecord({
+                    timestamp: Date.now(),
+                    model: event.modelId,
+                    inputTokens: event.usage?.promptTokens ?? 0,
+                    outputTokens: event.usage?.completionTokens ?? 0,
+                    latencyMs: event.elapsedMs,
+                    estimatedCostUsd: event.costUsd ?? 0,
+                  });
+                  analytics.trackApiUsage({
+                    model: event.modelId,
+                    latencyMs: event.elapsedMs,
+                    inputTokens: event.usage?.promptTokens ?? 0,
+                    outputTokens: event.usage?.completionTokens ?? 0,
+                    success: true,
+                  });
+                }
+                break;
+              }
+
+              case "run_error": {
+                conversationStore.markRunError(
+                  conversationId,
+                  assistantMessageId,
+                  event.runId,
+                  event.error,
+                );
+                const slot = slotByRunId.get(event.runId);
+                if (slot) modelStore.updateSlotStatus(slot.slotId, "error");
+                break;
+              }
+
+              case "done":
+                break outer;
+
+              case "error": {
+                // Fatal error — mark all still-pending runs as errored
+                for (const run of runs) {
+                  const conv = useConversationStore
+                    .getState()
+                    .conversations.find((c) => c.id === conversationId);
+                  const msg = conv?.messages.find(
+                    (m) => m.id === assistantMessageId,
+                  );
+                  const currentRun = msg?.runs?.find((r) => r.id === run.id);
+                  if (
+                    currentRun?.status === "queued" ||
+                    currentRun?.status === "streaming"
+                  ) {
+                    conversationStore.markRunError(
+                      conversationId,
+                      assistantMessageId,
+                      run.id,
+                      event.error,
+                    );
+                    const s = slotByRunId.get(run.id);
+                    if (s) modelStore.updateSlotStatus(s.slotId, "error");
+                  }
+                }
+                break outer;
+              }
+            }
+          } catch {
+            // skip malformed JSON
+          }
+        }
+      }
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") return;
+      const errMsg =
+        error instanceof Error
+          ? error.message
+          : t(locale, "errors.somethingWentWrong");
+      for (const run of runs) {
+        conversationStore.markRunError(
+          conversationId,
+          assistantMessageId,
+          run.id,
+          errMsg,
+        );
+        const slot = slotByRunId.get(run.id);
+        if (slot) modelStore.updateSlotStatus(slot.slotId, "error");
+      }
+    } finally {
+      for (const run of runs) {
+        streamStore.removeStream(run.id);
+      }
+    }
+  };
+
   const sendMessage = async (content: string, projectId?: string) => {
     if (!content.trim()) return;
 
@@ -1184,7 +1496,7 @@ export function useChatActions() {
     }
 
     const { slots } = modelStore;
-    const { mode, instructions } = settingsStore;
+    const { mode, instructions, collaborationMode, webSearchEnabled } = settingsStore;
 
     // Create user message
     const userMessage: Message = {
@@ -1194,8 +1506,11 @@ export function useChatActions() {
       createdAt: Date.now(),
     };
 
-    // Create runs for each enabled model
-    const runs = generateRuns(mode, slots);
+    // Create runs — collab modes use sequential roles; normal modes use parallel slots
+    const isCollab = collaborationMode !== "none";
+    const runs = isCollab
+      ? generateCollabRuns(collaborationMode, slots)
+      : generateRuns(mode, slots);
 
     // Create assistant message with runs
     const assistantMessage: Message = {
@@ -1204,6 +1519,7 @@ export function useChatActions() {
       content: "",
       createdAt: Date.now(),
       runs,
+      collaborationMode: isCollab ? collaborationMode : undefined,
     };
 
     // Add messages to conversation
@@ -1310,17 +1626,31 @@ export function useChatActions() {
     });
 
     try {
-      await startRuns(
-        conversationId!,
-        content,
-        mode,
-        targetProjectId,
-        slots,
-        runs,
-        assistantMessage.id,
-        apiMessages,
-        serverConversationId,
-      );
+      if (isCollab && collaborationMode !== "none") {
+        await startCollabRuns(
+          conversationId!,
+          collaborationMode,
+          content,
+          runs,
+          assistantMessage.id,
+          slots,
+          apiMessages,
+          serverConversationId,
+          webSearchEnabled,
+        );
+      } else {
+        await startRuns(
+          conversationId!,
+          content,
+          mode,
+          targetProjectId,
+          slots,
+          runs,
+          assistantMessage.id,
+          apiMessages,
+          serverConversationId,
+        );
+      }
     } catch (error) {
       console.error("[useChatActions] Failed to start runs", {
         conversationId,

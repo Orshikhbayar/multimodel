@@ -13,5 +13,6 @@ export {
   type ModeOption,
   MODE_OPTIONS,
 } from "./settingsStore";
+export type { CollaborationMode } from "@/lib/types";
 export { useStreamStore, type StreamStore } from "./streamStore";
 export { useWorkspaceStore, type WorkspaceStore } from "./workspaceStore";

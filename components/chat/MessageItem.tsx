@@ -228,10 +228,21 @@ export function MessageItem({
           )}
         >
           {!isUser && !isCompare && (
-            <div className="mb-1 text-[11px] text-muted-foreground">
-              {showUnifiedFlow
-                ? t("chat.unifiedAnswer")
-                : (selectedRun?.model ?? t("chat.assistant"))}
+            <div className="mb-1 flex items-center gap-2 text-[11px] text-muted-foreground">
+              <span>
+                {showUnifiedFlow
+                  ? t("chat.unifiedAnswer")
+                  : (selectedRun?.model ?? t("chat.assistant"))}
+              </span>
+              {message.collaborationMode && message.collaborationMode !== "none" && (
+                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+                  {message.collaborationMode === "debate"
+                    ? "⚔ Debate"
+                    : message.collaborationMode === "chain"
+                      ? "⛓ Chain"
+                      : "🔬 Research"}
+                </span>
+              )}
             </div>
           )}
           {/* AI Collaboration Visual — shown while streaming in multi-model modes */}

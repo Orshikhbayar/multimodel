@@ -55,6 +55,8 @@ export interface Message {
   attachments?: Attachment[];
   /** Tool calls made during this message */
   toolCalls?: ToolCall[];
+  /** Set on assistant messages produced by a collaboration mode */
+  collaborationMode?: CollaborationMode;
 }
 
 export interface Conversation {
@@ -78,6 +80,13 @@ export type InteractionMode =
   | "single" // One model answers
   | "compare" // Multiple models answer side by side (no synthesis)
   | "team"; // Multiple models + judge synthesizes
+
+// Sequential collaboration modes (override normal parallel flow)
+export type CollaborationMode =
+  | "none" // Normal parallel flow
+  | "debate" // A answers → B critiques & improves
+  | "chain" // Drafter → Reviewer → Verifier (sequential refinement)
+  | "research"; // Optional web search → parallel fan-out with context
 
 export interface ModelOption {
   id: string;

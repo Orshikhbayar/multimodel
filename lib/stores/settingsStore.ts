@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import type { InteractionMode } from "@/lib/types";
+import type { CollaborationMode, InteractionMode } from "@/lib/types";
 
 export interface ModeOption {
   value: InteractionMode;
@@ -39,11 +39,15 @@ export const MODE_OPTIONS: ModeOption[] = [
 interface SettingsStoreState {
   mode: InteractionMode;
   instructions: string;
+  collaborationMode: CollaborationMode;
+  webSearchEnabled: boolean;
 }
 
 interface SettingsStoreActions {
   setMode: (mode: InteractionMode) => void;
   setInstructions: (text: string) => void;
+  setCollaborationMode: (mode: CollaborationMode) => void;
+  setWebSearchEnabled: (enabled: boolean) => void;
   resetSettings: () => void;
 }
 
@@ -54,18 +58,24 @@ export const useSettingsStore = create<SettingsStore>()(
     (set) => ({
       mode: "compare",
       instructions: "",
+      collaborationMode: "none",
+      webSearchEnabled: false,
 
       setMode: (mode) => set({ mode }),
       setInstructions: (text) => set({ instructions: text }),
+      setCollaborationMode: (collaborationMode) => set({ collaborationMode }),
+      setWebSearchEnabled: (webSearchEnabled) => set({ webSearchEnabled }),
       resetSettings: () =>
         set({
           mode: "compare",
           instructions: "",
+          collaborationMode: "none",
+          webSearchEnabled: false,
         }),
     }),
     {
       name: "multi-model-settings",
-      version: 4,
+      version: 5,
       storage: createJSONStorage(() => localStorage),
       migrate: (persisted) => {
         const state = (persisted as Partial<SettingsStore> | null) ?? {};
@@ -88,6 +98,8 @@ export const useSettingsStore = create<SettingsStore>()(
         return {
           mode,
           instructions: state.instructions ?? "",
+          collaborationMode: "none",
+          webSearchEnabled: false,
         };
       },
     },

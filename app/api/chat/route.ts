@@ -589,10 +589,15 @@ export async function POST(request: NextRequest) {
           Metrics.apiError({ endpoint: "/api/chat", errorType: status });
           Metrics.streamDuration(elapsed, { model: resolvedModel, status });
 
+          const errorPromptTokens =
+            tokenUsage?.promptTokens ?? estimatedPromptTokens;
+          const errorCompletionTokens =
+            tokenUsage?.completionTokens ?? Math.max(0, fallbackCompletionTokens);
+
           await finalizeMetering(
             status === "cancelled" ? "cancelled" : "failed",
-            0,
-            0,
+            errorPromptTokens,
+            errorCompletionTokens,
             message,
           );
 
@@ -605,6 +610,8 @@ export async function POST(request: NextRequest) {
                 message_id: messageId ?? null,
                 status: failedStatus,
                 output_text: accumulatedText,
+                input_tokens: errorPromptTokens,
+                output_tokens: errorCompletionTokens,
                 latency_ms: elapsed,
                 error_text: status === "cancelled" ? null : message,
               })
@@ -645,7 +652,17 @@ export async function POST(request: NextRequest) {
         streamClosed = true;
         releaseConcurrencySlot(sessionUserId, streamId);
 
-        void finalizeMetering("cancelled", 0, 0, "client_cancelled");
+        const cancelPromptTokens =
+          tokenUsage?.promptTokens ?? estimatedPromptTokens;
+        const cancelCompletionTokens =
+          tokenUsage?.completionTokens ?? Math.max(0, fallbackCompletionTokens);
+
+        void finalizeMetering(
+          "cancelled",
+          cancelPromptTokens,
+          cancelCompletionTokens,
+          "client_cancelled",
+        );
 
         if (conversationId && runId) {
           void supabase
@@ -654,6 +671,8 @@ export async function POST(request: NextRequest) {
               message_id: messageId ?? null,
               status: "completed",
               output_text: accumulatedText,
+              input_tokens: cancelPromptTokens,
+              output_tokens: cancelCompletionTokens,
               latency_ms: elapsed,
               error_text: null,
             })

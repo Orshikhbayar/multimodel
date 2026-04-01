@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Settings, Sparkles } from "lucide-react";
 
 import { ChatThread } from "@/components/ChatThread";
+import { CollabModeSelector } from "@/components/CollabModeSelector";
 import { Composer } from "@/components/Composer";
 import { DisagreementsDialog } from "@/components/DisagreementsDialog";
 import { SourcesDialog } from "@/components/SourcesDialog";
@@ -175,6 +176,7 @@ export function ChatWorkspace({
                 onEnableMultiModel={() => setSettingsOpen(true)}
               />
               <ActiveModelChips onOpenSettings={() => setSettingsOpen(true)} />
+              <CollabModeSelector />
               {!projectArchived ? (
                 <Composer
                   onSend={handleSend}
@@ -221,6 +223,7 @@ export function ChatWorkspace({
                 onEnableMultiModel={() => setSettingsOpen(true)}
               />
               <ActiveModelChips onOpenSettings={() => setSettingsOpen(true)} />
+              <CollabModeSelector />
               {!projectArchived ? (
                 <Composer
                   onSend={handleSend}
