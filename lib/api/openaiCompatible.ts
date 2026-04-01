@@ -35,8 +35,7 @@ const PROVIDER_CONFIGS: Record<
     baseUrl: "https://api.egune.com/v1",
     envKey: "EGUNE_API_KEY",
     modelMap: {
-      "egune/egune1-4b": "egune1-4b",
-      "egune/egune1-14b": "egune1-14b",
+      "egune/egune-mid": "egune-mid",
     },
   },
 };

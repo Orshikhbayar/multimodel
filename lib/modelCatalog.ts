@@ -282,30 +282,15 @@ export const MODELS: CatalogModel[] = [
 
   // ── Egune ────────────────────────────────────────────────────────────────
   {
-    id: "egune/egune1-14b",
-    label: "Egune 1 14B",
+    id: "egune/egune-mid",
+    label: "Egune Mid",
     providerId: "egune",
     description: "Mongolian-first LLM, strong multilingual reasoning",
     tags: ["new"],
     context: "8K",
     glyph: "egune",
-    // Pricing: ₮2700/1M input, ₮49000/1M output (≈ 1 USD = 3450 MNT)
     inputCostPer1M: 0.78,
     outputCostPer1M: 14.2,
-    contextWindowTokens: 8_192,
-    maxOutputTokens: 2_048,
-    tier: "free",
-  },
-  {
-    id: "egune/egune1-4b",
-    label: "Egune 1 4B",
-    providerId: "egune",
-    description: "Fast and lightweight Mongolian LLM",
-    context: "8K",
-    glyph: "egune",
-    // Pricing: ₮900/1M input, ₮4900/1M output (≈ 1 USD = 3450 MNT)
-    inputCostPer1M: 0.26,
-    outputCostPer1M: 1.42,
     contextWindowTokens: 8_192,
     maxOutputTokens: 2_048,
     tier: "free",
