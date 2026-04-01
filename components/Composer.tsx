@@ -514,7 +514,8 @@ export function Composer({
               title="Web Search"
               disabled={!plan.features.webSearch}
               onClick={() =>
-                plan.features.webSearch && setWebSearchEnabled(!webSearchEnabled)
+                plan.features.webSearch &&
+                setWebSearchEnabled(!webSearchEnabled)
               }
               className={cn(
                 "flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all",
