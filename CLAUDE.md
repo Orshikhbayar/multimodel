@@ -10,7 +10,7 @@ A Next.js 16 multi-model AI chat application deployed at `multimodel-ai.vercel.a
 - **Styling**: Tailwind CSS, shadcn/ui (Radix primitives)
 - **Database**: Supabase (Postgres + Auth + RLS)
 - **State**: Zustand (client), React Server Components (server)
-- **Streaming**: SSE via Edge runtime (`app/api/chat/route.ts`)
+- **Streaming**: SSE from `app/api/chat/route.ts` (Node.js runtime — no `runtime` export; the `clarify` and `chat/collab` routes declare `edge`)
 - **Billing**: Custom credit-based system with holds, ledger events, and plan tiers
 - **Rate Limiting**: In-memory + optional Upstash Redis sliding window
 - **Error Tracking**: Sentry
@@ -79,7 +79,7 @@ Dual-accounting credit system: included credits (from plan) + top-up credits. A 
 
 Models are NOT asked to produce special code blocks. Instead, the client detects user intent via regex triggers (e.g., "dashboard", "chart", "presentation") and transforms plain markdown into interactive HTML or PPTX data. This avoids model-cooperation problems (GPT-4o-mini ignoring system prompts).
 
-Key regex patterns in `interactiveBlocks.ts` and `useChatActions.ts`:
+Key regex patterns live in `lib/utils/contentTriggers.ts` (single source of truth, imported by `interactiveBlocks.ts` and `useChatActions.ts`):
 
 ```typescript
 const VIZ_TRIGGERS =

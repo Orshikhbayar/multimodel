@@ -32,7 +32,6 @@ export function MessageList({
   const { mode } = useSettingsStore();
   const isMultiModelMode = mode === "compare" || mode === "team";
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLElement | null>(null);
   const stickToBottomRef = useRef(true);
   const prevCountRef = useRef(0);
@@ -48,6 +47,22 @@ export function MessageList({
   );
   const activeIsSlot = slotIds.has(activeTab);
   const activeSlot = activeIsSlot ? slotById.get(activeTab) : undefined;
+
+  // Most recent user message content preceding each index, computed in one
+  // O(n) pass. The previous per-message `[...messages.slice(0, index)]
+  // .reverse().find(...)` ran twice per assistant message on every render —
+  // O(n²) with array copies on every streaming token.
+  const precedingUserContent = useMemo(() => {
+    const result: (string | undefined)[] = new Array(messages.length);
+    let lastUserContent: string | undefined;
+    for (let i = 0; i < messages.length; i += 1) {
+      result[i] = lastUserContent;
+      if (messages[i].role === "user") {
+        lastUserContent = messages[i].content;
+      }
+    }
+    return result;
+  }, [messages]);
 
   useEffect(() => {
     const viewport = scrollAreaRef.current?.querySelector(
@@ -97,12 +112,13 @@ export function MessageList({
 
   return (
     <div className="relative flex-1 min-h-0">
+      {/* role="log" is already an implicit polite live region — an explicit
+          aria-live here doubled screen-reader announcements. */}
       <ScrollArea
         ref={scrollAreaRef}
         className="h-full rounded-2xl bg-[hsl(var(--app-panel))] shadow-inner"
         role="log"
         aria-label={t("accessibility.chatMessages")}
-        aria-live="polite"
       >
         <ContentColumn
           className="space-y-6 py-6 pb-6"
@@ -113,17 +129,11 @@ export function MessageList({
             const isTurnEnd =
               message.role === "assistant" &&
               (!nextMessage || nextMessage.role === "user");
-            const retryContent =
+            // retryContent and prompt are the same value: the content of
+            // the user message that precedes this assistant message.
+            const precedingUser =
               message.role === "assistant"
-                ? [...messages.slice(0, index)]
-                    .reverse()
-                    .find((entry) => entry.role === "user")?.content
-                : undefined;
-            const prompt =
-              message.role === "assistant"
-                ? [...messages.slice(0, index)]
-                    .reverse()
-                    .find((entry) => entry.role === "user")?.content
+                ? precedingUserContent[index]
                 : undefined;
             // In compare/team mode, pass all runs so MessageItem can render them
             // In single mode, find the active tab's run
@@ -146,15 +156,14 @@ export function MessageList({
                 projectId={projectId}
                 conversationId={conversation?.id}
                 run={message.role === "assistant" ? run : undefined}
-                prompt={prompt}
-                retryContent={retryContent}
+                prompt={precedingUser}
+                retryContent={precedingUser}
                 isTurnEnd={isTurnEnd}
                 onShowSources={onShowSources}
                 onShowDisagreements={onShowDisagreements}
               />
             );
           })}
-          <div ref={bottomRef} />
         </ContentColumn>
       </ScrollArea>
 

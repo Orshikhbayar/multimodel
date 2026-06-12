@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest, after } from "next/server";
 import { nanoid } from "nanoid";
 import * as Sentry from "@sentry/nextjs";
 import { streamCompletion, type StreamOptions } from "@/lib/api/providerRouter";
@@ -49,6 +49,17 @@ function estimatePromptTokensFromMessages(messages: ChatMessage[]) {
   return estimatePromptTokens(messages);
 }
 
+// Env var that must be set for each provider. The key check runs against the
+// RESOLVED model (after billing auto-routing), not a hardcoded provider — a
+// deploy with only ANTHROPIC_API_KEY must not 500 on Claude requests.
+const PROVIDER_ENV_KEYS: Record<string, string> = {
+  openai: "OPENAI_API_KEY",
+  anthropic: "ANTHROPIC_API_KEY",
+  google: "GOOGLE_AI_API_KEY",
+  xai: "XAI_API_KEY",
+  deepseek: "DEEPSEEK_API_KEY",
+};
+
 export async function GET() {
   return new Response(
     JSON.stringify({ error: "Method Not Allowed", allowed: ["POST"] }),
@@ -79,12 +90,7 @@ export async function POST(request: NextRequest) {
   }
 
   const sessionUserId = claims.sub;
-  const sessionEmail =
-    typeof claims.email === "string"
-      ? claims.email
-      : typeof claims["email"] === "string"
-        ? claims["email"]
-        : null;
+  const sessionEmail = typeof claims.email === "string" ? claims.email : null;
   const log = createRequestLogger(requestId, sessionUserId);
 
   Sentry.setUser({ id: sessionUserId });
@@ -298,18 +304,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (!process.env.OPENAI_API_KEY) {
-      releaseConcurrencySlot(sessionUserId, streamId);
-      return new Response(
-        JSON.stringify({
-          error: "OpenAI API key not configured",
-          hint: "Add OPENAI_API_KEY to your .env.local file",
-          requestId,
-        }),
-        { status: 500, headers: { "Content-Type": "application/json" } },
-      );
-    }
-
     let resolvedModelId = modelId || "openai/gpt-4o-mini";
     const meteringRunReferenceId = runId ?? requestId;
     outerMeteringRunId = meteringRunReferenceId;
@@ -439,6 +433,23 @@ export async function POST(request: NextRequest) {
       }
     };
 
+    // Provider key check happens AFTER metering so it sees the final
+    // auto-routed model — and must release the hold metering just created.
+    const requiredEnvKey = PROVIDER_ENV_KEYS[resolvedProvider];
+    if (requiredEnvKey && !process.env[requiredEnvKey]) {
+      await finalizeMetering("failed", 0, 0, "provider_api_key_missing");
+      releaseConcurrencySlot(sessionUserId, streamId);
+      return new Response(
+        JSON.stringify({
+          error: `${resolvedProvider} API key not configured`,
+          code: "provider_key_missing",
+          hint: `Add ${requiredEnvKey} to your .env.local file`,
+          requestId,
+        }),
+        { status: 500, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
     if (conversationId && runId) {
       const { error: upsertErr } = await supabase.from("model_runs").upsert(
         {
@@ -468,6 +479,18 @@ export async function POST(request: NextRequest) {
     const resolvedModel = resolvedModelId;
 
     let tokenUsage: TokenUsage | undefined;
+
+    // cancel() used to fire finalizeMetering as a dangling promise. Vercel
+    // may suspend the function once the response settles, killing that write
+    // and leaving the credit hold locked. Any pending cancel-path cleanup is
+    // resolved into this deferred, which after() awaits below — keeping the
+    // function alive until the writes land. First resolve wins: the normal
+    // completion/error paths resolve with nothing (their writes are awaited
+    // inside start() before the stream closes).
+    let settleStreamCleanup!: (cleanup?: Promise<unknown>) => void;
+    const streamCleanupSettled = new Promise<unknown>((resolve) => {
+      settleStreamCleanup = resolve;
+    });
 
     const stream = new ReadableStream({
       async start(controller) {
@@ -645,6 +668,7 @@ export async function POST(request: NextRequest) {
           streamClosed = true;
         } finally {
           releaseConcurrencySlot(sessionUserId, streamId);
+          settleStreamCleanup();
         }
       },
 
@@ -658,28 +682,39 @@ export async function POST(request: NextRequest) {
         const cancelCompletionTokens =
           tokenUsage?.completionTokens ?? Math.max(0, fallbackCompletionTokens);
 
-        void finalizeMetering(
-          "cancelled",
-          cancelPromptTokens,
-          cancelCompletionTokens,
-          "client_cancelled",
-        );
+        const cleanupWork: Promise<unknown>[] = [
+          finalizeMetering(
+            "cancelled",
+            cancelPromptTokens,
+            cancelCompletionTokens,
+            "client_cancelled",
+          ),
+        ];
 
         if (conversationId && runId) {
-          void supabase
-            .from("model_runs")
-            .update({
-              message_id: messageId ?? null,
-              status: "completed",
-              output_text: accumulatedText,
-              input_tokens: cancelPromptTokens,
-              output_tokens: cancelCompletionTokens,
-              latency_ms: elapsed,
-              error_text: null,
-            })
-            .eq("id", runId)
-            .eq("conversation_id", conversationId);
+          cleanupWork.push(
+            Promise.resolve(
+              supabase
+                .from("model_runs")
+                .update({
+                  message_id: messageId ?? null,
+                  status: "completed",
+                  output_text: accumulatedText,
+                  input_tokens: cancelPromptTokens,
+                  output_tokens: cancelCompletionTokens,
+                  latency_ms: elapsed,
+                  error_text: null,
+                })
+                .eq("id", runId)
+                .eq("conversation_id", conversationId),
+            ),
+          );
         }
+
+        // Hand the pending writes to after() so the function isn't
+        // suspended before they complete (allSettled: cleanup must not
+        // throw into the runtime).
+        settleStreamCleanup(Promise.allSettled(cleanupWork));
 
         log.info("Client disconnected", {
           durationMs: elapsed,
@@ -691,6 +726,16 @@ export async function POST(request: NextRequest) {
         });
       },
     });
+
+    // Keeps the serverless function alive until any cancel-path cleanup
+    // (billing finalization, model_runs update) has landed. after() throws
+    // outside a Next.js request scope (unit tests); cleanup still runs
+    // there, just without the suspension guarantee.
+    try {
+      after(() => streamCleanupSettled);
+    } catch {
+      // No request scope — nothing to extend.
+    }
 
     return new Response(stream, {
       headers: {
