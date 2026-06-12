@@ -1,13 +1,22 @@
 "use client";
 
-import { memo, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Children,
+  cloneElement,
+  isValidElement,
+  memo,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactElement,
+} from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
   Check,
   Copy,
   ExternalLink,
-  Loader2,
   Pencil,
   RotateCcw,
   ThumbsDown,
@@ -31,7 +40,7 @@ import {
   normalizeLanguage,
 } from "./codeHighlight";
 import { useI18n } from "@/lib/i18n";
-import type { InteractionMode, Message, Run, ToolCall } from "@/lib/types";
+import type { Message, Run, ToolCall } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useChatActions } from "@/lib/hooks/useChatActions";
 import { useConversationStore, useSettingsStore } from "@/lib/stores";
@@ -62,14 +71,13 @@ const MessageContent = memo(
     const isStreaming =
       !isUser && (status === "streaming" || status === "queued");
 
-    // Phase 1 — plain text, no markdown parser, no layout thrash
+    // Phase 1 — plain text, no markdown parser, no layout thrash.
+    // No aria-live here: the message log (MessageList role="log") already
+    // announces updates — a second live region made screen readers announce
+    // streaming text twice.
     if (isStreaming) {
       return (
-        <div
-          className="whitespace-pre-wrap text-sm leading-relaxed"
-          aria-live="polite"
-          aria-atomic="false"
-        >
+        <div className="whitespace-pre-wrap text-sm leading-relaxed">
           {text ||
             (status === "queued"
               ? t("chat.waitingForSlot")
@@ -90,21 +98,26 @@ const MessageContent = memo(
         {splitInteractiveBlocks(content, !isUser ? prompt : undefined).map(
           (segment, i) =>
             segment.type === "interactive" ? (
-              <InteractiveBlock key={i} html={segment.content} />
+              <InteractiveBlock key={`interactive-${i}`} html={segment.content} />
             ) : segment.type === "pptx" ? (
-              <PptxBlock key={i} json={segment.content} />
+              <PptxBlock key={`pptx-${i}`} json={segment.content} />
             ) : (
               <ReactMarkdown
-                key={i}
+                key={`text-${i}`}
                 remarkPlugins={[remarkGfm]}
                 skipHtml
                 components={{
                   p: ({ children }) => (
                     <p className="mb-2 last:mb-0">{children}</p>
                   ),
+                  // Block vs inline detection: markdown block code always
+                  // arrives as pre > code, so `pre` tags its child instead of
+                  // relying on className — a fence with no language has no
+                  // className and used to collapse into the inline style.
                   code: ({ className, children, ...props }) => {
-                    const isInline = !className;
-                    if (isInline) {
+                    const isBlock =
+                      "data-codeblock" in props || Boolean(className);
+                    if (!isBlock) {
                       return (
                         <code
                           className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono"
@@ -119,7 +132,18 @@ const MessageContent = memo(
                     const code = String(children).replace(/\n$/, "");
                     return <CodeBlock code={code} language={language} />;
                   },
-                  pre: ({ children }) => <>{children}</>,
+                  pre: ({ children }) => (
+                    <>
+                      {Children.map(children, (child) =>
+                        isValidElement(child)
+                          ? cloneElement(
+                              child as ReactElement<Record<string, unknown>>,
+                              { "data-codeblock": "true" },
+                            )
+                          : child,
+                      )}
+                    </>
+                  ),
                 }}
               >
                 {segment.content}
@@ -129,11 +153,9 @@ const MessageContent = memo(
       </div>
     );
   },
-  // Only re-render when text or status actually changes
-  (prev, next) =>
-    prev.text === next.text &&
-    prev.status === next.status &&
-    prev.errorMessage === next.errorMessage,
+  // All props are primitives, so React's default shallow comparison is the
+  // correct comparator. The previous custom one omitted `prompt`/`isUser`,
+  // which made the auto-viz transform a stale-props trap.
 );
 
 interface MessageItemProps {
@@ -238,10 +260,10 @@ export function MessageItem({
                 message.collaborationMode !== "none" && (
                   <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
                     {message.collaborationMode === "debate"
-                      ? "⚔ Debate"
+                      ? `⚔ ${t("chat.collabDebate")}`
                       : message.collaborationMode === "chain"
-                        ? "⛓ Chain"
-                        : "🔬 Research"}
+                        ? `⛓ ${t("chat.collabChain")}`
+                        : `🔬 ${t("chat.collabResearch")}`}
                   </span>
                 )}
             </div>
@@ -526,12 +548,21 @@ export function MessageItem({
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
   const { t } = useI18n();
+  const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+    },
+    [],
+  );
 
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+      if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+      resetTimerRef.current = setTimeout(() => setCopied(false), 1500);
     } catch {
       // Ignore clipboard errors
     }
@@ -553,25 +584,30 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
-function LoaderSpinner() {
-  return <Loader2 className="h-4 w-4 animate-spin" />;
-}
-
 /** Code block with copy functionality */
 function CodeBlock({ code, language }: { code: string; language?: string }) {
   const [copied, setCopied] = useState(false);
   const { t } = useI18n();
+  const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const normalizedLanguage = normalizeLanguage(language);
   const isSupported = SUPPORTED_LANGUAGES.has(normalizedLanguage);
   const label = isSupported
     ? normalizedLanguage.toUpperCase()
     : t("common.text");
 
+  useEffect(
+    () => () => {
+      if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+    },
+    [],
+  );
+
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(code);
       setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+      if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+      resetTimerRef.current = setTimeout(() => setCopied(false), 1500);
     } catch {
       setCopied(false);
     }
@@ -603,6 +639,7 @@ function CodeBlock({ code, language }: { code: string; language?: string }) {
 }
 
 function ToolActivityList({ toolCalls }: { toolCalls: ToolCall[] }) {
+  const { t } = useI18n();
   return (
     <div className="mt-3 w-full max-w-[85%] space-y-2">
       {toolCalls.map((toolCall) => (
@@ -619,7 +656,9 @@ function ToolActivityList({ toolCalls }: { toolCalls: ToolCall[] }) {
           </div>
           {toolCall.actualCost && (
             <div className="mt-1 text-[11px] text-muted-foreground">
-              Cost: {toolCall.actualCost.totalTokens ?? 0} tokens
+              {t("chat.toolCost", {
+                tokens: toolCall.actualCost.totalTokens ?? 0,
+              })}
               {typeof toolCall.actualCost.externalCostUsd === "number"
                 ? ` · $${toolCall.actualCost.externalCostUsd.toFixed(4)}`
                 : ""}
@@ -648,12 +687,12 @@ function ToolActivityList({ toolCalls }: { toolCalls: ToolCall[] }) {
                   key={`${toolCall.id}-artifact-${index}`}
                   className="rounded-md border border-border/60 px-2 py-1 text-[11px] text-muted-foreground"
                 >
-                  {artifact.type ?? "artifact"}:{" "}
+                  {artifact.type ?? t("chat.artifactLabel")}:{" "}
                   {artifact.title ??
                     artifact.storagePath ??
                     artifact.downloadUrl ??
                     artifact.id ??
-                    "generated"}
+                    t("chat.artifactGenerated")}
                 </span>
               ))}
             </div>
