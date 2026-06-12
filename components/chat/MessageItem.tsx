@@ -98,7 +98,10 @@ const MessageContent = memo(
         {splitInteractiveBlocks(content, !isUser ? prompt : undefined).map(
           (segment, i) =>
             segment.type === "interactive" ? (
-              <InteractiveBlock key={`interactive-${i}`} html={segment.content} />
+              <InteractiveBlock
+                key={`interactive-${i}`}
+                html={segment.content}
+              />
             ) : segment.type === "pptx" ? (
               <PptxBlock key={`pptx-${i}`} json={segment.content} />
             ) : (

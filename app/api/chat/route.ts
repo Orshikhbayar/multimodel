@@ -728,8 +728,14 @@ export async function POST(request: NextRequest) {
     });
 
     // Keeps the serverless function alive until any cancel-path cleanup
-    // (billing finalization, model_runs update) has landed.
-    after(() => streamCleanupSettled);
+    // (billing finalization, model_runs update) has landed. after() throws
+    // outside a Next.js request scope (unit tests); cleanup still runs
+    // there, just without the suspension guarantee.
+    try {
+      after(() => streamCleanupSettled);
+    } catch {
+      // No request scope — nothing to extend.
+    }
 
     return new Response(stream, {
       headers: {

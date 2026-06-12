@@ -719,7 +719,8 @@ const mn: MessageSchema = {
     copyHtml: "HTML хуулах",
     expandFullscreen: "Бүтэн дэлгэцээр нээх",
     closeFullscreen: "Бүтэн дэлгэцийг хаах",
-    vizRenderError: "Дүрслэлийг харуулж чадсангүй — оронд нь кодыг үзүүлж байна",
+    vizRenderError:
+      "Дүрслэлийг харуулж чадсангүй — оронд нь кодыг үзүүлж байна",
     toolCost: "Зарцуулалт: {tokens} токен",
     artifactLabel: "артефакт",
     artifactGenerated: "үүсгэсэн",

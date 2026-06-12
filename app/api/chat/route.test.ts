@@ -256,7 +256,10 @@ describe("/api/chat route", () => {
 
     expect(response.status).toBe(500);
     const json = await response.json();
-    expect(json.error).toContain("OpenAI API key not configured");
+    // Key check is provider-aware now: the message is templated from the
+    // resolved provider and carries a machine-readable code.
+    expect(json.error).toContain("API key not configured");
+    expect(json.code).toBe("provider_key_missing");
   });
 
   it("returns 409 when request scope mismatches conversation scope", async () => {

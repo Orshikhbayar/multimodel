@@ -191,7 +191,10 @@ export default function InteractiveBlock({
   }
 
   return (
-    <div ref={containerRef} className={cn(!fullscreen && "my-3 group relative")}>
+    <div
+      ref={containerRef}
+      className={cn(!fullscreen && "my-3 group relative")}
+    >
       <div
         className={cn(
           fullscreen &&
@@ -330,7 +333,9 @@ export default function InteractiveBlock({
                 sandbox="allow-scripts allow-popups"
                 className={cn(
                   "w-full border-0 bg-transparent",
-                  fullscreen ? "h-full" : "rounded-xl border border-white/[0.06]",
+                  fullscreen
+                    ? "h-full"
+                    : "rounded-xl border border-white/[0.06]",
                   showCode && "hidden",
                 )}
                 style={fullscreen ? undefined : { height: `${height}px` }}
