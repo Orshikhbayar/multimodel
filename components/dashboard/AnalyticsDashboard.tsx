@@ -107,7 +107,9 @@ function Sparkline({ values, color }: { values: number[]; color: string }) {
     .map(
       (v, i) =>
         `${((i / Math.max(1, values.length - 1)) * w).toFixed(1)},${(
-          h - 2 - ((v - min) / span) * (h - 4)
+          h -
+          2 -
+          ((v - min) / span) * (h - 4)
         ).toFixed(1)}`,
     )
     .join(" ");
@@ -132,7 +134,9 @@ function AreaChart({ days, values }: { days: string[]; values: number[] }) {
   const x = (i: number) => (i / Math.max(1, values.length - 1)) * w;
   const y = (v: number) => h - 14 - (v / max) * (h - 28);
   const line = values
-    .map((v, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)} ${y(v).toFixed(1)}`)
+    .map(
+      (v, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)} ${y(v).toFixed(1)}`,
+    )
     .join(" ");
   const area = `${line} L${w} ${h} L0 ${h} Z`;
   const slice = w / values.length;
@@ -296,7 +300,10 @@ export function AnalyticsDashboard({ runs }: { runs: AnalyticsRun[] }) {
     let thumbsTotal = 0;
     for (const run of inRange) {
       const provider = PROVIDER_COLORS[run.provider] ? run.provider : "other";
-      byProvider.set(provider, (byProvider.get(provider) ?? 0) + (run.cost_usd ?? 0));
+      byProvider.set(
+        provider,
+        (byProvider.get(provider) ?? 0) + (run.cost_usd ?? 0),
+      );
       const m = byModel.get(run.model) ?? { cost: 0, count: 0 };
       m.cost += run.cost_usd ?? 0;
       m.count += 1;
@@ -321,7 +328,9 @@ export function AnalyticsDashboard({ runs }: { runs: AnalyticsRun[] }) {
     const avgLatency =
       current.latencyCount > 0 ? current.latencySum / current.latencyCount : 0;
     const prevLatency =
-      previous.latencyCount > 0 ? previous.latencySum / previous.latencyCount : 0;
+      previous.latencyCount > 0
+        ? previous.latencySum / previous.latencyCount
+        : 0;
 
     const weekdayCounts = new Array(7).fill(0);
     for (const [day, agg] of byDay) {
@@ -549,7 +558,8 @@ export function AnalyticsDashboard({ runs }: { runs: AnalyticsRun[] }) {
                     <Crown className="h-3.5 w-3.5 self-center text-amber-500" />
                   )}
                   <span className="ml-auto tabular-nums text-muted-foreground">
-                    {entry.count.toLocaleString()} runs · ${entry.cost.toFixed(2)}
+                    {entry.count.toLocaleString()} runs · $
+                    {entry.cost.toFixed(2)}
                   </span>
                 </div>
                 <div className="h-1.5 overflow-hidden rounded-full bg-muted/40">
@@ -591,7 +601,8 @@ export function AnalyticsDashboard({ runs }: { runs: AnalyticsRun[] }) {
                 title={`${day} · ${heatmap.counts[i]} runs`}
                 className={cn(
                   "h-[10px] w-[10px] rounded-[2px]",
-                  isToday && "ring-1 ring-primary ring-offset-1 ring-offset-background",
+                  isToday &&
+                    "ring-1 ring-primary ring-offset-1 ring-offset-background",
                 )}
                 style={{
                   backgroundColor:
