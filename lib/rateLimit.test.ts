@@ -3,6 +3,10 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("@/lib/rateLimitUpstash", () => ({
   getUpstashRateLimiter: vi.fn().mockResolvedValue(null),
   _resetUpstashLimiterCache: vi.fn(),
+  // null = Redis concurrency unavailable -> callers fall back to the
+  // in-memory store (preserves the pre-distributed test behavior).
+  acquireDistributedConcurrencySlot: vi.fn().mockResolvedValue(null),
+  releaseDistributedConcurrencySlot: vi.fn().mockResolvedValue(undefined),
 }));
 
 import * as rateLimitUpstash from "@/lib/rateLimitUpstash";
@@ -299,6 +303,90 @@ describe("checkStreamPermissionAsync", () => {
     expect(result.allowed).toBe(true);
     expect(result.concurrency.streamId).toBeTruthy();
     expect(result.rateLimit.remaining).toBe(18);
+
+    mockGetUpstash.mockResolvedValue(null);
+  });
+
+  it("uses Redis-backed concurrency slots and routes the release to Redis", async () => {
+    resetAllLimits();
+    const userId = "async-distributed";
+    const mockAcquire = vi.mocked(
+      rateLimitUpstash.acquireDistributedConcurrencySlot,
+    );
+    const mockRelease = vi.mocked(
+      rateLimitUpstash.releaseDistributedConcurrencySlot,
+    );
+    mockRelease.mockClear();
+    mockAcquire.mockResolvedValueOnce({ acquired: true, active: 1 });
+    const fakeLimiter: UpstashRateLimiter = {
+      limit: vi.fn().mockResolvedValue({
+        success: true,
+        remaining: 17,
+        reset: Date.now() + 60_000,
+        limit: 20,
+      }),
+    };
+    mockGetUpstash.mockResolvedValue(fakeLimiter);
+
+    const result = await checkStreamPermissionAsync(userId);
+    expect(result.allowed).toBe(true);
+    const streamId = result.concurrency.streamId!;
+    expect(streamId).toBeTruthy();
+
+    // Release must go to Redis, exactly once (double-release guard).
+    releaseConcurrencySlot(userId, streamId);
+    releaseConcurrencySlot(userId, streamId);
+    expect(mockRelease).toHaveBeenCalledTimes(1);
+    expect(mockRelease).toHaveBeenCalledWith(userId);
+
+    mockGetUpstash.mockResolvedValue(null);
+  });
+
+  it("rejects on Redis concurrency limit WITHOUT consuming a rate token", async () => {
+    resetAllLimits();
+    const mockAcquire = vi.mocked(
+      rateLimitUpstash.acquireDistributedConcurrencySlot,
+    );
+    mockAcquire.mockResolvedValueOnce({ acquired: false, active: 2 });
+    const limitSpy = vi.fn();
+    mockGetUpstash.mockResolvedValue({ limit: limitSpy });
+
+    const result = await checkStreamPermissionAsync("async-distributed-full");
+    expect(result.allowed).toBe(false);
+    expect(result.reason).toBe("concurrency_limit");
+    expect(result.concurrency.active).toBe(2);
+    // The invariant this fix restores: no rate token burned on a
+    // concurrency rejection.
+    expect(limitSpy).not.toHaveBeenCalled();
+
+    mockGetUpstash.mockResolvedValue(null);
+  });
+
+  it("returns the Redis slot when the rate check fails afterwards", async () => {
+    resetAllLimits();
+    const userId = "async-distributed-rate-denied";
+    const mockAcquire = vi.mocked(
+      rateLimitUpstash.acquireDistributedConcurrencySlot,
+    );
+    const mockRelease = vi.mocked(
+      rateLimitUpstash.releaseDistributedConcurrencySlot,
+    );
+    mockRelease.mockClear();
+    mockAcquire.mockResolvedValueOnce({ acquired: true, active: 1 });
+    mockGetUpstash.mockResolvedValue({
+      limit: vi.fn().mockResolvedValue({
+        success: false,
+        remaining: 0,
+        reset: Date.now() + 30_000,
+        limit: 20,
+      }),
+    });
+
+    const result = await checkStreamPermissionAsync(userId);
+    expect(result.allowed).toBe(false);
+    expect(result.reason).toBe("rate_limit");
+    expect(mockRelease).toHaveBeenCalledTimes(1);
+    expect(mockRelease).toHaveBeenCalledWith(userId);
 
     mockGetUpstash.mockResolvedValue(null);
   });

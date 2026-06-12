@@ -19,7 +19,11 @@ import {
   isUnlimitedTesterEmail,
 } from "@/lib/testerAccess";
 import { debug as logDebug } from "@/lib/logger";
-import { getUpstashRateLimiter } from "@/lib/rateLimitUpstash";
+import {
+  getUpstashRateLimiter,
+  acquireDistributedConcurrencySlot,
+  releaseDistributedConcurrencySlot,
+} from "@/lib/rateLimitUpstash";
 
 // ============================================
 // Types
@@ -71,6 +75,12 @@ const rateLimitStore = new Map<string, RateLimitEntry>();
 
 // Concurrency storage: userId -> entry
 const concurrencyStore = new Map<string, ConcurrencyEntry>();
+
+// Stream IDs whose slot lives in Redis rather than the local store. Acquire
+// and release always happen on the same instance (same function invocation),
+// so a local Set is sufficient to route releases — and doubles as the
+// double-release guard the local store provides via streamIds.
+const distributedStreamIds = new Set<string>();
 
 // Cleanup interval (5 minutes)
 const CLEANUP_INTERVAL = 5 * 60 * 1000;
@@ -228,6 +238,13 @@ export function acquireConcurrencySlot(
  * Release a concurrency slot when streaming is done
  */
 export function releaseConcurrencySlot(userId: string, streamId: string): void {
+  // Redis-backed slot: fire the DECR without blocking the caller. If the
+  // instance dies before it lands, the key's TTL reclaims the slot.
+  if (distributedStreamIds.delete(streamId)) {
+    void releaseDistributedConcurrencySlot(userId);
+    return;
+  }
+
   const entry = concurrencyStore.get(userId);
   if (!entry) return;
 
@@ -407,9 +424,53 @@ export async function checkStreamPermissionAsync(
   // Try Upstash first
   const upstash = await getUpstashRateLimiter();
   if (upstash) {
+    // Concurrency is resolved BEFORE a rate token is consumed, mirroring the
+    // in-memory invariant ("only consume if BOTH checks pass"). Previously
+    // upstash.limit() ran first, so a user stuck at the concurrency cap who
+    // retried also burned through their rate window.
+    //
+    // Slots are acquired atomically in Redis (INCR-first) so the cap holds
+    // across serverless instances; if Redis concurrency is unavailable we
+    // fall back to the local per-instance store.
+    const distributed = await acquireDistributedConcurrencySlot(
+      userId,
+      config.maxConcurrentStreams,
+    );
+
+    const localConcurrency =
+      distributed === null ? getConcurrencyStatus(userId, config) : null;
+
+    const concurrencyRejected = distributed
+      ? !distributed.acquired
+      : localConcurrency!.active >= config.maxConcurrentStreams;
+
+    if (concurrencyRejected) {
+      return {
+        allowed: false,
+        reason: "concurrency_limit",
+        // The limiter was deliberately not consulted (no token consumed),
+        // so window values are reported optimistically.
+        rateLimit: {
+          allowed: true,
+          remaining: config.maxRequests,
+          resetIn: 0,
+          limit: config.maxRequests,
+        },
+        concurrency: {
+          allowed: false,
+          active: distributed?.active ?? localConcurrency!.active,
+          limit: config.maxConcurrentStreams,
+        },
+      };
+    }
+
     const upstashResult = await upstash.limit(userId);
 
     if (!upstashResult.success) {
+      // Return the slot acquired above — the request is not going ahead.
+      if (distributed) {
+        await releaseDistributedConcurrencySlot(userId);
+      }
       const resetIn = Math.max(
         0,
         Math.ceil((upstashResult.reset - Date.now()) / 1000),
@@ -425,33 +486,28 @@ export async function checkStreamPermissionAsync(
         },
         concurrency: {
           allowed: false,
-          active: getConcurrencyStatus(userId, config).active,
+          active: distributed
+            ? Math.max(0, distributed.active - 1)
+            : localConcurrency!.active,
           limit: config.maxConcurrentStreams,
         },
       };
     }
 
-    // Rate limit passed via Upstash — still enforce local concurrency
-    const concurrencyStatus = getConcurrencyStatus(userId, config);
-    if (concurrencyStatus.active >= config.maxConcurrentStreams) {
-      return {
-        allowed: false,
-        reason: "concurrency_limit",
-        rateLimit: {
-          allowed: true,
-          remaining: upstashResult.remaining,
-          resetIn: 0,
-          limit: upstashResult.limit,
-        },
-        concurrency: {
-          allowed: false,
-          active: concurrencyStatus.active,
-          limit: config.maxConcurrentStreams,
-        },
+    let concurrencyResult: ConcurrencyResult;
+    if (distributed) {
+      const streamId = `${userId}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+      distributedStreamIds.add(streamId);
+      concurrencyResult = {
+        allowed: true,
+        active: distributed.active,
+        limit: config.maxConcurrentStreams,
+        streamId,
       };
+    } else {
+      concurrencyResult = acquireConcurrencySlot(userId, config);
     }
 
-    const concurrencyResult = acquireConcurrencySlot(userId, config);
     return {
       allowed: true,
       rateLimit: {

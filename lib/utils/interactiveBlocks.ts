@@ -1,5 +1,6 @@
 import { markdownToInteractiveHtml } from "./markdownToHtml";
 import { markdownToPptxData } from "./markdownToPptx";
+import { VIZ_TRIGGERS, PPTX_TRIGGERS } from "./contentTriggers";
 
 /**
  * Splits a message string into segments of plain text, interactive-html blocks,
@@ -10,11 +11,6 @@ import { markdownToPptxData } from "./markdownToPptx";
  */
 export type SegmentType = "text" | "interactive" | "pptx";
 export type Segment = { type: SegmentType; content: string };
-
-const VIZ_TRIGGERS =
-  /\b(visualiz\w*|interactive|diagram|chart|dashboard|infographic|flowchart|graph|timeline)\b/i;
-const PPTX_TRIGGERS =
-  /\b(presentation|slides?|pptx|powerpoint|deck|pitch\s*deck)\b/i;
 
 export function splitInteractiveBlocks(
   content: string,

@@ -32,6 +32,7 @@ import {
   upsertConversation,
 } from "@/lib/supabase/chatPersistence";
 import { generateRuns, UNIFIED_MODEL_NAME } from "@/lib/hooks/runGeneration";
+import { VIZ_TRIGGERS, PPTX_TRIGGERS } from "@/lib/utils/contentTriggers";
 /**
  * Builds a simple system prompt. Visualization and PPTX are handled
  * CLIENT-SIDE — we don't ask the model to output special code blocks
@@ -54,12 +55,8 @@ function buildConsolidatedSystemPrompt(
   }
 
   // Tell model to use clear structure (headers + bullets) so client-side
-  // transformation produces good results
-  const VIZ_TRIGGERS =
-    /\b(visualiz\w*|interactive|diagram|chart|dashboard|infographic|flowchart|graph|timeline)\b/i;
-  const PPTX_TRIGGERS =
-    /\b(presentation|slides?|pptx|powerpoint|deck|pitch\s*deck)\b/i;
-
+  // transformation produces good results. Triggers are shared with
+  // interactiveBlocks.ts via lib/utils/contentTriggers.ts.
   if (VIZ_TRIGGERS.test(userContent) || PPTX_TRIGGERS.test(userContent)) {
     parts.push(
       "Structure your response with clear markdown headers (## Section Title) and bullet points. Use ## for each major section. This helps the user navigate your response.",
